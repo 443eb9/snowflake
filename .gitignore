@@ -1,2 +1,7 @@
-target
-Cargo.lock
+generated
+
+build/bin
+node_modules
+frontend/dist
+frontend/package-lock.json
+frontend/package-lock.json.md5
