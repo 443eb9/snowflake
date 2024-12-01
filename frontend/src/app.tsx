@@ -4,7 +4,7 @@ import DetailInfo from "./detail-info";
 
 export default function MainApp() {
     return (
-        <div className="">
+        <div className="p-8">
             <Browser></Browser>
             <AssetsGrid></AssetsGrid>
             <DetailInfo></DetailInfo>
