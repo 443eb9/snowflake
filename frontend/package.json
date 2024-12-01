@@ -12,10 +12,13 @@
     "@fluentui/react-components": "^9.56.3",
     "@fluentui/react-icons": "^2.0.266",
     "@fluentui/react-list-preview": "^0.4.1",
+    "@types/randomcolor": "^0.5.9",
+    "randomcolor": "^0.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.0.1",
-    "tailwindcss": "^3.4.15"
+    "tailwindcss": "^3.4.15",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

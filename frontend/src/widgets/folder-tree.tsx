@@ -7,7 +7,7 @@ import { Folder20Regular } from "@fluentui/react-icons";
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
-export function FolderTree() {
+export function FolderTree({ setBrowsingFolderCallback }: { setBrowsingFolderCallback: (id: string) => void }) {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
 
@@ -39,12 +39,17 @@ export function FolderTree() {
             selectionMode="multiselect"
         >
             {
-                Array.from(flatTree.items(), flatTreeItem => {
-                    const { name, open, ...treeItemProps } = flatTreeItem.getTreeItemProps()
+                Array.from(flatTree.items(), (flatTreeItem, index) => {
+                    const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
                     return (
-                        <TreeItem {...treeItemProps}>
+                        <TreeItem {...treeItemProps} key={index}>
                             <TreeItemLayout
                                 iconBefore={<Folder20Regular />}
+                                onClick={() => {
+                                    if (treeItemProps.itemType == "leaf") {
+                                        setBrowsingFolderCallback(treeItemProps.value as string)
+                                    }
+                                }}
                             >
                                 {name}
                             </TreeItemLayout>

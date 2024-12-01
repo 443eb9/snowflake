@@ -22,7 +22,8 @@ func main() {
 		Height:    768,
 		Frameless: true,
 		AssetServer: &assetserver.Options{
-			Assets: assets,
+			Assets:  assets,
+			Handler: NewAssetLoader(),
 		},
 		CSSDragProperty:  "widows",
 		CSSDragValue:     "1",

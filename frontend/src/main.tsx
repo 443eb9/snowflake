@@ -12,13 +12,15 @@ const root = createRoot(container!)
 
 root.render(
     <React.StrictMode>
-        <FluentProvider theme={webDarkTheme}>
-            <HashRouter basename="/">
-                <Routes>
-                    <Route path="/app" element={<MainApp />} />
-                    <Route path="/" element={<Startup />} />
-                </Routes>
-            </HashRouter>
+        <FluentProvider theme={webDarkTheme} className='test'>
+            <div className="w-full h-full overflow-hidden">
+                <HashRouter basename="/">
+                    <Routes>
+                        <Route path="/app" element={<MainApp />} />
+                        <Route path="/" element={<Startup />} />
+                    </Routes>
+                </HashRouter>
+            </div>
         </FluentProvider>
     </React.StrictMode>
 )

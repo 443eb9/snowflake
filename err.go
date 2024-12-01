@@ -19,3 +19,11 @@ type FolderNotFoundError struct {
 func (e FolderNotFoundError) Error() string {
 	return fmt.Sprintf("Cannot find folder %v", e.id)
 }
+
+type AssetNotFoundError struct {
+	id uuid.UUID
+}
+
+func (e AssetNotFoundError) Error() string {
+	return fmt.Sprintf("Cannot find folder %v", e.id)
+}
