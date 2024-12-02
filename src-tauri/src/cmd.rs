@@ -142,6 +142,25 @@ pub fn get_asset(
 }
 
 #[tauri::command]
+pub fn get_assets(
+    assets: Vec<Uuid>,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<Vec<Asset>, String> {
+    fs_cache
+        .lock()
+        .as_deref()
+        .ok()
+        .and_then(Option::as_ref)
+        .map(|cache| {
+            assets
+                .iter()
+                .filter_map(|id| cache.assets.get(id).cloned())
+                .collect()
+        })
+        .ok_or_else(cache_not_built)
+}
+
+#[tauri::command]
 pub fn get_tags_of(
     asset: Uuid,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -192,17 +211,13 @@ pub fn modify_tags_of(
 #[tauri::command]
 pub fn get_assets_containing_tag(
     tag: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<Asset>, String> {
-    if let (Ok(Some(fs_cache)), Ok(Some(storage))) =
-        (fs_cache.lock().as_deref(), storage.lock().as_deref())
-    {
+) -> Result<Vec<Uuid>, String> {
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage
             .item_tags
             .iter()
-            .filter_map(|(item, tags)| tags.contains(&tag).then_some(item))
-            .filter_map(|item| fs_cache.assets.get(item).cloned())
+            .filter_map(|(item, tags)| tags.contains(&tag).then_some(*item))
             .collect())
     } else {
         Err(storage_not_initialized())

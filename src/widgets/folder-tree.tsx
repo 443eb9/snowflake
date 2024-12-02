@@ -10,21 +10,23 @@ type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 export function FolderTree() {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
+    const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
     const browsingFolder = useContext(browsingFolderContext)
 
     useEffect(() => {
         if (folderTree) { return }
 
         async function fetch() {
-            const tree = await GetFolderTree()
+            const map = await GetFolderTree()
             const rootFolderId = await GetRootFolderId()
                 .catch(err => {
                     // TODO error handling
                     console.error(err)
                 })
 
-            if (tree && rootFolderId) {
-                setFolderTree(convertFolderTreeToFlatTree(rootFolderId, tree))
+            if (map && rootFolderId) {
+                setFolderMap(map)
+                setFolderTree(convertFolderTreeToFlatTree(rootFolderId, map))
             } else {
                 nav("/startup")
             }
@@ -32,6 +34,16 @@ export function FolderTree() {
 
         fetch()
     }, [])
+
+    const updateBrowsingFolder = (folderId: string) => {
+        const folder = folderMap?.get(folderId)
+        if (folder) {
+            browsingFolder?.setter({
+                content: folder.content,
+                path: folder.path
+            })
+        }
+    }
 
     const flatTree = useHeadlessFlatTree_unstable(folderTree ?? [])
 
@@ -53,7 +65,7 @@ export function FolderTree() {
                                 iconBefore={<Folder20Regular />}
                                 onClick={() => {
                                     if (treeItemProps.itemType == "leaf") {
-                                        browsingFolder?.setter(treeItemProps.value as string)
+                                        updateBrowsingFolder(treeItemProps.value as string)
                                     }
                                 }}
                             >

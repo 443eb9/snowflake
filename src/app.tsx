@@ -27,13 +27,18 @@ type StateContext<T> = {
     setter: (data: T) => void,
 }
 
+type VirtualFolder = {
+    content: string[],
+    path: string,
+}
+
 export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)
-export const browsingFolderContext = createContext<StateContext<string> | undefined>(undefined)
+export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)
 export const selectedAssetContext = createContext<StateContext<string> | undefined>(undefined)
 
 export default function MainApp() {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
-    const [browsingFolder, setBrowsingFolder] = useState<string | undefined>()
+    const [browsingFolder, setBrowsingFolder] = useState<VirtualFolder | undefined>()
     const [selectedAsset, setSelectedAsset] = useState<string | undefined>()
 
     return (
@@ -52,7 +57,7 @@ export default function MainApp() {
                             </div>
                             <TagsManager />
                         </div>
-                        <div className="">
+                        <div className="w-full">
                             <AssetsGrid />
                         </div>
                         <div className="flex flex-col gap-4">

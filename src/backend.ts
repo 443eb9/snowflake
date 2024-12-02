@@ -67,6 +67,10 @@ export function GetAsset(params: { asset: string }): Promise<Asset> {
     return invoke("get_asset", params)
 }
 
+export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
+    return invoke("get_assets", params)
+}
+
 export function GetTagsOf(params: { asset: string }): Promise<Tag[]> {
     return invoke("get_tags_of", params)
 }
@@ -75,6 +79,6 @@ export function ModifyTagsOf(params: { asset: string, newTags: Tag[] }): Promise
     return invoke("modify_tags_of", params)
 }
 
-export function GetAssetsContainingTag(params: { tag: string }): Promise<Asset> {
+export function GetAssetsContainingTag(params: { tag: string }): Promise<string[]> {
     return invoke("get_assets_containing_tag", params)
 }

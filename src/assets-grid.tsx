@@ -1,26 +1,23 @@
 import { useContext, useEffect, useState } from "react"
 import AssetPreview from "./widgets/asset-preview"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
-import { Asset, Folder, GetAssetsAt, GetFolder } from "./backend"
+import { Asset, GetAssets } from "./backend"
 import { browsingFolderContext, selectedAssetContext } from "./app"
 
 export default function AssetsGrid() {
-    const [folder, setFolder] = useState<Folder | undefined>()
     const [assets, setAssets] = useState<Asset[] | undefined>()
 
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAsset = useContext(selectedAssetContext)
 
     useEffect(() => {
-        if (folder && folder.meta.id == browsingFolder?.data) { return }
         async function fetch() {
             if (!browsingFolder?.data) {
-                setFolder(undefined)
                 setAssets(undefined)
                 return
             }
 
-            const assets = await GetAssetsAt({ folder: browsingFolder.data })
+            const assets = await GetAssets({ assets: browsingFolder.data.content })
                 .catch(err => {
                     // TODO error handling
                     console.log(err)
@@ -28,22 +25,20 @@ export default function AssetsGrid() {
 
             if (assets) {
                 setAssets(assets)
-                const folder = await GetFolder({ folder: browsingFolder.data })
-                setFolder(folder)
             }
         }
 
         fetch()
-    }, [browsingFolder, selectedAsset])
+    }, [browsingFolder])
 
-    if (!folder || !assets) {
+    if (!assets || !browsingFolder?.data) {
         return <></>
     }
 
-    const pathSegs = folder.path.replaceAll("\\", "/").split("/")
+    const pathSegs = browsingFolder.data.path.replaceAll("\\", "/").split("/")
 
     return (
-        <div className="flex flex-col gap-2 h-full">
+        <div className="flex w-full flex-col gap-2 h-full">
             <Breadcrumb>
                 {
                     pathSegs.map((seg, index) =>
@@ -58,7 +53,7 @@ export default function AssetsGrid() {
                     )
                 }
             </Breadcrumb>
-            <div className="flex flex-wrap gap-2 max-h-full overflow-y-auto">
+            <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto">
                 {
                     assets.map((asset, index) => {
                         if (asset.ty != "Image") {

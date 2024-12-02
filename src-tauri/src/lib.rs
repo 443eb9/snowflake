@@ -38,6 +38,7 @@ pub fn run() {
             cmd::get_assets_at,
             cmd::get_folder,
             cmd::get_asset,
+            cmd::get_assets,
             cmd::get_tags_of,
             cmd::modify_tags_of,
             cmd::get_assets_containing_tag

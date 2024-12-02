@@ -95,7 +95,7 @@ impl Storage {
     }
 
     pub fn save_to(&self, root_folder: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
-        Ok(std::fs::File::create(root_folder)?
+        Ok(std::fs::File::create(root_folder.as_ref().join(LIBRARY_STORAGE))?
             .write_all(serde_json::to_string(self)?.as_bytes())?)
     }
 }
