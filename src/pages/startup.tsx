@@ -1,0 +1,55 @@
+import { Button, Text, Title1, useId, useToastController } from "@fluentui/react-components";
+import { Library20Regular, New20Regular } from "@fluentui/react-icons";
+import WindowControls from "../widgets/window-controls";
+import MsgToast from "../widgets/toast";
+import { NavigateFunction, useNavigate } from "react-router-dom";
+import { open } from "@tauri-apps/plugin-dialog";
+import { LoadLibrary } from "../backend";
+
+function openLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
+    return async () => {
+        const path = await open({
+            directory: true,
+        })
+
+        if (path) {
+            await LoadLibrary({ rootFolder: path })
+                .then(() => {
+                    nav("/app")
+                })
+                .catch(err => {
+                    dispatch(err)
+                })
+        }
+    }
+}
+
+export default function Startup() {
+    const toasterId = useId("toaster");
+    const { dispatchToast } = useToastController(toasterId);
+    const dispatch = (ctn: string) => {
+        console.log(ctn)
+        dispatchToast(<MsgToast title="Error" body={ctn}></MsgToast>, { intent: "error" })
+    }
+    const nav = useNavigate()
+
+    return (
+        <>
+            <div className="h-full">
+                <div className="absolute right-4 top-4">
+                    <WindowControls />
+                </div>
+                <div className="flex h-full justify-center">
+                    <div className="flex h-full items-center">
+                        <div className="flex flex-col gap-2">
+                            <Title1 className="italic">Snowflake ❄</Title1>
+                            <Button icon={<Library20Regular />} className="h-12" onClick={openLibrary(dispatch, nav)}>Open Library</Button>
+                            <Button icon={<New20Regular />} className="h-12" onClick={openLibrary(dispatch, nav)}>Initialize Library</Button>
+                            <Text as="i" className="opacity-50">Or drop the library root folder here.</Text>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
