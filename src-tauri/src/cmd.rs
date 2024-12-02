@@ -4,7 +4,10 @@ use hashbrown::HashMap;
 use tauri::State;
 use uuid::Uuid;
 
-use crate::models::{Asset, Folder, FsCache, Storage, Tag};
+use crate::{
+    err::{asset_doesnt_exist, cache_not_built, folder_doesnt_exist, storage_not_initialized},
+    models::{Asset, Folder, FsCache, Storage, Tag},
+};
 
 #[tauri::command]
 pub fn load_library(
@@ -65,7 +68,7 @@ pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result
         .ok()
         .and_then(Option::as_ref)
         .map(|cache| cache.root)
-        .ok_or(format!("Cache not built."))
+        .ok_or_else(cache_not_built)
 }
 
 #[tauri::command]
@@ -76,7 +79,7 @@ pub fn get_all_tags(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Ta
         .ok()
         .and_then(Option::as_ref)
         .map(|st| st.tags.values().into_iter().cloned().collect())
-        .ok_or(format!("Storage not initialized."))
+        .ok_or_else(storage_not_initialized)
 }
 
 #[tauri::command]
@@ -104,7 +107,7 @@ pub fn get_assets_at(
                     .filter_map(|id| cache.assets.get(id).cloned())
                     .collect()
             })
-            .ok_or(format!("Folder {} does not exist.", folder))
+            .ok_or_else(|| folder_doesnt_exist(folder))
     } else {
         Ok(Vec::new())
     }
@@ -121,7 +124,7 @@ pub fn get_folder(
         .ok()
         .and_then(Option::as_ref)
         .and_then(|cache| cache.folders.get(&folder).cloned())
-        .ok_or(format!("Folder {} does not exist.", folder))
+        .ok_or_else(|| folder_doesnt_exist(folder))
 }
 
 #[tauri::command]
@@ -135,7 +138,7 @@ pub fn get_asset(
         .ok()
         .and_then(Option::as_ref)
         .and_then(|cache| cache.assets.get(&asset).cloned())
-        .ok_or(format!("Asset {} does not exist.", asset))
+        .ok_or_else(|| asset_doesnt_exist(asset))
 }
 
 #[tauri::command]
@@ -147,10 +150,7 @@ pub fn get_tags_of(
         .lock()
         .as_deref()
         .map_err(|e| e.to_string())
-        .and_then(|s| {
-            s.as_ref()
-                .ok_or_else(|| format!("Storage not initialized."))
-        })
+        .and_then(|s| s.as_ref().ok_or_else(storage_not_initialized))
         .and_then(|storage| {
             storage
                 .item_tags
@@ -185,6 +185,26 @@ pub fn modify_tags_of(
         );
         Ok(())
     } else {
-        Err(format!("Storage not initialized."))
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_assets_containing_tag(
+    tag: Uuid,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Asset>, String> {
+    if let (Ok(Some(fs_cache)), Ok(Some(storage))) =
+        (fs_cache.lock().as_deref(), storage.lock().as_deref())
+    {
+        Ok(storage
+            .item_tags
+            .iter()
+            .filter_map(|(item, tags)| tags.contains(&tag).then_some(item))
+            .filter_map(|item| fs_cache.assets.get(item).cloned())
+            .collect())
+    } else {
+        Err(storage_not_initialized())
     }
 }

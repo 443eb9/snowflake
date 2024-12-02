@@ -74,3 +74,7 @@ export function GetTagsOf(params: { asset: string }): Promise<Tag[]> {
 export function ModifyTagsOf(params: { asset: string, newTags: Tag[] }): Promise<void> {
     return invoke("modify_tags_of", params)
 }
+
+export function GetAssetsContainingTag(params: { tag: string }): Promise<Asset> {
+    return invoke("get_assets_containing_tag", params)
+}

@@ -1,19 +1,16 @@
-import { useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { FlatTree, HeadlessFlatTreeItemProps, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
+import { browsingFolderContext } from "../app";
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
-export function FolderTree({
-    setBrowsingFolderCallback
-}: {
-    setBrowsingFolderCallback: (id: string) => void,
-}
-) {
+export function FolderTree() {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
+    const browsingFolder = useContext(browsingFolderContext)
 
     useEffect(() => {
         if (folderTree) { return }
@@ -56,7 +53,7 @@ export function FolderTree({
                                 iconBefore={<Folder20Regular />}
                                 onClick={() => {
                                     if (treeItemProps.itemType == "leaf") {
-                                        setBrowsingFolderCallback(treeItemProps.value as string)
+                                        browsingFolder?.setter(treeItemProps.value as string)
                                     }
                                 }}
                             >

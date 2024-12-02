@@ -6,6 +6,7 @@ use tauri::Manager;
 use crate::models::{FsCache, Storage};
 
 mod cmd;
+mod err;
 mod models;
 mod util;
 
@@ -38,7 +39,8 @@ pub fn run() {
             cmd::get_folder,
             cmd::get_asset,
             cmd::get_tags_of,
-            cmd::modify_tags_of
+            cmd::modify_tags_of,
+            cmd::get_assets_containing_tag
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

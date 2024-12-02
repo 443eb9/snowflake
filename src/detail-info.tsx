@@ -57,7 +57,6 @@ export default function DetailInfo({ id }: { id?: string }) {
     return (
         // TODO better approach to set width?
         <div className="flex flex-col gap-2 h-full overflow-y-auto" style={{ width: `${windowSize.width * 0.15}px` }}>
-            <Text as="h2" align="end" size={500}>File Detail</Text>
             <Image
                 className="w-full"
                 src={convertFileSrc(tagged.asset.path)}

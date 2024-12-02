@@ -1,9 +1,10 @@
 import { Button, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Input, makeStyles, Popover, PopoverSurface, PopoverTrigger, TableCellLayout, TableColumnDefinition, Text } from "@fluentui/react-components";
 import { Checkmark20Regular, Color20Regular, Edit20Regular, Tag20Regular } from "@fluentui/react-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
 import randomColor from "randomcolor";
 import { GetAllTags, ModifyTag, Tag } from "../backend";
+import { allTagsContext as allTagsContext } from "../app";
 
 type TagEditingStatus = {
     isEditingName: boolean,
@@ -19,7 +20,9 @@ const inputStyleHook = makeStyles({
 })
 
 export default function TagsManager() {
-    const [allTags, setAllTags] = useState<EditableTag[] | undefined>()
+    const allTags = useContext(allTagsContext)
+
+    const [allTagsEditable, setAllTagsEditable] = useState<EditableTag[] | undefined>()
     const [refresh, setRefresh] = useState(true)
     const inputStyle = inputStyleHook()
     const updateTag = useCallback(async (tag: Tag) => {
@@ -32,24 +35,26 @@ export default function TagsManager() {
     }, [])
 
     async function fetchTags() {
-        const allTags = await GetAllTags()
+        const fetchedTags = await GetAllTags()
             .catch(err => {
                 // TODO error handling
                 console.error(err)
             })
-        if (allTags) {
-            setAllTags(allTags.map(tag => {
+
+        if (fetchedTags) {
+            setAllTagsEditable(fetchedTags.map(tag => {
                 return {
                     isEditingName: false,
                     isEditingColor: false,
                     ...tag
                 }
             }))
+            allTags?.setter(fetchedTags)
         }
     }
 
     useEffect(() => {
-        if (allTags) { return }
+        if (allTagsEditable) { return }
 
         fetchTags()
     }, [])
@@ -58,66 +63,68 @@ export default function TagsManager() {
         setRefresh(!refresh)
     }
 
-    if (!allTags) {
+    if (!allTagsEditable) {
         return <></>
     }
 
     return (
-        <Popover inline>
-            <PopoverTrigger>
-                <Button icon={<Tag20Regular />}></Button>
-            </PopoverTrigger>
+        <div>
+            <Popover inline>
+                <PopoverTrigger>
+                    <Button icon={<Tag20Regular />}></Button>
+                </PopoverTrigger>
 
-            <PopoverSurface className="flex flex-col gap-2 w-1/2">
-                <Text>Tags Management</Text>
-                {
-                    allTags.length == 0
-                        ? <Text italic className="opacity-50">Void</Text>
-                        : <DataGrid
-                            className="max-h-96 overflow-y-auto"
-                            items={allTags}
-                            columns={generateColumns(refreshPage, inputStyle, updateTag)}
-                        >
-                            <DataGridHeader>
-                                <DataGridRow>
+                <PopoverSurface className="flex flex-col gap-2 w-1/2">
+                    <Text>Tags Management</Text>
+                    {
+                        allTagsEditable.length == 0
+                            ? <Text italic className="opacity-50">Void</Text>
+                            : <DataGrid
+                                className="max-h-96 overflow-y-auto"
+                                items={allTagsEditable}
+                                columns={generateColumns(refreshPage, inputStyle, updateTag)}
+                            >
+                                <DataGridHeader>
+                                    <DataGridRow>
+                                        {
+                                            ({ renderHeaderCell }) =>
+                                                <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                                        }
+                                    </DataGridRow>
+                                </DataGridHeader>
+                                <DataGridBody<Tag>>
                                     {
-                                        ({ renderHeaderCell }) =>
-                                            <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
+                                        ({ item, rowId }) =>
+                                            <DataGridRow<Tag> key={rowId}>
+                                                {({ renderCell }) =>
+                                                    <DataGridCell>{renderCell(item)}</DataGridCell>
+                                                }
+                                            </DataGridRow>
                                     }
-                                </DataGridRow>
-                            </DataGridHeader>
-                            <DataGridBody<Tag>>
+                                </DataGridBody>
+                            </DataGrid>
+                    }
+                    <Button
+                        onClick={() => {
+                            setAllTagsEditable([
+                                ...allTagsEditable,
                                 {
-                                    ({ item, rowId }) =>
-                                        <DataGridRow<Tag> key={rowId}>
-                                            {({ renderCell }) =>
-                                                <DataGridCell>{renderCell(item)}</DataGridCell>
-                                            }
-                                        </DataGridRow>
+                                    name: "",
+                                    color: randomColor().substring(1),
+                                    meta: {
+                                        id: v4(),
+                                        created_at: new Date(),
+                                        last_modified: new Date(),
+                                    },
+                                    isEditingName: true,
+                                    isEditingColor: false,
                                 }
-                            </DataGridBody>
-                        </DataGrid>
-                }
-                <Button
-                    onClick={() => {
-                        setAllTags([
-                            ...allTags,
-                            {
-                                name: "",
-                                color: randomColor().substring(1),
-                                meta: {
-                                    id: v4(),
-                                    created_at: new Date(),
-                                    last_modified: new Date(),
-                                },
-                                isEditingName: true,
-                                isEditingColor: false,
-                            },
-                        ])
-                    }}
-                >Add Tag</Button>
-            </PopoverSurface>
-        </Popover>
+                            ])
+                        }}
+                    >Add Tag</Button>
+                </PopoverSurface>
+            </Popover>
+        </div>
     )
 }
 

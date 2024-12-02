@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { createContext, useState } from "react";
 import AssetsGrid from "./assets-grid";
 import Browser from "./browser";
 import DetailInfo from "./detail-info";
 import WindowControls from "./widgets/window-controls";
 import TagsManager from "./widgets/tags-manager";
 import { HotKeys } from "react-hotkeys";
-import { SaveLibrary } from "./backend";
+import { SaveLibrary, Tag } from "./backend";
+import { Text } from "@fluentui/react-components";
 
 const KeyMap = {
     SAVE: "ctrl+s"
@@ -21,32 +22,49 @@ const Handlers = {
     }
 }
 
+type StateContext<T> = {
+    data: T | undefined,
+    setter: (data: T) => void,
+}
+
+export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)
+export const browsingFolderContext = createContext<StateContext<string> | undefined>(undefined)
+export const selectedAssetContext = createContext<StateContext<string> | undefined>(undefined)
+
 export default function MainApp() {
+    const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [browsingFolder, setBrowsingFolder] = useState<string | undefined>()
     const [selectedAsset, setSelectedAsset] = useState<string | undefined>()
 
     return (
-        <HotKeys
-            className="flex justify-between w-full h-full gap-2 p-4"
-            keyMap={KeyMap}
-            handlers={Handlers}
-        >
-            <div className="max-w-96 min-w-48 flex flex-col justify-between">
-                <Browser setBrowsingFolderCallback={(id) => {
-                    setBrowsingFolder(id)
-                    setSelectedAsset(undefined)
-                }} />
-                <TagsManager />
-            </div>
-            <div className="">
-                <AssetsGrid id={browsingFolder} setSelectedAsset={setSelectedAsset}></AssetsGrid>
-            </div>
-            <div className="flex flex-col gap-4">
-                <div className="flex justify-end">
-                    <WindowControls />
-                </div>
-                <DetailInfo id={selectedAsset}></DetailInfo>
-            </div>
-        </HotKeys>
+        <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
+            <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
+                <selectedAssetContext.Provider value={{ data: selectedAsset, setter: setSelectedAsset }}>
+                    <HotKeys
+                        className="flex justify-between w-full h-full gap-2 p-4"
+                        keyMap={KeyMap}
+                        handlers={Handlers}
+                    >
+                        <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
+                            <Text as="h2">Library</Text>
+                            <div className="h-full overflow-y-auto">
+                                <Browser />
+                            </div>
+                            <TagsManager />
+                        </div>
+                        <div className="">
+                            <AssetsGrid />
+                        </div>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-2">
+                                <WindowControls />
+                                {selectedAsset && <Text as="h2" align="end" size={500}>File Detail</Text>}
+                            </div>
+                            <DetailInfo id={selectedAsset}></DetailInfo>
+                        </div>
+                    </HotKeys>
+                </selectedAssetContext.Provider>
+            </browsingFolderContext.Provider>
+        </allTagsContext.Provider>
     )
 }
