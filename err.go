@@ -6,6 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type LibraryAlreadyExists struct{}
+
+func (e LibraryAlreadyExists) Error() string {
+	return "Library already exists in this folder."
+}
+
 type LibraryNotInitializedError struct{}
 
 func (e LibraryNotInitializedError) Error() string {

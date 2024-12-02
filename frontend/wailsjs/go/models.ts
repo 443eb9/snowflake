@@ -88,6 +88,7 @@ export namespace main {
 		}
 	}
 	export class FolderRef {
+	    src: string;
 	    data: AssetRef[];
 	    subFolders: string[];
 	    meta: WebMetaData;
@@ -98,6 +99,7 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.src = source["src"];
 	        this.data = this.convertValues(source["data"], AssetRef);
 	        this.subFolders = source["subFolders"];
 	        this.meta = this.convertValues(source["meta"], WebMetaData);

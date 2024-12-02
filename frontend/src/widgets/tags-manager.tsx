@@ -1,5 +1,5 @@
 import { Button, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Input, makeStyles, Popover, PopoverSurface, PopoverTrigger, TableCellLayout, TableColumnDefinition, Text } from "@fluentui/react-components";
-import { Checkmark20Regular, Color20Regular, Edit20Filled, Tag20Regular } from "@fluentui/react-icons";
+import { Checkmark20Regular, Color20Regular, Edit20Regular, Tag20Regular } from "@fluentui/react-icons";
 import { useCallback, useEffect, useState } from "react";
 import { main } from "../../wailsjs/go/models";
 import { GetAllTags, ModifyTag } from "../../wailsjs/go/main/App";
@@ -37,6 +37,7 @@ export default function TagsManager() {
             const allTags = await GetAllTags()
                 .catch(err => {
                     // TODO error handling
+                    console.error(err)
                 })
             if (allTags) {
                 setAllTags(allTags.map(tag => {
@@ -70,31 +71,31 @@ export default function TagsManager() {
                 <Text>Tags Management</Text>
                 {
                     allTags.length == 0
-                    ? <Text italic className="opacity-50">Void</Text>
-                    : <DataGrid
-                    className="max-h-96 overflow-y-auto"
-                    items={allTags}
-                    columns={generateColumns(refreshPage, inputStyle, updateTag)}
-                >
-                    <DataGridHeader>
-                        <DataGridRow>
-                            {
-                                ({ renderHeaderCell }) =>
-                                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                            }
-                        </DataGridRow>
-                    </DataGridHeader>
-                    <DataGridBody<main.TagRef>>
-                        {
-                            ({ item, rowId }) =>
-                                <DataGridRow<main.TagRef> key={rowId}>
-                                    {({ renderCell }) =>
-                                        <DataGridCell>{renderCell(item)}</DataGridCell>
+                        ? <Text italic className="opacity-50">Void</Text>
+                        : <DataGrid
+                            className="max-h-96 overflow-y-auto"
+                            items={allTags}
+                            columns={generateColumns(refreshPage, inputStyle, updateTag)}
+                        >
+                            <DataGridHeader>
+                                <DataGridRow>
+                                    {
+                                        ({ renderHeaderCell }) =>
+                                            <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
                                     }
                                 </DataGridRow>
-                        }
-                    </DataGridBody>
-                </DataGrid>
+                            </DataGridHeader>
+                            <DataGridBody<main.TagRef>>
+                                {
+                                    ({ item, rowId }) =>
+                                        <DataGridRow<main.TagRef> key={rowId}>
+                                            {({ renderCell }) =>
+                                                <DataGridCell>{renderCell(item)}</DataGridCell>
+                                            }
+                                        </DataGridRow>
+                                }
+                            </DataGridBody>
+                        </DataGrid>
                 }
                 <Button
                     onClick={() => {
@@ -153,7 +154,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
                 <TableCellLayout>
                     <div className="flex gap-2">
                         <Button
-                            icon={<Edit20Filled />}
+                            icon={<Edit20Regular />}
                             onClick={() => {
                                 item.isEditingName = true
                                 item.isEditingColor = false

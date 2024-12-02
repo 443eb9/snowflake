@@ -16,6 +16,7 @@
     "randomcolor": "^0.6.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hotkeys": "^2.0.0",
     "react-router-dom": "^7.0.1",
     "tailwindcss": "^3.4.15",
     "uuid": "^11.0.3"

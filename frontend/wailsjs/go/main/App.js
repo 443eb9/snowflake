@@ -45,3 +45,7 @@ export function ModifyTag(arg1) {
 export function ModifyTagsOfAsset(arg1, arg2, arg3) {
   return window['go']['main']['App']['ModifyTagsOfAsset'](arg1, arg2, arg3);
 }
+
+export function SaveLibrary() {
+  return window['go']['main']['App']['SaveLibrary']();
+}

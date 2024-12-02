@@ -9,6 +9,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const ProjectFile = "snowflake.json"
+
 type WebUUID string
 
 func (id WebUUID) ToUUID() (uuid.UUID, error) {
@@ -26,6 +28,7 @@ func NewResources(lib Library) Resources {
 	folders := make(map[uuid.UUID]*Folder)
 	assets := make(map[uuid.UUID]*Asset)
 	tags := make(map[uuid.UUID]Tag)
+	containsTags := make(map[uuid.UUID][]*Asset)
 
 	var collectFolder func(parent *Folder)
 	collectFolder = func(parent *Folder) {
@@ -37,6 +40,7 @@ func NewResources(lib Library) Resources {
 
 			for _, tag := range asset.Tags {
 				tags[tag.Id] = tag
+				containsTags[tag.Id] = append(containsTags[tag.Id], asset)
 			}
 		}
 
@@ -47,21 +51,24 @@ func NewResources(lib Library) Resources {
 
 	collectFolder(&lib.RootFolder)
 
-	return Resources{lib, ResourcesLookup{folders, assets, tags}}
+	return Resources{lib, ResourcesLookup{folders, assets, tags, containsTags}}
 }
 
 type ResourcesLookup struct {
-	Folders map[uuid.UUID]*Folder
-	Assets  map[uuid.UUID]*Asset
-	Tags    map[uuid.UUID]Tag
+	Folders      map[uuid.UUID]*Folder
+	Assets       map[uuid.UUID]*Asset
+	Tags         map[uuid.UUID]Tag
+	ContainsTags map[uuid.UUID][]*Asset
 }
 
 type Library struct {
 	RootFolder Folder   `json:"rootFolder"`
+	RootPath   string   `json:"rootPath"`
 	Meta       MetaData `json:"meta"`
 }
 
 type Folder struct {
+	Src        string   `json:"src"`
 	Data       []Asset  `json:"data"`
 	SubFolders []Folder `json:"subFolders"`
 	Meta       MetaData `json:"meta"`
@@ -82,6 +89,7 @@ func (folder *Folder) ToNode() FolderTreeNode {
 }
 
 type FolderRef struct {
+	Src        string      `json:"src"`
 	Data       []AssetRef  `json:"data"`
 	SubFolders []WebUUID   `json:"subFolders"`
 	Meta       WebMetaData `json:"meta"`
@@ -98,7 +106,7 @@ func (folder *Folder) ToRef() FolderRef {
 		assetRefs[index] = asset.ToRef()
 	}
 
-	return FolderRef{assetRefs, subFolders, folder.Meta.ToWeb()}
+	return FolderRef{folder.Src, assetRefs, subFolders, folder.Meta.ToWeb()}
 }
 
 type AssetType int

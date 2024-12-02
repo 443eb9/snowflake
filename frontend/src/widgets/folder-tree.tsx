@@ -7,7 +7,12 @@ import { Folder20Regular } from "@fluentui/react-icons";
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
-export function FolderTree({ setBrowsingFolderCallback }: { setBrowsingFolderCallback: (id: string) => void }) {
+export function FolderTree({
+    setBrowsingFolderCallback
+}: {
+    setBrowsingFolderCallback: (id: string) => void,
+}
+) {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
 
@@ -36,7 +41,6 @@ export function FolderTree({ setBrowsingFolderCallback }: { setBrowsingFolderCal
         <FlatTree
             {...flatTree.getTreeProps()}
             aria-label="Folder Tree"
-            selectionMode="multiselect"
         >
             {
                 Array.from(flatTree.items(), (flatTreeItem, index) => {

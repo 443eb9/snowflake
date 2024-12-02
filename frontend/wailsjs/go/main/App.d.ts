@@ -24,3 +24,5 @@ export function ModifyAsset(arg1:main.AssetRef):Promise<void>;
 export function ModifyTag(arg1:main.TagRef):Promise<void>;
 
 export function ModifyTagsOfAsset(arg1:main.AssetType,arg2:uuid.UUID,arg3:Array<main.TagRef>):Promise<void>;
+
+export function SaveLibrary():Promise<void>;

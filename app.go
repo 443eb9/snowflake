@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -42,9 +43,19 @@ func (a *App) LoadLibrary() error {
 		return err
 	}
 
+	result.RootPath = file
 	res := NewResources(result)
 	a.resources = &res
 	return nil
+}
+
+func (a *App) SaveLibrary() error {
+	bytes, err := json.Marshal(a.resources.Library)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(path.Join(a.resources.Library.RootPath, ProjectFile), bytes, 0644)
 }
 
 func (a *App) InitializeLibrary() error {
@@ -56,6 +67,10 @@ func (a *App) InitializeLibrary() error {
 	info, err := os.Stat(root)
 	if err != nil {
 		return err
+	}
+
+	if _, err := os.Stat(path.Join(root, ProjectFile)); os.IsExist(err) {
+		return LibraryAlreadyExists{}
 	}
 
 	var collectFolder func(parent, name string) (*Folder, error)
@@ -104,7 +119,14 @@ func (a *App) InitializeLibrary() error {
 			}
 		}
 
-		return &Folder{data, subFolders, folderMeta}, nil
+		sort.Slice(data, func(i, j int) bool {
+			return data[i].Meta.Name < data[j].Meta.Name
+		})
+		sort.Slice(subFolders, func(i, j int) bool {
+			return subFolders[i].Meta.Name < subFolders[j].Meta.Name
+		})
+
+		return &Folder{folderPath, data, subFolders, folderMeta}, nil
 	}
 
 	rootFolder, err := collectFolder(path.Dir(root), info.Name())
@@ -112,8 +134,12 @@ func (a *App) InitializeLibrary() error {
 		return err
 	}
 
-	res := NewResources(Library{*rootFolder, rootFolder.Meta})
+	res := NewResources(Library{*rootFolder, root, rootFolder.Meta})
 	a.resources = &res
+
+	if err := a.SaveLibrary(); err != nil {
+		return err
+	}
 
 	return nil
 }
