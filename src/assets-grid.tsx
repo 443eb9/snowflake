@@ -1,14 +1,14 @@
-import { useContext, useEffect, useState } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 import AssetPreview from "./widgets/asset-preview"
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
 import { Asset, GetAssets } from "./backend"
-import { browsingFolderContext, selectedAssetContext } from "./context-provider"
+import { browsingFolderContext } from "./context-provider"
+import Selecto from "react-selecto";
 
 export default function AssetsGrid() {
     const [assets, setAssets] = useState<Asset[] | undefined>()
+    const gridRef = useRef<HTMLDivElement>(null)
 
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAsset = useContext(selectedAssetContext)
 
     useEffect(() => {
         async function fetch() {
@@ -31,35 +31,40 @@ export default function AssetsGrid() {
         fetch()
     }, [browsingFolder])
 
-    const pathSegs = browsingFolder?.data?.path.replaceAll("\\", "/").split("/") ?? []
-
     return (
         <>
-            <Breadcrumb>
-                {
-                    pathSegs.map((seg, index) =>
-                        <>
-                            <BreadcrumbItem key={index * 2}>
-                                <BreadcrumbButton>
-                                    {seg}
-                                </BreadcrumbButton>
-                            </BreadcrumbItem>
-                            {index != pathSegs.length - 1 && <BreadcrumbDivider key={index * 2 + 1} />}
-                        </>
-                    )
-                }
-            </Breadcrumb>
-            <div className="flex w-full flex-col gap-2 h-full rounded-md p-1" style={{ backgroundColor: "#00000020" }}>
+            <Selecto
+                container={gridRef.current}
+                selectableTargets={[".selectable-asset"]}
+                hitRate={5}
+                selectByClick
+                selectFromInside
+                onSelect={ev => {
+                    ev.added.forEach(elem => {
+                        elem.dispatchEvent(new Event("selected"))
+                    })
+                    ev.removed.forEach(elem => {
+                        elem.dispatchEvent(new Event("deselected"))
+                    })
+                }}
+            />
+            <div
+                className="flex w-full flex-col gap-2 rounded-md"
+                style={{ backgroundColor: "#00000020", height: "calc(100% - 25px)" }}
+            >
                 {
                     assets &&
-                    <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto">
+                    <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto" ref={gridRef}>
                         {
                             assets.map((asset, index) => {
                                 if (asset.ty != "Image") {
                                     return undefined
                                 }
 
-                                return <AssetPreview key={index} asset={asset} selectionCallback={(id) => selectedAsset?.setter(id)} />
+                                return <AssetPreview
+                                    key={index}
+                                    asset={asset}
+                                />
                             })
                         }
                     </div>

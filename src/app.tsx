@@ -7,6 +7,8 @@ import { HotKeys } from "react-hotkeys";
 import { SaveLibrary } from "./backend";
 import { Text } from "@fluentui/react-components";
 import ContextProvider from "./context-provider";
+import { BrowsingPath } from "./widgets/browsing-path";
+import FileManipulation from "./widgets/file-manipulation";
 
 const KeyMap = {
     SAVE: "ctrl+s"
@@ -37,7 +39,9 @@ export default function MainApp() {
                     </div>
                     <TagsManager />
                 </div>
-                <div className="w-full">
+                <div className="w-full flex flex-col gap-1">
+                    <BrowsingPath />
+                    <FileManipulation />
                     <AssetsGrid />
                 </div>
                 <div className="flex flex-col gap-4">

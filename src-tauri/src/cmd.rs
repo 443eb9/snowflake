@@ -6,7 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     err::{asset_doesnt_exist, cache_not_built, folder_doesnt_exist, storage_not_initialized},
-    models::{Asset, Folder, FsCache, Storage, Tag},
+    models::{Asset, Checksums, Folder, FsCache, Storage, Tag},
 };
 
 #[tauri::command]
@@ -249,5 +249,29 @@ pub fn get_assets_containing_tag(
             .collect())
     } else {
         Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn compute_checksum(
+    asset: Uuid,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<Asset, String> {
+    log::info!("Compute checksum of {}", asset);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        if let Some(asset) = cache.assets.get_mut(&asset) {
+            match Checksums::from_path(&asset.path) {
+                Ok(checksum) => {
+                    asset.checksum.replace(checksum);
+                }
+                Err(err) => return Err(err.to_string()),
+            }
+            Ok(asset.clone())
+        } else {
+            Err(asset_doesnt_exist(asset))
+        }
+    } else {
+        Err(cache_not_built())
     }
 }

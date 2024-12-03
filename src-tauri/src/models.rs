@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     fs::{metadata, read_dir, ReadDir},
-    io::Write,
+    io::{Read, Write},
     path::{Path, PathBuf},
 };
 
@@ -68,6 +68,7 @@ fn collect_cache(
                     name: path.file_name().unwrap().to_string_lossy().to_string(),
                     path,
                     meta,
+                    checksum: None,
                 },
             );
         }
@@ -213,6 +214,7 @@ pub struct Asset {
     pub name: String,
     pub path: PathBuf,
     pub meta: Metadata,
+    pub checksum: Option<Checksums>,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]
@@ -262,5 +264,35 @@ impl Metadata {
             .unwrap()
             .into(),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Checksums {
+    pub crc32: u32,
+    pub md5: [u8; 16],
+    // pub sha1: [u8; 32],
+    // pub sha256: [u8; 8],
+}
+
+impl Checksums {
+    pub fn from_path(path: impl AsRef<Path>) -> Result<Self, std::io::Error> {
+        let mut file = std::fs::File::open(path)?;
+        let mut buf = file
+            .metadata()
+            .map(|m| Vec::with_capacity(m.len() as usize))
+            .unwrap_or_default();
+        file.read_to_end(&mut buf)?;
+
+        let sha1 = <sha1::Sha1 as sha1::Digest>::digest(&buf).to_vec().len();
+        let sha256 = <sha2::Sha256 as sha2::Digest>::digest(&buf).to_vec().len();
+
+        dbg!(sha1, sha256);
+
+        Ok(Self {
+            crc32: crc32fast::hash(&buf),
+            md5: md5::compute(&buf).0,
+            // sha1: ,
+        })
     }
 }

@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from "react"
-import { FlatTree, HeadlessFlatTreeItemProps, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { FlatTree, HeadlessFlatTreeItemProps, Text, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext, selectedAssetContext } from "../context-provider";
+import { browsingFolderContext, selectedAssetsContext } from "../context-provider";
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
@@ -12,7 +12,7 @@ export function FolderTree() {
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAsset = useContext(selectedAssetContext)
+    const selectedAsset = useContext(selectedAssetsContext)
 
     useEffect(() => {
         if (folderTree) { return }
@@ -71,13 +71,11 @@ export function FolderTree() {
                         <TreeItem {...treeItemProps} key={index}>
                             <TreeItemLayout
                                 iconBefore={<Folder20Regular />}
-                                onClick={() => {
-                                    if (treeItemProps.itemType == "leaf") {
-                                        updateBrowsingFolder(treeItemProps.value as string)
-                                    }
-                                }}
+                                onClick={() => updateBrowsingFolder(treeItemProps.value as string)}
                             >
-                                {name}
+                                <Text>
+                                    {name}
+                                </Text>
                             </TreeItemLayout>
                         </TreeItem>
                     )

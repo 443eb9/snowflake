@@ -16,19 +16,19 @@ type VirtualFolder = {
 
 export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)
 export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)
-export const selectedAssetContext = createContext<StateContext<string> | undefined>(undefined)
+export const selectedAssetsContext = createContext<StateContext<Set<string>> | undefined>(undefined)
 
 export default function ContextProvider({ children }: { children?: ReactNode }) {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [browsingFolder, setBrowsingFolder] = useState<VirtualFolder | undefined>()
-    const [selectedAsset, setSelectedAsset] = useState<string | undefined>()
+    const [selectedAssets, setSelectedAssets] = useState<Set<string> | undefined>(new Set())
 
     return (
         <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
             <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
-                <selectedAssetContext.Provider value={{ data: selectedAsset, setter: setSelectedAsset }}>
+                <selectedAssetsContext.Provider value={{ data: selectedAssets, setter: setSelectedAssets }}>
                     {children}
-                </selectedAssetContext.Provider>
+                </selectedAssetsContext.Provider>
             </browsingFolderContext.Provider>
         </allTagsContext.Provider>
     )

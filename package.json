@@ -24,6 +24,7 @@
     "@tauri-apps/plugin-shell": "^2",
     "react-hotkeys": "^2.0.0",
     "react-router-dom": "^7.0.1",
+    "react-selecto": "^1.26.3",
     "tailwindcss": "^3.4.15",
     "uuid": "^11.0.3"
   },
