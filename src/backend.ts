@@ -17,6 +17,7 @@ export type Tag = {
 
 export type Metadata = {
     id: string,
+    byte_size: number,
     created_at: Date,
     last_modified: Date,
 }

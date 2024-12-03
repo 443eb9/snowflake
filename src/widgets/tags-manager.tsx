@@ -115,6 +115,7 @@ export default function TagsManager() {
                                     color: randomColor().substring(1),
                                     meta: {
                                         id: v4(),
+                                        byte_size: 0,
                                         created_at: new Date(),
                                         last_modified: new Date(),
                                     },

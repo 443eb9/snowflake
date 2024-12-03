@@ -236,6 +236,7 @@ impl AssetType {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
     pub id: Uuid,
+    pub byte_size: u64,
     pub created_at: Option<DateTime<FixedOffset>>,
     pub last_modified: DateTime<FixedOffset>,
 }
@@ -248,11 +249,17 @@ impl Metadata {
     pub fn from_std_meta(meta: &std::fs::Metadata) -> Self {
         Self {
             id: Uuid::new_v4(),
-            created_at: FileTime::from_creation_time(&meta)
-                .map(|t| DateTime::from_timestamp_nanos(t.nanoseconds() as i64).into()),
-            last_modified: DateTime::from_timestamp_nanos(
-                FileTime::from_last_modification_time(&meta).nanoseconds() as i64,
+            byte_size: meta.len(),
+            created_at: FileTime::from_creation_time(&meta).map(|t| {
+                DateTime::from_timestamp(t.unix_seconds() as i64, 0)
+                    .unwrap()
+                    .into()
+            }),
+            last_modified: DateTime::from_timestamp(
+                FileTime::from_last_modification_time(&meta).unix_seconds(),
+                0,
             )
+            .unwrap()
             .into(),
         }
     }

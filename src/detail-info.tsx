@@ -6,6 +6,7 @@ import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
 import { Asset, GetAsset, GetTagsOf, Tag } from "./backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetContext } from "./context-provider"
+import formatFileSize from "./util"
 
 type TaggedAsset = {
     asset: Asset,
@@ -84,6 +85,14 @@ export default function DetailInfo() {
                             <ListItem className="flex flex-col gap-1">
                                 <Text weight="bold">Full Path</Text>
                                 <Text>{tagged.asset.path}</Text>
+                            </ListItem>
+                            <ListItem className="flex flex-col gap-1">
+                                <Text weight="bold">Size</Text>
+                                <Text>{formatFileSize(tagged.asset.meta.byte_size)}</Text>
+                            </ListItem>
+                            <ListItem className="flex flex-col gap-1">
+                                <Text weight="bold">Created At</Text>
+                                <Text>{new Date(tagged.asset.meta.created_at).toLocaleString()}</Text>
                             </ListItem>
                             <ListItem className="flex flex-col gap-1">
                                 <Text weight="bold">Last Modified</Text>
