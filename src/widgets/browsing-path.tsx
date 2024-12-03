@@ -1,7 +1,7 @@
 import { useContext } from "react"
 import { browsingFolderContext } from "../context-provider"
 import { Folder, GetFolderTree } from "../backend"
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text } from "@fluentui/react-components"
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
 
 export function BrowsingPath() {
     const browsingFolder = useContext(browsingFolderContext)

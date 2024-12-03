@@ -39,9 +39,8 @@ export default function AssetsGrid() {
             <Selecto
                 container={gridRef.current}
                 selectableTargets={[".selectable-asset"]}
-                hitRate={5}
+                hitRate={0}
                 selectByClick
-                selectFromInside
                 onSelect={ev => {
                     ev.added.forEach(elem => {
                         elem.dispatchEvent(new Event("selected"))

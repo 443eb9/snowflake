@@ -45,7 +45,10 @@ export function FolderTree() {
         if (folder) {
             selectedAssets?.data?.clear()
             document.querySelectorAll(".selected-asset")
-                .forEach(elem => elem.classList.remove("selected-asset"))
+                .forEach(elem => {
+                    elem.dispatchEvent(new Event("deselect"))
+                    elem.classList.remove("selected-asset")
+                })
             browsingFolder?.setter({
                 id: folderId,
                 content: folder.content,

@@ -1,51 +1,40 @@
 import { Button, Image, Text } from "@fluentui/react-components";
 import { Asset } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { selectedAssetsContext } from "../context-provider";
-
-type ListeningState = {
-    id: string,
-    controller: AbortController,
-}
 
 export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const selectedAssets = useContext(selectedAssetsContext)
-    const [listeningState, setListeningState] = useState<ListeningState | undefined>()
-
-    const selectedCallback = useCallback(() => {
-        if (selectedAssets?.data) {
-            thisRef.current?.classList.add("selected-asset")
-            console.log(`added ${asset.meta.id}`)
-            selectedAssets.data.add(asset.meta.id)
-            selectedAssets.setter(selectedAssets.data)
-        }
-    }, [asset.meta.id])
-
-    const deselectedCallback = useCallback(() => {
-        if (selectedAssets?.data) {
-            thisRef.current?.classList.remove("selected-asset")
-            selectedAssets.data.delete(asset.meta.id)
-            selectedAssets.setter(selectedAssets.data)
-        }
-    }, [asset.meta.id])
 
     useEffect(() => {
-        if (thisRef.current && listeningState?.id != asset.meta.id) {
-            listeningState?.controller.abort()
-            thisRef.current.removeEventListener("selected", selectedCallback)
-            thisRef.current.removeEventListener("deselected", deselectedCallback)
+        if (thisRef.current) {
+            const selectedHandler = () => {
+                if (selectedAssets?.data) {
+                    thisRef.current?.classList.add("selected-asset")
+                    selectedAssets.data.add(asset.meta.id)
+                    selectedAssets.setter(selectedAssets.data)
+                }
+            }
 
-            let controller = new AbortController()
-            thisRef.current.addEventListener("selected", selectedCallback, { signal: controller.signal })
-            thisRef.current.addEventListener("deselected", deselectedCallback, { signal: controller.signal })
-            setListeningState({
-                id: asset.meta.id,
-                controller,
-            })
+            const deselectHandler = () => {
+                if (selectedAssets?.data) {
+                    thisRef.current?.classList.remove("selected-asset")
+                    selectedAssets.data.delete(asset.meta.id)
+                    selectedAssets.setter(selectedAssets.data)
+                }
+            }
+
+            thisRef.current.addEventListener("selected", selectedHandler)
+            thisRef.current.addEventListener("deselected", deselectHandler)
+
+            return () => {
+                thisRef.current?.removeEventListener("selected", selectedHandler)
+                thisRef.current?.removeEventListener("deselected", deselectHandler)
+            }
         }
-    }, [asset])
+    }, [asset.meta.id])
 
     return (
         <Button
