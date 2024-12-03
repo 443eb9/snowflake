@@ -1,7 +1,7 @@
 import { useContext } from "react"
 import { browsingFolderContext } from "../context-provider"
 import { Folder, GetFolderTree } from "../backend"
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text } from "@fluentui/react-components"
 
 export function BrowsingPath() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -38,16 +38,18 @@ export function BrowsingPath() {
     return (
         <Breadcrumb>
             {
-                pathSegs.map((seg, index) =>
-                    <>
-                        <BreadcrumbItem key={index * 2}>
-                            <BreadcrumbButton onClick={() => pathChangeHandler(pathSegs.length - 1 - index)}>
-                                {seg}
-                            </BreadcrumbButton>
-                        </BreadcrumbItem>
-                        {index != pathSegs.length - 1 && <BreadcrumbDivider key={index * 2 + 1} />}
-                    </>
-                )
+                pathSegs.length == 0
+                    ? <BreadcrumbButton>Void</BreadcrumbButton>
+                    : pathSegs.map((seg, index) =>
+                        <>
+                            <BreadcrumbItem key={index * 2}>
+                                <BreadcrumbButton onClick={() => pathChangeHandler(pathSegs.length - 1 - index)}>
+                                    {seg}
+                                </BreadcrumbButton>
+                            </BreadcrumbItem>
+                            {index != pathSegs.length - 1 && <BreadcrumbDivider key={index * 2 + 1} />}
+                        </>
+                    )
             }
         </Breadcrumb>
     )

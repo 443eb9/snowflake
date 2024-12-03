@@ -69,7 +69,7 @@ fn collect_cache(
                     name: path.file_name().unwrap().to_string_lossy().to_string(),
                     path,
                     meta,
-                    checksum: None,
+                    checksums: None,
                 },
             );
         }
@@ -215,7 +215,7 @@ pub struct Asset {
     pub name: String,
     pub path: PathBuf,
     pub meta: Metadata,
-    pub checksum: Option<Checksums>,
+    pub checksums: Option<Checksums>,
 }
 
 #[derive(Serialize, Debug, Clone, Copy)]

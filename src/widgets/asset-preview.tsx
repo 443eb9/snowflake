@@ -6,47 +6,44 @@ import { selectedAssetsContext } from "../context-provider";
 
 type ListeningState = {
     id: string,
-    selectHandler: EventListenerOrEventListenerObject,
-    deselectHandler: EventListenerOrEventListenerObject,
+    controller: AbortController,
 }
 
 export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
-    const selectedAsset = useContext(selectedAssetsContext)
+    const selectedAssets = useContext(selectedAssetsContext)
     const [listeningState, setListeningState] = useState<ListeningState | undefined>()
+    const newId = new String(asset.meta.id)
 
     useEffect(() => {
-        if (thisRef.current && listeningState?.id != asset.meta.id) {
-            if (listeningState?.selectHandler) {
-                thisRef.current.removeEventListener("selected", listeningState.selectHandler)
-            }
-            if (listeningState?.deselectHandler) {
-                thisRef.current.removeEventListener("selected", listeningState.deselectHandler)
-            }
+        if (thisRef.current) {
+            console.log(`changed ${listeningState?.id} -> ${newId}`)
 
-            const newSelectHandler = () => {
-                if (selectedAsset?.data) {
+            console.log(listeningState?.controller.signal)
+            const controller = new AbortController()
+
+            thisRef.current.addEventListener("selected", () => {
+                if (selectedAssets?.data) {
                     thisRef.current?.classList.add("selected-asset")
-                    selectedAsset.data.add(asset.meta.id)
-                    selectedAsset.setter(selectedAsset.data)
+                    console.log(`added ${newId}`, asset.meta.id)
+                    selectedAssets.data.add(asset.meta.id)
+                    selectedAssets.setter(selectedAssets.data)
                 }
-            }
+            }, { signal: controller.signal })
 
-            const newDeselectHandler = () => {
-                if (selectedAsset?.data) {
+            thisRef.current.addEventListener("deselected", () => {
+                if (selectedAssets?.data) {
                     thisRef.current?.classList.remove("selected-asset")
-                    selectedAsset.data.delete(asset.meta.id)
-                    selectedAsset.setter(selectedAsset.data)
+                    selectedAssets.data.delete(asset.meta.id)
+                    selectedAssets.setter(selectedAssets.data)
                 }
-            }
+            }, { signal: controller.signal })
 
-            thisRef.current.addEventListener("selected", newSelectHandler)
-            thisRef.current.addEventListener("deselected", newDeselectHandler)
+            listeningState?.controller.abort("")
 
             setListeningState({
                 id: asset.meta.id,
-                selectHandler: newSelectHandler,
-                deselectHandler: newDeselectHandler,
+                controller,
             })
         }
     }, [asset.meta.id])

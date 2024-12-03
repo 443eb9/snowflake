@@ -3,10 +3,13 @@ import AssetPreview from "./widgets/asset-preview"
 import { Asset, GetAssets } from "./backend"
 import { browsingFolderContext } from "./context-provider"
 import Selecto from "react-selecto";
+import { darkenContentStyleHook } from "./styling";
+import { mergeClasses } from "@fluentui/react-components";
 
 export default function AssetsGrid() {
     const [assets, setAssets] = useState<Asset[] | undefined>()
     const gridRef = useRef<HTMLDivElement>(null)
+    const darkenContentStyle = darkenContentStyleHook()
 
     const browsingFolder = useContext(browsingFolderContext)
 
@@ -49,8 +52,8 @@ export default function AssetsGrid() {
                 }}
             />
             <div
-                className="flex w-full flex-col gap-2 rounded-md"
-                style={{ backgroundColor: "#00000020", height: "calc(100% - 25px)" }}
+                className={mergeClasses("flex w-full flex-col gap-2 rounded-md", darkenContentStyle.root)}
+                style={{ height: "calc(100% - 25px)" }}
             >
                 {
                     assets &&
@@ -61,10 +64,7 @@ export default function AssetsGrid() {
                                     return undefined
                                 }
 
-                                return <AssetPreview
-                                    key={index}
-                                    asset={asset}
-                                />
+                                return <AssetPreview key={index} asset={asset} />
                             })
                         }
                     </div>

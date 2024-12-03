@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { Button, Image, Text } from "@fluentui/react-components"
+import { Button, Image, mergeClasses, Text } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "./widgets/tags-container"
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
@@ -7,6 +7,7 @@ import { Asset, ComputeChecksum, GetAsset, GetTagsOf, Tag } from "./backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "./context-provider"
 import formatFileSize from "./util"
+import { darkenContentStyleHook } from "./styling"
 
 type TaggedAsset = {
     asset: Asset,
@@ -16,6 +17,7 @@ type TaggedAsset = {
 export default function DetailInfo() {
     const [tagged, setTagged] = useState<TaggedAsset | undefined>()
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
+    const darkenContentStyle = darkenContentStyleHook()
 
     const selectedAssets = useContext(selectedAssetsContext)
     const selected = selectedAssets?.data?.entries().next().value
@@ -32,7 +34,6 @@ export default function DetailInfo() {
         async function fetch() {
             if (!selected) { return }
 
-            console.log(selectedAssets.data)
             const asset = await GetAsset({ asset: selected[0] })
                 .catch(err => {
                     // TODO error handling
@@ -92,34 +93,41 @@ export default function DetailInfo() {
                                 associatedItem={tagged.asset.meta.id}
                             />
                         </ListItem>
-                        <ListItem className="flex flex-col gap-1">
-                            <Text weight="bold">Full Path</Text>
-                            <Text>{tagged.asset.path}</Text>
+                    </List>
+                    <List className={darkenContentStyle.root}>
+                        <ListItem>
+                            <Text as="h5" size={500} weight="bold" font="monospace">File Properties</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="bold">Size</Text>
-                            <Text>{formatFileSize(tagged.asset.meta.byte_size)}</Text>
+                            <Text weight="semibold" font="monospace">Full Path</Text>
+                            <Text font="monospace">{tagged.asset.path}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="bold">Created At</Text>
-                            <Text>{new Date(tagged.asset.meta.created_at).toLocaleString()}</Text>
+                            <Text weight="semibold" font="monospace">Size</Text>
+                            <Text font="monospace">{formatFileSize(tagged.asset.meta.byte_size)}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="bold">Last Modified</Text>
-                            <Text>{new Date(tagged.asset.meta.last_modified).toLocaleString()}</Text>
+                            <Text weight="semibold" font="monospace">Created At</Text>
+                            <Text font="monospace">{new Date(tagged.asset.meta.created_at).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="bold">Id</Text>
-                            <Text>{tagged.asset.meta.id}</Text>
+                            <Text weight="semibold" font="monospace">Last Modified</Text>
+                            <Text font="monospace">{new Date(tagged.asset.meta.last_modified).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="bold">Checksums</Text>
+                            <Text weight="semibold" font="monospace">Id</Text>
+                            <Text font="monospace">{tagged.asset.meta.id}</Text>
+                        </ListItem>
+                        <ListItem className="flex flex-col gap-1">
+                            <Text weight="semibold" font="monospace">Checksums</Text>
                             {
                                 tagged.asset.checksums
-                                    ? <>
-                                        <Text>{tagged.asset.checksums.crc32}</Text>
-                                        <Text>{tagged.asset.checksums.md5}</Text>
-                                    </>
+                                    ? <div className={mergeClasses("w-full flex flex-col overflow-x-auto", darkenContentStyle.root)}>
+                                        <Text font="monospace">[CRC32]{tagged.asset.checksums.crc32}</Text>
+                                        <Text font="monospace">[MD5]{tagged.asset.checksums.md5}</Text>
+                                        <Text font="monospace">[SHA1]{tagged.asset.checksums.sha1}</Text>
+                                        <Text font="monospace">[SHA256]{tagged.asset.checksums.sha256}</Text>
+                                    </div>
                                     : <Button onClick={async () => {
                                         const computed = await ComputeChecksum({ asset: tagged.asset.meta.id })
                                             .catch(err => {
@@ -128,10 +136,12 @@ export default function DetailInfo() {
                                             })
 
                                         if (computed) {
+                                            console.log(computed.checksums)
                                             setTagged({
                                                 asset: computed,
                                                 tags: tagged.tags,
                                             })
+                                            console.log(tagged.asset.checksums)
                                         }
                                     }}>
                                         <Text>Compute</Text>

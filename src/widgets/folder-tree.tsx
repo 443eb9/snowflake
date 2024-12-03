@@ -12,7 +12,7 @@ export function FolderTree() {
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAsset = useContext(selectedAssetsContext)
+    const selectedAssets = useContext(selectedAssetsContext)
 
     useEffect(() => {
         if (folderTree) { return }
@@ -43,7 +43,9 @@ export function FolderTree() {
 
         const folder = folderMap?.get(folderId)
         if (folder) {
-            selectedAsset?.setter(new Set())
+            selectedAssets?.data?.clear()
+            document.querySelectorAll(".selected-asset")
+                .forEach(elem => elem.classList.remove("selected-asset"))
             browsingFolder?.setter({
                 id: folderId,
                 content: folder.content,

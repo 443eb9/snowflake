@@ -3,7 +3,7 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import { Button, makeStyles } from "@fluentui/react-components"
 import { Collections20Regular } from "@fluentui/react-icons"
 import { GetAssetsContainingTag, Tag } from "../backend"
-import { allTagsContext, browsingFolderContext } from "../context-provider"
+import { allTagsContext, browsingFolderContext, selectedAssetsContext } from "../context-provider"
 import TagName from "./tag-name"
 
 const buttonStyleHook = makeStyles({
@@ -16,6 +16,7 @@ const buttonStyleHook = makeStyles({
 export default function TagsCollections() {
     const buttonStyle = buttonStyleHook()
     const browsingFolder = useContext(browsingFolderContext)
+    const selectedAssets = useContext(selectedAssetsContext)
 
     const updateBrowsingFolder = async (tag: Tag) => {
         const assets = await GetAssetsContainingTag({ tag: tag.meta.id })
@@ -25,6 +26,9 @@ export default function TagsCollections() {
             })
 
         if (browsingFolder?.data && assets) {
+            selectedAssets?.data?.clear()
+            document.querySelectorAll(".selected-asset")
+                .forEach(elem => elem.classList.remove("selected-asset"))
             browsingFolder.setter({
                 id: undefined,
                 content: assets,

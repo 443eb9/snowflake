@@ -261,10 +261,10 @@ pub fn compute_checksum(
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
         if let Some(asset) = cache.assets.get_mut(&asset) {
-            if asset.checksum.is_none() {
+            if asset.checksums.is_none() {
                 match Checksums::from_path(&asset.path) {
                     Ok(checksum) => {
-                        asset.checksum.replace(checksum);
+                        asset.checksums.replace(checksum);
                     }
                     Err(err) => return Err(err.to_string()),
                 }
