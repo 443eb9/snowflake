@@ -33,20 +33,21 @@ export default function MainApp() {
                 handlers={Handlers}
             >
                 <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
-                    <Text as="h2">Library</Text>
+                    <Text as="h2" weight="bold" size={600}>Library</Text>
                     <div className="h-full overflow-y-auto">
                         <Browser />
                     </div>
                     <TagsManager />
                 </div>
-                <div className="w-full flex flex-col gap-1">
+                <div className="w-full flex h-full flex-col gap-1">
                     <BrowsingPath />
                     <AssetManipulation />
                     <AssetsGrid />
                 </div>
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2">
                         <WindowControls />
+                        <Text as="h2" weight="bold" align="end" size={400}>Asset Info</Text>
                     </div>
                     <DetailInfo />
                 </div>
