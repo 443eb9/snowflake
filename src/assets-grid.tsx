@@ -35,7 +35,10 @@ export default function AssetsGrid() {
     }, [browsingFolder])
 
     return (
-        <>
+        <div
+            className={mergeClasses("flex w-full flex-col gap-2 rounded-md", darkenContentStyle.root)}
+            style={{ height: "calc(100% - 25px)" }}
+        >
             <Selecto
                 container={gridRef.current}
                 selectableTargets={[".selectable-asset"]}
@@ -50,25 +53,20 @@ export default function AssetsGrid() {
                     })
                 }}
             />
-            <div
-                className={mergeClasses("flex w-full flex-col gap-2 rounded-md", darkenContentStyle.root)}
-                style={{ height: "calc(100% - 25px)" }}
-            >
-                {
-                    assets &&
-                    <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto" ref={gridRef}>
-                        {
-                            assets.map((asset, index) => {
-                                if (asset.ty != "Image") {
-                                    return undefined
-                                }
+            {
+                assets &&
+                <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto" ref={gridRef}>
+                    {
+                        assets.map((asset, index) => {
+                            if (asset.ty != "Image") {
+                                return undefined
+                            }
 
-                                return <AssetPreview key={index} asset={asset} />
-                            })
-                        }
-                    </div>
-                }
-            </div>
-        </>
+                            return <AssetPreview key={index} asset={asset} />
+                        })
+                    }
+                </div>
+            }
+        </div>
     )
 }

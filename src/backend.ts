@@ -95,3 +95,27 @@ export function GetAssetsContainingTag(params: { tag: string }): Promise<string[
 export function ComputeChecksum(params: { asset: string }): Promise<Asset> {
     return invoke("compute_checksum", params)
 }
+
+export function DeleteAssets(params: { assets: string[] }): Promise<void> {
+    return invoke("delete_assets", params)
+}
+
+export function DeleteFolders(params: { folders: string[] }): Promise<void> {
+    return invoke("delete_folders", params)
+}
+
+export function RenameAsset(params: { asset: string, nameNoExt: string }): Promise<void> {
+    return invoke("rename_asset", params)
+}
+
+export function RenameFolder(params: { folder: string, name: string }): Promise<void> {
+    return invoke("rename_folder", params)
+}
+
+export function MoveAssetsTo(params: { assets: string[], folder: string }): Promise<void> {
+    return invoke("move_assets_to", params)
+}
+
+export function MoveFoldersTo(params: { src_folders: string[], dst_folder: string }): Promise<void> {
+    return invoke("move_folders_to", params)
+}

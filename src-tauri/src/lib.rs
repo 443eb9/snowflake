@@ -42,7 +42,13 @@ pub fn run() {
             cmd::get_tags_of,
             cmd::modify_tags_of,
             cmd::get_assets_containing_tag,
-            cmd::compute_checksum
+            cmd::compute_checksum,
+            cmd::delete_folders,
+            cmd::delete_assets,
+            cmd::rename_folder,
+            cmd::rename_asset,
+            cmd::move_folders_to,
+            cmd::move_assets_to
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

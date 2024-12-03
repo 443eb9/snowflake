@@ -17,11 +17,17 @@ pub fn load_library(
 ) -> Result<(), String> {
     log::info!("Start loading library at {}", root_folder);
 
+    let mut new_storage = Storage::from_path(&root_folder).map_err(|e| e.to_string())?;
+    let new_cache = FsCache::build(&root_folder, &mut new_storage).map_err(|e| e.to_string())?;
     let mut fs_cache = fs_cache.lock().map_err(|e| e.to_string())?;
-    fs_cache.replace(FsCache::build(&root_folder).map_err(|e| e.to_string())?);
 
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
-    storage.replace(Storage::from_path(&root_folder).map_err(|e| e.to_string())?);
+    new_storage
+        .save_to(&new_cache.root_path)
+        .map_err(|e| e.to_string())?;
+
+    fs_cache.replace(new_cache);
+    storage.replace(new_storage);
 
     log::info!("Successfully loaded library!");
 
@@ -274,6 +280,112 @@ pub fn compute_checksum(
         } else {
             Err(asset_doesnt_exist(asset))
         }
+    } else {
+        Err(cache_not_built())
+    }
+}
+
+#[tauri::command]
+pub fn delete_assets(
+    assets: Vec<Uuid>,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<(), String> {
+    log::info!("Deleting assets {:?}", assets);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        for asset in assets {
+            cache.delete_asset(asset).map_err(|e| e.to_string())?
+        }
+        Ok(())
+    } else {
+        Err(cache_not_built())
+    }
+}
+
+#[tauri::command]
+pub fn delete_folders(
+    folders: Vec<Uuid>,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<(), String> {
+    log::info!("Deleting folders {:?}", folders);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        for folder in folders {
+            cache.delete_folder(folder).map_err(|e| e.to_string())?
+        }
+        Ok(())
+    } else {
+        Err(cache_not_built())
+    }
+}
+
+#[tauri::command]
+pub fn rename_asset(
+    asset: Uuid,
+    name_no_ext: String,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<(), String> {
+    log::info!("Renaming asset {}", asset);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        cache
+            .rename_asset(asset, name_no_ext)
+            .map_err(|e| e.to_string())
+    } else {
+        Err(cache_not_built())
+    }
+}
+
+#[tauri::command]
+pub fn rename_folder(
+    folder: Uuid,
+    name: String,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<(), String> {
+    log::info!("Renaming folder {} -> {}", folder, name);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        cache.rename_folder(folder, name).map_err(|e| e.to_string())
+    } else {
+        Err(cache_not_built())
+    }
+}
+
+#[tauri::command]
+pub fn move_assets_to(
+    assets: Vec<Uuid>,
+    folder: Uuid,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<(), String> {
+    log::info!("Moving assets {:?} to {}", assets, folder);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        for asset in assets {
+            cache
+                .move_asset_to(asset, folder)
+                .map_err(|e| e.to_string())?
+        }
+        Ok(())
+    } else {
+        Err(cache_not_built())
+    }
+}
+
+#[tauri::command]
+pub fn move_folders_to(
+    src_folders: Vec<Uuid>,
+    dst_folder: Uuid,
+    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+) -> Result<(), String> {
+    log::info!("Moving folders {:?} to {}", src_folders, dst_folder);
+
+    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+        for src_folder in src_folders {
+            cache
+                .move_folder_to(src_folder, dst_folder)
+                .map_err(|e| e.to_string())?;
+        }
+        Ok(())
     } else {
         Err(cache_not_built())
     }

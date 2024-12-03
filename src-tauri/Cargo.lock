@@ -3517,6 +3517,7 @@ dependencies = [
  "hex",
  "log",
  "md5",
+ "pathdiff",
  "serde",
  "serde_json",
  "sha1",

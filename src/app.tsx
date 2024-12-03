@@ -8,7 +8,7 @@ import { SaveLibrary } from "./backend";
 import { Text } from "@fluentui/react-components";
 import ContextProvider from "./context-provider";
 import { BrowsingPath } from "./widgets/browsing-path";
-import FileManipulation from "./widgets/file-manipulation";
+import AssetManipulation from "./widgets/asset-manipulation";
 
 const KeyMap = {
     SAVE: "ctrl+s"
@@ -41,14 +41,14 @@ export default function MainApp() {
                 </div>
                 <div className="w-full flex flex-col gap-1">
                     <BrowsingPath />
-                    <FileManipulation />
+                    <AssetManipulation />
                     <AssetsGrid />
                 </div>
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col gap-2">
                         <WindowControls />
                     </div>
-                    <DetailInfo></DetailInfo>
+                    <DetailInfo />
                 </div>
             </HotKeys>
         </ContextProvider>

@@ -2,11 +2,12 @@ import { Button, Image, Text } from "@fluentui/react-components";
 import { Asset } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useContext, useEffect, useRef } from "react";
-import { selectedAssetsContext } from "../context-provider";
+import { selectedAssetsContext, selectedAssetsCountContext } from "../context-provider";
 
 export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const selectedAssets = useContext(selectedAssetsContext)
+    const selectedAssetsCount = useContext(selectedAssetsCountContext)
 
     useEffect(() => {
         if (thisRef.current) {
@@ -15,6 +16,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
                     thisRef.current?.classList.add("selected-asset")
                     selectedAssets.data.add(asset.meta.id)
                     selectedAssets.setter(selectedAssets.data)
+                    selectedAssetsCount?.setter(selectedAssets.data.size)
                 }
             }
 
@@ -23,6 +25,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
                     thisRef.current?.classList.remove("selected-asset")
                     selectedAssets.data.delete(asset.meta.id)
                     selectedAssets.setter(selectedAssets.data)
+                    selectedAssetsCount?.setter(selectedAssets.data.size)
                 }
             }
 
