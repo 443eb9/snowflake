@@ -3,6 +3,7 @@ use std::{
     fs::{metadata, read_dir, ReadDir},
     io::{Read, Write},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use chrono::{DateTime, FixedOffset};
@@ -270,9 +271,9 @@ impl Metadata {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Checksums {
     pub crc32: u32,
-    pub md5: [u8; 16],
-    // pub sha1: [u8; 32],
-    // pub sha256: [u8; 8],
+    pub md5: Arc<str>,
+    pub sha1: Arc<str>,
+    pub sha256: Arc<str>,
 }
 
 impl Checksums {
@@ -284,15 +285,11 @@ impl Checksums {
             .unwrap_or_default();
         file.read_to_end(&mut buf)?;
 
-        let sha1 = <sha1::Sha1 as sha1::Digest>::digest(&buf).to_vec().len();
-        let sha256 = <sha2::Sha256 as sha2::Digest>::digest(&buf).to_vec().len();
-
-        dbg!(sha1, sha256);
-
         Ok(Self {
             crc32: crc32fast::hash(&buf),
-            md5: md5::compute(&buf).0,
-            // sha1: ,
+            md5: hex::encode(md5::compute(&buf).0).into(),
+            sha1: hex::encode(<sha1::Sha1 as sha1::Digest>::digest(&buf)).into(),
+            sha256: hex::encode(<sha2::Sha256 as sha2::Digest>::digest(&buf)).into(),
         })
     }
 }

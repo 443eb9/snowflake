@@ -261,12 +261,15 @@ pub fn compute_checksum(
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
         if let Some(asset) = cache.assets.get_mut(&asset) {
-            match Checksums::from_path(&asset.path) {
-                Ok(checksum) => {
-                    asset.checksum.replace(checksum);
+            if asset.checksum.is_none() {
+                match Checksums::from_path(&asset.path) {
+                    Ok(checksum) => {
+                        asset.checksum.replace(checksum);
+                    }
+                    Err(err) => return Err(err.to_string()),
                 }
-                Err(err) => return Err(err.to_string()),
             }
+
             Ok(asset.clone())
         } else {
             Err(asset_doesnt_exist(asset))

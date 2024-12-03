@@ -27,6 +27,14 @@ export type Asset = {
     name: string,
     path: string,
     meta: Metadata,
+    checksums: Checksums | undefined,
+}
+
+export type Checksums = {
+    crc32: number,
+    md5: string,
+    sha1: string,
+    sha256: string,
 }
 
 export type AssetType = "Image" | "Unknown"
@@ -82,4 +90,8 @@ export function ModifyTagsOf(params: { asset: string, newTags: Tag[] }): Promise
 
 export function GetAssetsContainingTag(params: { tag: string }): Promise<string[]> {
     return invoke("get_assets_containing_tag", params)
+}
+
+export function ComputeChecksum(params: { asset: string }): Promise<Asset> {
+    return invoke("compute_checksum", params)
 }

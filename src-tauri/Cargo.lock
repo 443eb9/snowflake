@@ -3514,6 +3514,7 @@ dependencies = [
  "crc32fast",
  "filetime",
  "hashbrown 0.15.2",
+ "hex",
  "log",
  "md5",
  "serde",

@@ -43,7 +43,7 @@ export function FolderTree() {
 
         const folder = folderMap?.get(folderId)
         if (folder) {
-            selectedAsset?.setter(undefined)
+            selectedAsset?.setter(new Set())
             browsingFolder?.setter({
                 id: folderId,
                 content: folder.content,

@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from "react"
-import { Image, Text } from "@fluentui/react-components"
+import { Button, Image, Text } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "./widgets/tags-container"
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
-import { Asset, GetAsset, GetTagsOf, Tag } from "./backend"
+import { Asset, ComputeChecksum, GetAsset, GetTagsOf, Tag } from "./backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "./context-provider"
 import formatFileSize from "./util"
@@ -32,6 +32,7 @@ export default function DetailInfo() {
         async function fetch() {
             if (!selected) { return }
 
+            console.log(selectedAssets.data)
             const asset = await GetAsset({ asset: selected[0] })
                 .catch(err => {
                     // TODO error handling
@@ -106,6 +107,36 @@ export default function DetailInfo() {
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="bold">Last Modified</Text>
                             <Text>{new Date(tagged.asset.meta.last_modified).toLocaleString()}</Text>
+                        </ListItem>
+                        <ListItem className="flex flex-col gap-1">
+                            <Text weight="bold">Id</Text>
+                            <Text>{tagged.asset.meta.id}</Text>
+                        </ListItem>
+                        <ListItem className="flex flex-col gap-1">
+                            <Text weight="bold">Checksums</Text>
+                            {
+                                tagged.asset.checksums
+                                    ? <>
+                                        <Text>{tagged.asset.checksums.crc32}</Text>
+                                        <Text>{tagged.asset.checksums.md5}</Text>
+                                    </>
+                                    : <Button onClick={async () => {
+                                        const computed = await ComputeChecksum({ asset: tagged.asset.meta.id })
+                                            .catch(err => {
+                                                // TODO error handling
+                                                console.error(err)
+                                            })
+
+                                        if (computed) {
+                                            setTagged({
+                                                asset: computed,
+                                                tags: tagged.tags,
+                                            })
+                                        }
+                                    }}>
+                                        <Text>Compute</Text>
+                                    </Button>
+                            }
                         </ListItem>
                     </List>
                 </>
