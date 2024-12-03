@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
 import randomColor from "randomcolor";
 import { GetAllTags, ModifyTag, Tag } from "../backend";
-import { allTagsContext as allTagsContext } from "../app";
+import { allTagsContext } from "../context-provider";
 
 type TagEditingStatus = {
     isEditingName: boolean,

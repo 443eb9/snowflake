@@ -12,7 +12,7 @@ export default function Browser() {
                     <FolderTree />
                 </ListItem>
                 <ListItem className="flex flex-col gap-1">
-                    <Text as="h3" size={200}>Tags</Text>
+                    <Text as="h3" size={200}>Tag Collections</Text>
                     <TagsCollections />
                 </ListItem>
             </List>

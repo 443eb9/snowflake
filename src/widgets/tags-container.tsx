@@ -1,6 +1,7 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text } from "@fluentui/react-components";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { GetAllTags, ModifyTagsOf, Tag } from "../backend";
+import { browsingFolderContext } from "../context-provider";
 
 export default function TagsContainer({
     associatedItem, tags, readonly
@@ -10,8 +11,9 @@ export default function TagsContainer({
     const [currentItem, setCurrentItem] = useState<string | null>()
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [selected, setSelected] = useState<Tag[]>([])
+    const browsingFolder = useContext(browsingFolderContext)
 
-    const update = (newTags: Tag[]) => {
+    const update = (newTags: Tag[], isDismiss: boolean) => {
         if (associatedItem) {
             setSelected(newTags)
             ModifyTagsOf({ asset: associatedItem, newTags: newTags })
@@ -19,6 +21,15 @@ export default function TagsContainer({
                     // TODO error handling
                     console.log(err)
                 })
+
+            const currentFolder = browsingFolder
+            if (isDismiss && currentFolder && currentFolder.data && currentFolder.data.collection) {
+                currentFolder.setter({
+                    content: currentFolder.data.content.filter(itemId => itemId != associatedItem),
+                    path: currentFolder.data.path,
+                    collection: true,
+                })
+            }
         }
     }
 
@@ -54,7 +65,7 @@ export default function TagsContainer({
     return (
         <div className="flex flex-col gap-2 overflow-hidden">
             <TagGroup
-                onDismiss={(_, data) => update([...selected].filter(tag => tag.meta.id != data.value))}
+                onDismiss={(_, data) => update([...selected].filter(tag => tag.meta.id != data.value), true)}
             >
                 {
                     selected.length == 0
@@ -88,7 +99,7 @@ export default function TagsContainer({
                                         <MenuItem
                                             key={index}
                                             style={{ color: `#${tag.color}` }}
-                                            onClick={() => update([...selected, tag])}
+                                            onClick={() => update([...selected, tag], false)}
                                         >
                                             {tag.name}
                                         </MenuItem>

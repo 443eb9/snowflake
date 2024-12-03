@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import AssetPreview from "./widgets/asset-preview"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
 import { Asset, GetAssets } from "./backend"
-import { browsingFolderContext, selectedAssetContext } from "./app"
+import { browsingFolderContext, selectedAssetContext } from "./context-provider"
 
 export default function AssetsGrid() {
     const [assets, setAssets] = useState<Asset[] | undefined>()
@@ -38,7 +38,7 @@ export default function AssetsGrid() {
     const pathSegs = browsingFolder.data.path.replaceAll("\\", "/").split("/")
 
     return (
-        <div className="flex w-full flex-col gap-2 h-full">
+        <div className="flex w-full flex-col gap-2 h-full rounded-md p-1" style={{backgroundColor: "#00000020"}}>
             <Breadcrumb>
                 {
                     pathSegs.map((seg, index) =>

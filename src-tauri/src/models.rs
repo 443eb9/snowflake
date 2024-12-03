@@ -87,7 +87,9 @@ impl Storage {
         let path = root_folder.as_ref().join(LIBRARY_STORAGE);
         if !path.exists() {
             std::fs::File::create(&path)?;
-            Ok(Self::default())
+            let storage = Self::default();
+            storage.save_to(root_folder)?;
+            Ok(storage)
         } else {
             let reader = std::fs::File::open(&path)?;
             Ok(serde_json::from_reader(reader)?)
@@ -95,8 +97,10 @@ impl Storage {
     }
 
     pub fn save_to(&self, root_folder: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
-        Ok(std::fs::File::create(root_folder.as_ref().join(LIBRARY_STORAGE))?
-            .write_all(serde_json::to_string(self)?.as_bytes())?)
+        Ok(
+            std::fs::File::create(root_folder.as_ref().join(LIBRARY_STORAGE))?
+                .write_all(serde_json::to_string(self)?.as_bytes())?,
+        )
     }
 }
 

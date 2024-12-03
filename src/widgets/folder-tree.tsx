@@ -3,7 +3,7 @@ import { FlatTree, HeadlessFlatTreeItemProps, TreeItem, TreeItemLayout, useHeadl
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext } from "../app";
+import { browsingFolderContext, selectedAssetContext } from "../context-provider";
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
@@ -12,6 +12,7 @@ export function FolderTree() {
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
     const browsingFolder = useContext(browsingFolderContext)
+    const selectedAsset = useContext(selectedAssetContext)
 
     useEffect(() => {
         if (folderTree) { return }
@@ -36,11 +37,18 @@ export function FolderTree() {
     }, [])
 
     const updateBrowsingFolder = (folderId: string) => {
+        if (folderId == browsingFolder?.data?.id) {
+            return
+        }
+
         const folder = folderMap?.get(folderId)
         if (folder) {
+            selectedAsset?.setter(undefined)
             browsingFolder?.setter({
+                id: folderId,
                 content: folder.content,
-                path: folder.path
+                path: folder.path,
+                collection: false,
             })
         }
     }
