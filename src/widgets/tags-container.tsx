@@ -23,11 +23,23 @@ export default function TagsContainer({
                     console.error(err)
                 })
 
-            const currentFolder = browsingFolder
-            if (isDismiss && currentFolder && currentFolder.data && currentFolder.data.collection) {
-                currentFolder.setter({
-                    ...currentFolder.data,
-                    content: currentFolder.data.content.filter(itemId => itemId != associatedItem)
+            if (!browsingFolder) {
+                return
+            }
+
+            const currentFolder = browsingFolder.data
+
+            if (isDismiss && currentFolder?.collection && tags.find(t => t.meta.id == currentFolder?.id) != undefined) {
+                browsingFolder.setter({
+                    ...currentFolder,
+                    content: currentFolder.content.filter(itemId => itemId != associatedItem)
+                })
+            }
+
+            if (!isDismiss && currentFolder?.collection && newTags.find(t => t.meta.id == currentFolder.id) != undefined) {
+                browsingFolder.setter({
+                    ...currentFolder,
+                    content: [...currentFolder.content, associatedItem]
                 })
             }
         }

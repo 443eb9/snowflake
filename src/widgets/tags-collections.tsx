@@ -33,7 +33,7 @@ export default function TagsCollections() {
                     elem.classList.remove("selected-asset")
                 })
             browsingFolder.setter({
-                id: undefined,
+                id: tag.meta.id,
                 content: assets,
                 path: `Collection ${tag.name}`,
                 collection: true,

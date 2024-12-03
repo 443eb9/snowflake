@@ -8,7 +8,7 @@ type StateContext<T> = {
 }
 
 type VirtualFolder = {
-    id: string | undefined,
+    id: string,
     content: string[],
     path: string,
     collection: boolean,

@@ -27,7 +27,7 @@ export function BrowsingPath() {
                 id: currentFolder.meta.id,
                 content: currentFolder.content,
                 path: currentFolder.path,
-                collection: false
+                collectionId: false
             })
         }
     }
