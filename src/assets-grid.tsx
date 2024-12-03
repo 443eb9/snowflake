@@ -31,14 +31,10 @@ export default function AssetsGrid() {
         fetch()
     }, [browsingFolder])
 
-    if (!assets || !browsingFolder?.data) {
-        return <></>
-    }
-
-    const pathSegs = browsingFolder.data.path.replaceAll("\\", "/").split("/")
+    const pathSegs = browsingFolder?.data?.path.replaceAll("\\", "/").split("/") ?? []
 
     return (
-        <div className="flex w-full flex-col gap-2 h-full rounded-md p-1" style={{backgroundColor: "#00000020"}}>
+        <>
             <Breadcrumb>
                 {
                     pathSegs.map((seg, index) =>
@@ -53,17 +49,22 @@ export default function AssetsGrid() {
                     )
                 }
             </Breadcrumb>
-            <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto">
+            <div className="flex w-full flex-col gap-2 h-full rounded-md p-1" style={{ backgroundColor: "#00000020" }}>
                 {
-                    assets.map((asset, index) => {
-                        if (asset.ty != "Image") {
-                            return undefined
-                        }
+                    assets &&
+                    <div className="flex w-full flex-wrap gap-2 max-h-full overflow-y-auto">
+                        {
+                            assets.map((asset, index) => {
+                                if (asset.ty != "Image") {
+                                    return undefined
+                                }
 
-                        return <AssetPreview key={index} asset={asset} selectionCallback={(id) => selectedAsset?.setter(id)} />
-                    })
+                                return <AssetPreview key={index} asset={asset} selectionCallback={(id) => selectedAsset?.setter(id)} />
+                            })
+                        }
+                    </div>
                 }
             </div>
-        </div>
+        </>
     )
 }

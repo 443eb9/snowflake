@@ -4,6 +4,7 @@ import { Button, makeStyles } from "@fluentui/react-components"
 import { Collections20Regular } from "@fluentui/react-icons"
 import { GetAssetsContainingTag, Tag } from "../backend"
 import { allTagsContext, browsingFolderContext } from "../context-provider"
+import TagName from "./tag-name"
 
 const buttonStyleHook = makeStyles({
     root: {
@@ -50,7 +51,7 @@ export default function TagsCollections() {
                             style={{ color: `#${tag.color}` }}
                             onClick={() => updateBrowsingFolder(tag)}
                         >
-                            {tag.name}
+                            <TagName name={tag.name} />
                         </Button>
                     </ListItem>
                 )

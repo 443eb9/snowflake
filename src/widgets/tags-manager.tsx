@@ -5,6 +5,7 @@ import { v4 } from "uuid";
 import randomColor from "randomcolor";
 import { GetAllTags, ModifyTag, Tag } from "../backend";
 import { allTagsContext } from "../context-provider";
+import TagName from "./tag-name";
 
 type TagEditingStatus = {
     isEditingName: boolean,
@@ -15,7 +16,7 @@ type EditableTag = Tag & TagEditingStatus
 
 const inputStyleHook = makeStyles({
     root: {
-        maxWidth: "150px"
+        width: "100%"
     },
 })
 
@@ -25,6 +26,7 @@ export default function TagsManager() {
     const [allTagsEditable, setAllTagsEditable] = useState<EditableTag[] | undefined>()
     const [refresh, setRefresh] = useState(true)
     const inputStyle = inputStyleHook()
+
     const updateTag = useCallback(async (tag: Tag) => {
         await ModifyTag({ newTag: tag })
             .catch(err => {
@@ -74,7 +76,7 @@ export default function TagsManager() {
                     <Button icon={<Tag20Regular />}></Button>
                 </PopoverTrigger>
 
-                <PopoverSurface className="flex flex-col gap-2 w-1/2">
+                <PopoverSurface className="flex flex-col gap-2 max-w-[500] min-w-96">
                     <Text>Tags Management</Text>
                     {
                         allTagsEditable.length == 0
@@ -135,7 +137,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
             compare: (a, b) => a.name.localeCompare(b.name),
             renderHeaderCell: () => "Name",
             renderCell: item =>
-                <TableCellLayout>
+                <div className="w-full">
                     {
                         item.isEditingName
                             ? <Input
@@ -145,9 +147,9 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
                                 }}
                                 className={inputStyle.root}
                             />
-                            : item.name
+                            : <TagName name={item.name} />
                     }
-                </TableCellLayout>
+                </div>
         }),
         createTableColumn<EditableTag>({
             columnId: "color",

@@ -33,6 +33,8 @@ pub fn save_library(
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
+    log::info!("Saving library...");
+
     if let (Ok(Some(fs_cache)), Ok(Some(storage))) =
         (fs_cache.lock().as_deref(), storage.lock().as_deref())
     {
@@ -48,6 +50,8 @@ pub fn save_library(
 pub fn get_folder_tree(
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<HashMap<Uuid, Folder>, String> {
+    log::info!("Getting folder tree.");
+
     match fs_cache.lock() {
         Ok(ok) => {
             if let Some(cache) = ok.as_ref() {
@@ -62,6 +66,8 @@ pub fn get_folder_tree(
 
 #[tauri::command]
 pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result<Uuid, String> {
+    log::info!("Getting root folder id.");
+
     fs_cache
         .lock()
         .as_deref()
@@ -73,6 +79,8 @@ pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result
 
 #[tauri::command]
 pub fn get_all_tags(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Tag>, String> {
+    log::info!("Getting all tags");
+
     storage
         .lock()
         .as_deref()
@@ -84,6 +92,8 @@ pub fn get_all_tags(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Ta
 
 #[tauri::command]
 pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), String> {
+    log::info!("Modifying tag: {:?}", new_tag);
+
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         storage.tags.insert(new_tag.meta.id, new_tag);
     }
@@ -96,6 +106,8 @@ pub fn get_assets_at(
     folder: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Vec<Asset>, String> {
+    log::info!("Getting assets at {}", folder);
+
     if let Ok(Some(cache)) = fs_cache.lock().as_deref() {
         cache
             .folders
@@ -118,6 +130,8 @@ pub fn get_folder(
     folder: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Folder, String> {
+    log::info!("Getting folder {}", folder);
+
     fs_cache
         .lock()
         .as_deref()
@@ -132,6 +146,8 @@ pub fn get_asset(
     asset: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Asset, String> {
+    log::info!("Getting asset {}", asset);
+
     fs_cache
         .lock()
         .as_deref()
@@ -146,6 +162,8 @@ pub fn get_assets(
     assets: Vec<Uuid>,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Vec<Asset>, String> {
+    log::info!("Getting assets {:?}", assets);
+
     fs_cache
         .lock()
         .as_deref()
@@ -165,6 +183,8 @@ pub fn get_tags_of(
     asset: Uuid,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Tag>, String> {
+    log::info!("Getting tags of {}", asset);
+
     storage
         .lock()
         .as_deref()
@@ -190,18 +210,24 @@ pub fn modify_tags_of(
     new_tags: Vec<Tag>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
+    log::info!("Modifying tags of {}, new tags: {:?}", asset, new_tags);
+
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage.item_tags.insert(
-            asset,
-            new_tags
-                .into_iter()
-                .map(|tag| {
-                    let id = tag.meta.id;
-                    storage.tags.insert(tag.meta.id, tag);
-                    id
-                })
-                .collect(),
-        );
+        if new_tags.is_empty() {
+            storage.item_tags.remove(&asset);
+        } else {
+            storage.item_tags.insert(
+                asset,
+                new_tags
+                    .into_iter()
+                    .map(|tag| {
+                        let id = tag.meta.id;
+                        storage.tags.insert(tag.meta.id, tag);
+                        id
+                    })
+                    .collect(),
+            );
+        }
         Ok(())
     } else {
         Err(storage_not_initialized())
@@ -213,6 +239,8 @@ pub fn get_assets_containing_tag(
     tag: Uuid,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Uuid>, String> {
+    log::info!("Getting assets containing tag {}", tag);
+
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage
             .item_tags
