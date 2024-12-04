@@ -38,7 +38,7 @@ export function FolderTree() {
     }, [])
 
     const updateBrowsingFolder = (folderId: string) => {
-        if (folderId == browsingFolder?.data?.path) {
+        if (folderId == browsingFolder?.data?.id) {
             return
         }
 
@@ -52,8 +52,9 @@ export function FolderTree() {
                     elem.classList.remove("selected-asset")
                 })
             browsingFolder?.setter({
+                id: folderId,
                 content: folder.content,
-                path: folder.relative_path,
+                path: folder.path,
                 collection: false,
             })
         }

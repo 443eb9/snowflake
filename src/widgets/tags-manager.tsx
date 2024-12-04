@@ -111,10 +111,10 @@ export default function TagsManager() {
                             setAllTagsEditable([
                                 ...allTagsEditable,
                                 {
-                                    id: v4(),
                                     name: "",
                                     color: randomColor().substring(1),
                                     meta: {
+                                        id: v4(),
                                         byte_size: 0,
                                         created_at: new Date(),
                                         last_modified: new Date(),

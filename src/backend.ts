@@ -3,20 +3,20 @@ import { invoke } from "@tauri-apps/api/core";
 export type Folder = {
     parent: string,
     name: string,
-    relative_path: string,
+    path: string,
     children: string[],
     content: string[],
     meta: Metadata,
 }
 
 export type Tag = {
-    id: string,
     name: string,
     color: string,
     meta: Metadata,
 }
 
 export type Metadata = {
+    id: string,
     byte_size: number,
     created_at: Date,
     last_modified: Date,
@@ -25,7 +25,7 @@ export type Metadata = {
 export type Asset = {
     ty: AssetType,
     name: string,
-    relative_path: string,
+    path: string,
     meta: Metadata,
     checksums: Checksums | undefined,
 }
@@ -45,10 +45,6 @@ export function LoadLibrary(params: { rootFolder: string }): Promise<void> {
 
 export function SaveLibrary(): Promise<void> {
     return invoke("save_library")
-}
-
-export function AbsolutizePath(params: { path: string }): Promise<string> {
-    return invoke("absolutize_path", params)
 }
 
 export async function GetFolderTree(): Promise<Map<string, Folder>> {

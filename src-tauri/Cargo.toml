@@ -37,6 +37,3 @@ sha1 = "0.10"
 sha2 = "0.10"
 hex = "0.4"
 pathdiff = "0.2"
-notify = "7"
-crossbeam-channel = "0.5"
-notify-debouncer-full = { version = "0.4", features = ["crossbeam-channel"] }

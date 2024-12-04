@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
 use log::LevelFilter;
 use tauri::Manager;
@@ -7,8 +7,6 @@ use crate::models::{FsCache, Storage};
 
 mod cmd;
 mod err;
-mod event;
-mod io;
 mod models;
 mod util;
 
@@ -24,16 +22,15 @@ pub fn run() {
                 .level(LevelFilter::Info)
                 .build(),
         )
-        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             app.manage(Mutex::new(Option::<FsCache>::None));
             app.manage(Mutex::new(Option::<Storage>::None));
             Ok(())
         })
+        .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             cmd::load_library,
             cmd::save_library,
-            cmd::absolutize_path,
             cmd::get_folder_tree,
             cmd::get_root_folder_id,
             cmd::get_all_tags,

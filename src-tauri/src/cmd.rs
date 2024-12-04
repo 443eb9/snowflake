@@ -1,7 +1,7 @@
-use std::{path::PathBuf, sync::Mutex};
+use std::sync::Mutex;
 
 use hashbrown::HashMap;
-use tauri::{AppHandle, State};
+use tauri::State;
 use uuid::Uuid;
 
 use crate::{
@@ -11,7 +11,6 @@ use crate::{
 
 #[tauri::command]
 pub fn load_library(
-    app: AppHandle,
     root_folder: String,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -19,13 +18,12 @@ pub fn load_library(
     log::info!("Start loading library at {}", root_folder);
 
     let mut new_storage = Storage::from_path(&root_folder).map_err(|e| e.to_string())?;
-    let new_cache =
-        FsCache::build(&root_folder, &mut new_storage, app).map_err(|e| e.to_string())?;
+    let new_cache = FsCache::build(&root_folder, &mut new_storage).map_err(|e| e.to_string())?;
     let mut fs_cache = fs_cache.lock().map_err(|e| e.to_string())?;
 
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
     new_storage
-        .save_to(&new_cache.root)
+        .save_to(&new_cache.root_path)
         .map_err(|e| e.to_string())?;
 
     fs_cache.replace(new_cache);
@@ -46,7 +44,9 @@ pub fn save_library(
     if let (Ok(Some(fs_cache)), Ok(Some(storage))) =
         (fs_cache.lock().as_deref(), storage.lock().as_deref())
     {
-        storage.save_to(&fs_cache.root).map_err(|e| e.to_string())?;
+        storage
+            .save_to(&fs_cache.root_path)
+            .map_err(|e| e.to_string())?;
     }
 
     Ok(())
@@ -55,7 +55,7 @@ pub fn save_library(
 #[tauri::command]
 pub fn get_folder_tree(
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
-) -> Result<HashMap<PathBuf, Folder>, String> {
+) -> Result<HashMap<Uuid, Folder>, String> {
     log::info!("Getting folder tree.");
 
     match fs_cache.lock() {
@@ -71,7 +71,7 @@ pub fn get_folder_tree(
 }
 
 #[tauri::command]
-pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result<PathBuf, String> {
+pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result<Uuid, String> {
     log::info!("Getting root folder id.");
 
     fs_cache
@@ -79,7 +79,7 @@ pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result
         .as_deref()
         .ok()
         .and_then(Option::as_ref)
-        .map(|cache| cache.root.clone())
+        .map(|cache| cache.root)
         .ok_or_else(cache_not_built)
 }
 
@@ -101,7 +101,7 @@ pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> R
     log::info!("Modifying tag: {:?}", new_tag);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage.tags.insert(new_tag.id, new_tag);
+        storage.tags.insert(new_tag.meta.id, new_tag);
     }
 
     Ok(())
@@ -109,10 +109,10 @@ pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> R
 
 #[tauri::command]
 pub fn get_assets_at(
-    folder: PathBuf,
+    folder: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Vec<Asset>, String> {
-    log::info!("Getting assets at {:?}", folder);
+    log::info!("Getting assets at {}", folder);
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref() {
         cache
@@ -133,10 +133,10 @@ pub fn get_assets_at(
 
 #[tauri::command]
 pub fn get_folder(
-    folder: PathBuf,
+    folder: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Folder, String> {
-    log::info!("Getting folder {:?}", folder);
+    log::info!("Getting folder {}", folder);
 
     fs_cache
         .lock()
@@ -149,10 +149,10 @@ pub fn get_folder(
 
 #[tauri::command]
 pub fn get_asset(
-    asset: PathBuf,
+    asset: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Asset, String> {
-    log::info!("Getting asset {:?}", asset);
+    log::info!("Getting asset {}", asset);
 
     fs_cache
         .lock()
@@ -165,7 +165,7 @@ pub fn get_asset(
 
 #[tauri::command]
 pub fn get_assets(
-    assets: Vec<PathBuf>,
+    assets: Vec<Uuid>,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Vec<Asset>, String> {
     log::info!("Getting assets {:?}", assets);
@@ -186,10 +186,10 @@ pub fn get_assets(
 
 #[tauri::command]
 pub fn get_tags_of(
-    asset: PathBuf,
+    asset: Uuid,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Tag>, String> {
-    log::info!("Getting tags of {:?}", asset);
+    log::info!("Getting tags of {}", asset);
 
     storage
         .lock()
@@ -211,26 +211,12 @@ pub fn get_tags_of(
 }
 
 #[tauri::command]
-pub fn absolutize_path(
-    path: PathBuf,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
-) -> Result<PathBuf, String> {
-    log::info!("Absolutizing path {:?}", path);
-
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref() {
-        Ok(cache.absolutize_path(path))
-    } else {
-        Err(cache_not_built())
-    }
-}
-
-#[tauri::command]
 pub fn modify_tags_of(
-    asset: PathBuf,
+    asset: Uuid,
     new_tags: Vec<Tag>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Modifying tags of {:?}, new tags: {:?}", asset, new_tags);
+    log::info!("Modifying tags of {}, new tags: {:?}", asset, new_tags);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         if new_tags.is_empty() {
@@ -241,8 +227,8 @@ pub fn modify_tags_of(
                 new_tags
                     .into_iter()
                     .map(|tag| {
-                        let id = tag.id;
-                        storage.tags.insert(tag.id, tag);
+                        let id = tag.meta.id;
+                        storage.tags.insert(tag.meta.id, tag);
                         id
                     })
                     .collect(),
@@ -258,14 +244,14 @@ pub fn modify_tags_of(
 pub fn get_assets_containing_tag(
     tag: Uuid,
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<PathBuf>, String> {
+) -> Result<Vec<Uuid>, String> {
     log::info!("Getting assets containing tag {}", tag);
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage
             .item_tags
             .iter()
-            .filter_map(|(item, tags)| tags.contains(&tag).then(|| item.clone()))
+            .filter_map(|(item, tags)| tags.contains(&tag).then_some(*item))
             .collect())
     } else {
         Err(storage_not_initialized())
@@ -274,17 +260,15 @@ pub fn get_assets_containing_tag(
 
 #[tauri::command]
 pub fn compute_checksum(
-    asset: PathBuf,
+    asset: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<Asset, String> {
-    log::info!("Compute checksum of {:?}", asset);
+    log::info!("Compute checksum of {}", asset);
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
-        let root = cache.root.clone();
-
         if let Some(asset) = cache.assets.get_mut(&asset) {
             if asset.checksums.is_none() {
-                match Checksums::from_path(root.join(&asset.relative_path)) {
+                match Checksums::from_path(&asset.path) {
                     Ok(checksum) => {
                         asset.checksums.replace(checksum);
                     }
@@ -303,7 +287,7 @@ pub fn compute_checksum(
 
 #[tauri::command]
 pub fn delete_assets(
-    assets: Vec<PathBuf>,
+    assets: Vec<Uuid>,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<(), String> {
     log::info!("Deleting assets {:?}", assets);
@@ -320,7 +304,7 @@ pub fn delete_assets(
 
 #[tauri::command]
 pub fn delete_folders(
-    folders: Vec<PathBuf>,
+    folders: Vec<Uuid>,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<(), String> {
     log::info!("Deleting folders {:?}", folders);
@@ -337,11 +321,11 @@ pub fn delete_folders(
 
 #[tauri::command]
 pub fn rename_asset(
-    asset: PathBuf,
+    asset: Uuid,
     name_no_ext: String,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<(), String> {
-    log::info!("Renaming asset {:?}", asset);
+    log::info!("Renaming asset {}", asset);
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
         cache
@@ -354,11 +338,11 @@ pub fn rename_asset(
 
 #[tauri::command]
 pub fn rename_folder(
-    folder: PathBuf,
+    folder: Uuid,
     name: String,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<(), String> {
-    log::info!("Renaming folder {:?} -> {}", folder, name);
+    log::info!("Renaming folder {} -> {}", folder, name);
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
         cache.rename_folder(folder, name).map_err(|e| e.to_string())
@@ -369,16 +353,16 @@ pub fn rename_folder(
 
 #[tauri::command]
 pub fn move_assets_to(
-    assets: Vec<PathBuf>,
-    folder: PathBuf,
+    assets: Vec<Uuid>,
+    folder: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<(), String> {
-    log::info!("Moving assets {:?} to {:?}", assets, folder);
+    log::info!("Moving assets {:?} to {}", assets, folder);
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
         for asset in assets {
             cache
-                .move_asset_to(asset, folder.clone())
+                .move_asset_to(asset, folder)
                 .map_err(|e| e.to_string())?
         }
         Ok(())
@@ -389,16 +373,16 @@ pub fn move_assets_to(
 
 #[tauri::command]
 pub fn move_folders_to(
-    src_folders: Vec<PathBuf>,
-    dst_folder: PathBuf,
+    src_folders: Vec<Uuid>,
+    dst_folder: Uuid,
     fs_cache: State<'_, Mutex<Option<FsCache>>>,
 ) -> Result<(), String> {
-    log::info!("Moving folders {:?} to {:?}", src_folders, dst_folder);
+    log::info!("Moving folders {:?} to {}", src_folders, dst_folder);
 
     if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
         for src_folder in src_folders {
             cache
-                .move_folder_to(src_folder, dst_folder.clone())
+                .move_folder_to(src_folder, dst_folder)
                 .map_err(|e| e.to_string())?;
         }
         Ok(())
