@@ -9,6 +9,7 @@ import { Text } from "@fluentui/react-components";
 import ContextProvider from "./context-provider";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
+import ContextMenu from "./widgets/context-menu";
 
 const KeyMap = {
     SAVE: "ctrl+s"
@@ -51,6 +52,7 @@ export default function MainApp() {
                     </div>
                     <DetailInfo />
                 </div>
+                <ContextMenu />
             </HotKeys>
         </ContextProvider>
     )

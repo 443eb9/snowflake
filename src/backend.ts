@@ -7,7 +7,7 @@ export type Folder = {
     children: string[],
     content: string[],
     meta: Metadata,
-    tags: Tag[],
+    tags: string[],
 }
 
 export type Asset = {
@@ -17,7 +17,7 @@ export type Asset = {
     ty: AssetType,
     meta: Metadata,
     checksums: Checksums | undefined,
-    tags: Tag[],
+    tags: string[],
 }
 
 export type Tag = {
@@ -99,7 +99,11 @@ export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
     return invoke("get_assets", params)
 }
 
-export function ModifyTagsOf(params: { asset: string, newTags: Tag[] }): Promise<void> {
+export function GetTags(params: { tags: string[] }): Promise<Tag[]> {
+    return invoke("get_tags", params)
+}
+
+export function ModifyTagsOf(params: { asset: string, newTags: string[] }): Promise<void> {
     return invoke("modify_tags_of", params)
 }
 

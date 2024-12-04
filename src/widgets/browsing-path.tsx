@@ -9,7 +9,7 @@ export function BrowsingPath() {
     const browsingFolder = useContext(browsingFolderContext)
 
     const pathChangeHandler = async (pop: number) => {
-        if (!browsingFolder?.data?.id || pop == 0) {
+        if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.collection) {
             return
         }
 
@@ -27,6 +27,7 @@ export function BrowsingPath() {
 
             browsingFolder.setter({
                 id: currentFolder.id,
+                name: currentFolder.name,
                 content: currentFolder.content,
                 collection: false
             })
@@ -35,7 +36,13 @@ export function BrowsingPath() {
 
     useEffect(() => {
         async function fetch() {
-            if (browsingFolder?.data?.id) {
+            if (!browsingFolder?.data?.id) {
+                return
+            }
+
+            if (browsingFolder.data.collection) {
+                setVirtualPath([`Tag collection ${browsingFolder.data.name}`])
+            } else {
                 const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
                     .catch(err => {
                         // TODO error handling

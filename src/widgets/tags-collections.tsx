@@ -34,6 +34,7 @@ export default function TagsCollections() {
                 })
             browsingFolder.setter({
                 id: tag.id,
+                name: tag.name,
                 content: assets,
                 collection: true,
             })

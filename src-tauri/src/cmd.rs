@@ -5,7 +5,7 @@ use tauri::State;
 
 use crate::{
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
-    models::{Asset, AssetId, Checksums, Folder, FolderId, Storage, Tag, TagId, IMAGE_ASSETS},
+    models::{Asset, AssetId, Checksums, Folder, FolderId, Storage, Tag, TagId},
 };
 
 #[tauri::command]
@@ -224,6 +224,24 @@ pub fn get_assets(
 }
 
 #[tauri::command]
+pub fn get_tags(
+    tags: Vec<TagId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Tag>, String> {
+    log::info!("Getting tags {:?}", tags);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(tags
+            .into_iter()
+            .filter_map(|t| storage.tags.get(&t))
+            .cloned()
+            .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn modify_tags_of(
     asset: AssetId,
     new_tags: Vec<TagId>,
@@ -269,14 +287,19 @@ pub fn compute_checksum(
     log::info!("Compute checksum of {:?}", asset);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        let path = storage
+            .get_asset_abs_path(asset)
+            .map_err(|e| e.to_string())?;
+
         let asset = storage
             .assets
             .get_mut(&asset)
             .ok_or_else(|| asset_doesnt_exist(asset))?;
+
         if asset.checksums.is_none() {
-            asset.checksums.replace(
-                Checksums::from_path(storage.root.join(IMAGE_ASSETS).join(&asset.name)).unwrap(),
-            );
+            asset
+                .checksums
+                .replace(Checksums::from_path(path).map_err(|e| e.to_string())?);
         }
 
         Ok(asset.clone())

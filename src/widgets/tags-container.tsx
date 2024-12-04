@@ -1,13 +1,13 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { GetAllTags, ModifyTagsOf, Tag } from "../backend";
+import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
 import { browsingFolderContext } from "../context-provider";
 import TagName from "./tag-name";
 
 export default function TagsContainer({
     associatedItem, tags, readonly
 }: {
-    associatedItem?: string, tags: Tag[], readonly?: boolean
+    associatedItem?: string, tags: string[], readonly?: boolean
 }) {
     const [currentItem, setCurrentItem] = useState<string | null>()
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
@@ -16,8 +16,7 @@ export default function TagsContainer({
 
     const update = (newTags: Tag[], isDismiss: boolean) => {
         if (associatedItem) {
-            setSelected(newTags)
-            ModifyTagsOf({ asset: associatedItem, newTags: newTags })
+            ModifyTagsOf({ asset: associatedItem, newTags: newTags.map(t => t.id) })
                 .catch(err => {
                     // TODO error handling
                     console.error(err)
@@ -29,23 +28,25 @@ export default function TagsContainer({
 
             const currentFolder = browsingFolder.data
 
-            if (isDismiss && currentFolder?.collection && tags.find(t => t.id == currentFolder?.id) != undefined) {
+            if (isDismiss && currentFolder?.collection && newTags.find(t => t.id == currentFolder?.id) == undefined) {
                 browsingFolder.setter({
                     ...currentFolder,
                     content: currentFolder.content.filter(itemId => itemId != associatedItem)
                 })
             }
 
-            if (!isDismiss && currentFolder?.collection && newTags.find(t => t.id == currentFolder.id) != undefined) {
+            if (!isDismiss && currentFolder?.collection && selected.find(t => t.id == currentFolder.id) == undefined) {
                 browsingFolder.setter({
                     ...currentFolder,
                     content: [...currentFolder.content, associatedItem]
                 })
             }
+
+            setSelected(newTags)
         }
     }
 
-    async function fetchTags() {
+    async function fetchAllTags() {
         const allTags = await GetAllTags()
             .catch(err => {
                 // TODO error handling
@@ -58,21 +59,26 @@ export default function TagsContainer({
     }
 
     useEffect(() => {
-        if (associatedItem != currentItem) {
-            setCurrentItem(associatedItem)
-            setSelected(tags)
+
+        async function fetchTags() {
+            const selected = await GetTags({ tags: tags })
+                .catch(err => {
+                    // TODO error handling
+                    console.error(err)
+                })
+
+            if (selected) {
+                setSelected(selected)
+            }
         }
 
-        if (!allTags) {
+        if (associatedItem != currentItem) {
+            setCurrentItem(associatedItem)
             fetchTags()
         }
     }, [associatedItem])
 
-    if (!allTags) {
-        return <></>
-    }
-
-    const available = allTags.filter(tag => selected.find(t => t.id == tag.id) == undefined)
+    const available = allTags?.filter(tag => selected.find(t => t.id == tag.id) == undefined)
 
     return (
         <div className="flex flex-col gap-2 overflow-hidden">
@@ -100,15 +106,15 @@ export default function TagsContainer({
                 !readonly &&
                 <Menu inline>
                     <MenuTrigger>
-                        <MenuButton onClick={() => fetchTags()}>Add Tag</MenuButton>
+                        <MenuButton onClick={() => fetchAllTags()}>Add Tag</MenuButton>
                     </MenuTrigger>
 
                     <MenuPopover>
                         <MenuList>
                             {
-                                available.length == 0
+                                available?.length == 0
                                     ? <MenuItem>No tags available.</MenuItem>
-                                    : available.map((tag, index) =>
+                                    : available?.map((tag, index) =>
                                         <MenuItem
                                             key={index}
                                             style={{ color: `#${tag.color}` }}

@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, selectedAssetsContext } from "../context-provider";
+import { useContextMenu } from "react-contexify";
+import { CtxMenuId } from "./context-menu";
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
@@ -13,6 +15,8 @@ export function FolderTree() {
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
+
+    const { show: showContextMenu } = useContextMenu({ id: CtxMenuId })
 
     useEffect(() => {
         if (folderTree) { return }
@@ -51,6 +55,7 @@ export function FolderTree() {
                 })
             browsingFolder?.setter({
                 id: folderId,
+                name: folder.name,
                 content: folder.content,
                 collection: false,
             })
@@ -76,6 +81,10 @@ export function FolderTree() {
                             <TreeItemLayout
                                 iconBefore={<Folder20Regular />}
                                 onClick={() => updateBrowsingFolder(treeItemProps.value as string)}
+                                onContextMenu={(e) => {
+                                    console.log(e)
+                                    showContextMenu({ event: e })
+                                }}
                             >
                                 <Text>
                                     {name}

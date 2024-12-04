@@ -2,16 +2,19 @@ import { Button, Image, Text } from "@fluentui/react-components";
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
+import { useContextMenu } from "react-contexify";
+import { CtxMenuId } from "./context-menu";
 
 export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const [absPath, setAbsPath] = useState<string | undefined>()
+    const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
 
     useEffect(() => {
         if (thisRef.current) {
             thisRef.current.setAttribute("asset-id", asset.id)
         }
-    }, [asset])
+    })
 
     useEffect(() => {
         async function fetch() {
@@ -37,6 +40,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             className="flex flex-col selectable-asset"
             appearance="subtle"
             ref={thisRef}
+            onContextMenu={e => showCtxMenu({ event: e })}
         >
             <div className="flex h-full items-center">
                 <Image

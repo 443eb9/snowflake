@@ -19,7 +19,6 @@ export default function DetailInfo() {
     const selectedAssets = useContext(selectedAssetsContext)
 
     useEffect(() => {
-        console.log(selectedAssets?.data)
         if (!selectedAssets?.data) {
             setAsset(undefined)
             return

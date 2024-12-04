@@ -28,7 +28,6 @@ export default function AssetsGrid() {
                 })
 
             if (assets) {
-                console.log(assets.map(a => a.name))
                 setAssets(assets)
             }
         }
@@ -37,7 +36,7 @@ export default function AssetsGrid() {
     }, [browsingFolder?.data])
 
     return (
-        <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md max-h-full overflow-y-auto", darkenContentStyle.root)}>
+        <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}>
             <Selecto
                 container={gridRef.current}
                 selectableTargets={[".selectable-asset"]}
