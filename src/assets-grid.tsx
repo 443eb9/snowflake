@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import AssetPreview from "./widgets/asset-preview"
 import { Asset, GetAssets } from "./backend"
-import { browsingFolderContext, selectedAssetsContext } from "./context-provider"
+import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "./context-provider"
 import Selecto from "react-selecto";
 import { darkenContentStyleHook } from "./styling";
 import { mergeClasses } from "@fluentui/react-components";
@@ -13,6 +13,7 @@ export default function AssetsGrid() {
 
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
+    const fileManipulation = useContext(fileManipulationContext)
 
     useEffect(() => {
         async function fetch() {
@@ -42,6 +43,7 @@ export default function AssetsGrid() {
                 selectableTargets={[".selectable-asset"]}
                 hitRate={0}
                 selectByClick
+                dragCondition={() => fileManipulation?.data == undefined}
                 onSelect={ev => {
                     ev.added.forEach(elem => elem.classList.add("selected-asset"))
                     ev.removed.forEach(elem => elem.classList.remove("selected-asset"))
@@ -63,7 +65,11 @@ export default function AssetsGrid() {
                                 return undefined
                             }
 
-                            return <AssetPreview key={index} asset={asset} />
+                            return <AssetPreview
+                                key={index}
+                                asset={asset}
+                                onRename={fileManipulation?.data?.id == asset.id && fileManipulation.data.ty == "rename"}
+                            />
                         })
                     }
                 </div>

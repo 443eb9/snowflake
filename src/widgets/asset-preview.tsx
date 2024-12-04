@@ -1,14 +1,33 @@
-import { Button, Image, Text } from "@fluentui/react-components";
+import { Button, Image, Input, makeStyles, Text } from "@fluentui/react-components";
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { useEffect, useRef, useState } from "react";
-import { useContextMenu } from "react-contexify";
+import { useContext, useEffect, useRef, useState } from "react";
+import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
+import { fileManipulationContext, selectedAssetsContext } from "../context-provider";
+import { Checkmark20Regular, Dismiss20Regular } from "@fluentui/react-icons";
 
-export default function AssetPreview({ asset }: { asset: Asset }) {
+const inputStyleHook = makeStyles({
+    root: {
+        "width": "100px",
+    }
+})
+
+export default function AssetPreview({ asset, onRename }: { asset: Asset, onRename: boolean }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const [absPath, setAbsPath] = useState<string | undefined>()
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
+    const inputStyle = inputStyleHook()
+
+    const [newName, setNewName] = useState<string>()
+
+    const selectedAssets = useContext(selectedAssetsContext)
+    const fileManipulation = useContext(fileManipulationContext)
+
+    const handleContextMenu = (e: TriggerEvent) => {
+        selectedAssets?.setter([asset.id])
+        showCtxMenu({ event: e })
+    }
 
     useEffect(() => {
         if (thisRef.current) {
@@ -37,10 +56,10 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
 
     return (
         <Button
-            className="flex flex-col selectable-asset"
+            className="flex flex-col gap-2 selectable-asset"
             appearance="subtle"
             ref={thisRef}
-            onContextMenu={e => showCtxMenu({ event: e })}
+            onContextMenu={handleContextMenu}
         >
             <div className="flex h-full items-center">
                 <Image
@@ -50,7 +69,36 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
                     shadow
                 />
             </div>
-            <Text align="center" as="p">{asset.name}</Text>
+            {
+                onRename
+                    ? <div className="flex justify-center gap-2">
+                        <Input
+                            defaultValue={asset.name}
+                            className={inputStyle.root}
+                            appearance="underline"
+                            size="small"
+                            onChange={ev => setNewName(ev.target.value)}
+                        />
+                        <Button
+                            icon={<Checkmark20Regular />}
+                            size="small"
+                            onClick={() => {
+                                if (fileManipulation?.data) {
+                                    fileManipulation.setter({
+                                        ...fileManipulation.data,
+                                        submit: newName
+                                    })
+                                }
+                            }}
+                        />
+                        <Button
+                            icon={<Dismiss20Regular />}
+                            size="small"
+                            onClick={() => fileManipulation?.setter(undefined)}
+                        />
+                    </div>
+                    : <Text align="center" as="p">{asset.name}</Text>
+            }
         </Button>
     )
 }
