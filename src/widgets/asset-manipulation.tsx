@@ -1,7 +1,7 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
 import { Delete20Regular, Edit20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
-import { browsingFolderContext, selectedAssetsContext, selectedAssetsCountContext } from "../context-provider"
+import { browsingFolderContext, selectedAssetsContext } from "../context-provider"
 import { DeleteAssets, RenameAsset } from "../backend"
 import { Checkmark20Regular } from "@fluentui/react-icons/fonts"
 
@@ -14,7 +14,7 @@ const inputStyleHook = makeStyles({
 export default function AssetManipulation() {
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
-    const selectedAssetsCount = useContext(selectedAssetsCountContext)
+
     const inputStyle = inputStyleHook()
     const [newName, setNewName] = useState("")
     const [popoverOpen, setPopoverOpen] = useState(false)
@@ -26,7 +26,7 @@ export default function AssetManipulation() {
 
         browsingFolder.setter({
             ...browsingFolder.data,
-            content: [...browsingFolder.data.content.filter(id => !selectedAssets.data?.has(id))]
+            content: [...browsingFolder.data.content.filter(id => !selectedAssets.data?.includes(id))]
         })
         await DeleteAssets({ assets: [...selectedAssets?.data?.values() ?? []] })
             .catch(err => {
@@ -36,7 +36,7 @@ export default function AssetManipulation() {
     }
 
     const handleRename = async () => {
-        if (!browsingFolder?.data || !selectedAssets?.data || selectedAssets.data.size != 1) {
+        if (!browsingFolder?.data || !selectedAssets?.data || selectedAssets.data.length != 1) {
             return
         }
         const target = selectedAssets.data.values().next().value as string
@@ -50,12 +50,14 @@ export default function AssetManipulation() {
         setPopoverOpen(false)
     }
 
+    const selectedCount = selectedAssets?.data?.length ?? 0
+
     return (
         <div className="flex gap-1">
-            <Button icon={<Delete20Regular />} disabled={selectedAssetsCount?.data == 0} onClick={handleDelete} />
+            <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
             <Menu inline open={popoverOpen} onOpenChange={(_, d) => setPopoverOpen(d.open)}>
                 <MenuTrigger>
-                    <MenuButton icon={<Edit20Regular />} disabled={selectedAssetsCount?.data != 1} />
+                    <MenuButton icon={<Edit20Regular />} disabled={selectedCount != 1} />
                 </MenuTrigger>
                 <MenuPopover>
                     <div className="flex flex-grow gap-2 items-center p-1">

@@ -11,31 +11,36 @@ import { darkenContentStyleHook } from "./styling"
 
 export default function DetailInfo() {
     const [asset, setAsset] = useState<Asset | undefined>()
+    const [selectedCount, setSelectedCount] = useState(0)
     const [assetAbsPath, setAssetAbsPath] = useState<string | undefined>()
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
     const darkenContentStyle = darkenContentStyleHook()
 
     const selectedAssets = useContext(selectedAssetsContext)
-    const selected = selectedAssets?.data?.entries().next().value
-    const selectedCount = selectedAssets?.data?.size ?? 0
 
     useEffect(() => {
-        if (!selected || selectedAssets?.data?.size != 1) {
+        console.log(selectedAssets?.data)
+        if (!selectedAssets?.data) {
             setAsset(undefined)
             return
         }
 
-        if (asset && asset.id == selected[0]) { return }
+        setSelectedCount(selectedAssets.data.length)
+        if (selectedAssets.data.length != 1) {
+            setAsset(undefined)
+            return
+        }
+
+        const selected = selectedAssets.data[0]
+        if (asset && asset.id == selected) { return }
 
         async function fetch() {
-            if (!selected) { return }
-
-            const asset = await GetAsset({ asset: selected[0] })
+            const asset = await GetAsset({ asset: selected })
                 .catch(err => {
                     // TODO error handling
                     console.error(err)
                 })
-            const absPath = await GetAssetAbsPath({ asset: selected[0] })
+            const absPath = await GetAssetAbsPath({ asset: selected })
                 .catch(err => {
                     console.error(err)
                 })
@@ -47,7 +52,7 @@ export default function DetailInfo() {
         }
 
         fetch()
-    }, [selected])
+    }, [selectedAssets?.data])
 
     useEffect(() => {
         async function setWindowSizeAsync() {

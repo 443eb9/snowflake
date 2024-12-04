@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import AssetPreview from "./widgets/asset-preview"
 import { Asset, GetAssets } from "./backend"
-import { browsingFolderContext } from "./context-provider"
+import { browsingFolderContext, selectedAssetsContext } from "./context-provider"
 import Selecto from "react-selecto";
 import { darkenContentStyleHook } from "./styling";
 import { mergeClasses } from "@fluentui/react-components";
@@ -12,6 +12,7 @@ export default function AssetsGrid() {
     const darkenContentStyle = darkenContentStyleHook()
 
     const browsingFolder = useContext(browsingFolderContext)
+    const selectedAssets = useContext(selectedAssetsContext)
 
     useEffect(() => {
         async function fetch() {
@@ -27,12 +28,13 @@ export default function AssetsGrid() {
                 })
 
             if (assets) {
+                console.log(assets.map(a => a.name))
                 setAssets(assets)
             }
         }
 
         fetch()
-    }, [browsingFolder])
+    }, [browsingFolder?.data])
 
     return (
         <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md max-h-full overflow-y-auto", darkenContentStyle.root)}>
@@ -42,12 +44,15 @@ export default function AssetsGrid() {
                 hitRate={0}
                 selectByClick
                 onSelect={ev => {
-                    ev.added.forEach(elem => {
-                        elem.dispatchEvent(new Event("selected"))
-                    })
-                    ev.removed.forEach(elem => {
-                        elem.dispatchEvent(new Event("deselected"))
-                    })
+                    ev.added.forEach(elem => elem.classList.add("selected-asset"))
+                    ev.removed.forEach(elem => elem.classList.remove("selected-asset"))
+
+                    const removed = new Set(ev.removed.map(elem => elem.getAttribute("asset-id")))
+                    const selected = ev.added.map(elem => elem.getAttribute("asset-id"))
+                        .concat(selectedAssets?.data ?? [])
+                        .filter(id => !removed.has(id))
+                        .filter(id => id != null)
+                    selectedAssets?.setter(selected)
                 }}
             />
             {
