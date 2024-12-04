@@ -3,7 +3,7 @@ import { Button, Image, mergeClasses, Text } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "./widgets/tags-container"
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
-import { Asset, ComputeChecksum, GetAsset, GetTagsOf, Tag } from "./backend"
+import { AbsolutizePath, Asset, ComputeChecksum, GetAsset, GetTagsOf, Tag } from "./backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "./context-provider"
 import formatFileSize from "./util"
@@ -11,7 +11,8 @@ import { darkenContentStyleHook } from "./styling"
 
 type TaggedAsset = {
     asset: Asset,
-    tags: Tag[]
+    tags: Tag[],
+    absPath: string,
 }
 
 export default function DetailInfo() {
@@ -29,12 +30,17 @@ export default function DetailInfo() {
             return
         }
 
-        if (tagged && tagged.asset.meta.id == selected[0]) { return }
+        if (tagged && tagged.asset.relative_path == selected[0]) { return }
 
         async function fetch() {
             if (!selected) { return }
 
             const asset = await GetAsset({ asset: selected[0] })
+                .catch(err => {
+                    // TODO error handling
+                    console.error(err)
+                })
+            const absPath = await AbsolutizePath({ path: selected[0] })
                 .catch(err => {
                     // TODO error handling
                     console.error(err)
@@ -45,8 +51,8 @@ export default function DetailInfo() {
                     console.error(err)
                 })
 
-            if (asset && tags) {
-                setTagged({ asset, tags })
+            if (asset && tags && absPath) {
+                setTagged({ asset, tags, absPath })
             }
         }
 
@@ -77,7 +83,7 @@ export default function DetailInfo() {
                 <>
                     <Image
                         className="w-full"
-                        src={convertFileSrc(tagged.asset.path)}
+                        src={convertFileSrc(tagged.absPath)}
                         shape="rounded"
                         shadow
                     />
@@ -90,7 +96,7 @@ export default function DetailInfo() {
                             <Text weight="bold">Tags</Text>
                             <TagsContainer
                                 tags={tagged.tags}
-                                associatedItem={tagged.asset.meta.id}
+                                associatedItem={tagged.asset.relative_path}
                             />
                         </ListItem>
                     </List>
@@ -100,7 +106,7 @@ export default function DetailInfo() {
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Full Path</Text>
-                            <Text font="monospace">{tagged.asset.path}</Text>
+                            <Text font="monospace">{tagged.absPath}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Size</Text>
@@ -115,10 +121,6 @@ export default function DetailInfo() {
                             <Text font="monospace">{new Date(tagged.asset.meta.last_modified).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="semibold" font="monospace">Id</Text>
-                            <Text font="monospace">{tagged.asset.meta.id}</Text>
-                        </ListItem>
-                        <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Checksums</Text>
                             {
                                 tagged.asset.checksums
@@ -129,7 +131,7 @@ export default function DetailInfo() {
                                         <Text font="monospace">[SHA256]{tagged.asset.checksums.sha256}</Text>
                                     </div>
                                     : <Button onClick={async () => {
-                                        const computed = await ComputeChecksum({ asset: tagged.asset.meta.id })
+                                        const computed = await ComputeChecksum({ asset: tagged.asset.relative_path })
                                             .catch(err => {
                                                 // TODO error handling
                                                 console.error(err)
@@ -138,8 +140,8 @@ export default function DetailInfo() {
                                         if (computed) {
                                             console.log(computed.checksums)
                                             setTagged({
+                                                ...tagged,
                                                 asset: computed,
-                                                tags: tagged.tags,
                                             })
                                             console.log(tagged.asset.checksums)
                                         }

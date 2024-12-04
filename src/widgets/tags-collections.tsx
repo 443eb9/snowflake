@@ -20,7 +20,7 @@ export default function TagsCollections() {
     const selectedAssetsCount = useContext(selectedAssetsCountContext)
 
     const updateBrowsingFolder = async (tag: Tag) => {
-        const assets = await GetAssetsContainingTag({ tag: tag.meta.id })
+        const assets = await GetAssetsContainingTag({ tag: tag.id })
             .catch(err => {
                 // TODO error handling
                 console.error(err)
@@ -35,7 +35,6 @@ export default function TagsCollections() {
                     elem.classList.remove("selected-asset")
                 })
             browsingFolder.setter({
-                id: tag.meta.id,
                 content: assets,
                 path: `Collection ${tag.name}`,
                 collection: true,

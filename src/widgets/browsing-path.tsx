@@ -7,7 +7,7 @@ export function BrowsingPath() {
     const browsingFolder = useContext(browsingFolderContext)
 
     const pathChangeHandler = async (pop: number) => {
-        if (!browsingFolder?.data?.id || pop == 0) {
+        if (!browsingFolder?.data?.path || pop == 0) {
             return
         }
 
@@ -18,15 +18,14 @@ export function BrowsingPath() {
             })
 
         if (folderTree) {
-            let currentFolder = folderTree.get(browsingFolder.data.id) as Folder
+            let currentFolder = folderTree.get(browsingFolder.data.path) as Folder
             while (pop--) {
                 currentFolder = folderTree.get(currentFolder.parent) as Folder
             }
 
             browsingFolder.setter({
-                id: currentFolder.meta.id,
                 content: currentFolder.content,
-                path: currentFolder.path,
+                path: currentFolder.relative_path,
                 collection: false
             })
         }

@@ -29,14 +29,14 @@ export default function TagsContainer({
 
             const currentFolder = browsingFolder.data
 
-            if (isDismiss && currentFolder?.collection && tags.find(t => t.meta.id == currentFolder?.id) != undefined) {
+            if (isDismiss && currentFolder?.collection && tags.find(t => t.id == currentFolder?.path) != undefined) {
                 browsingFolder.setter({
                     ...currentFolder,
                     content: currentFolder.content.filter(itemId => itemId != associatedItem)
                 })
             }
 
-            if (!isDismiss && currentFolder?.collection && newTags.find(t => t.meta.id == currentFolder.id) != undefined) {
+            if (!isDismiss && currentFolder?.collection && newTags.find(t => t.id == currentFolder.path) != undefined) {
                 browsingFolder.setter({
                     ...currentFolder,
                     content: [...currentFolder.content, associatedItem]
@@ -72,13 +72,13 @@ export default function TagsContainer({
         return <></>
     }
 
-    const available = allTags.filter(tag => selected.find(t => t.meta.id == tag.meta.id) == undefined)
+    const available = allTags.filter(tag => selected.find(t => t.id == tag.id) == undefined)
 
     return (
         <div className="flex flex-col gap-2 overflow-hidden">
             <TagGroup
                 className="flex-wrap gap-1"
-                onDismiss={(_, data) => update([...selected].filter(tag => tag.meta.id != data.value), true)}
+                onDismiss={(_, data) => update([...selected].filter(tag => tag.id != data.value), true)}
             >
                 {
                     selected.length == 0
@@ -87,7 +87,7 @@ export default function TagsContainer({
                             <FluentTag
                                 key={index}
                                 dismissible={!readonly}
-                                value={tag.meta.id}
+                                value={tag.id}
                                 style={{ color: `#${tag.color}` }}
                             >
                                 <TagName name={tag.name} />
