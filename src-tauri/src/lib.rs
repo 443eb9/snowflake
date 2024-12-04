@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use log::LevelFilter;
 use tauri::Manager;
 
-use crate::models::{FsCache, Storage};
+use crate::models::Storage;
 
 mod cmd;
 mod err;
@@ -23,14 +23,17 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            app.manage(Mutex::new(Option::<FsCache>::None));
             app.manage(Mutex::new(Option::<Storage>::None));
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             cmd::load_library,
+            cmd::initialize_library,
             cmd::save_library,
+            cmd::get_asset_abs_path,
+            cmd::get_asset_virtual_path,
+            cmd::get_folder_virtual_path,
             cmd::get_folder_tree,
             cmd::get_root_folder_id,
             cmd::get_all_tags,
@@ -39,7 +42,6 @@ pub fn run() {
             cmd::get_folder,
             cmd::get_asset,
             cmd::get_assets,
-            cmd::get_tags_of,
             cmd::modify_tags_of,
             cmd::get_assets_containing_tag,
             cmd::compute_checksum,

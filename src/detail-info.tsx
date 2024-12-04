@@ -3,19 +3,15 @@ import { Button, Image, mergeClasses, Text } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "./widgets/tags-container"
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
-import { Asset, ComputeChecksum, GetAsset, GetTagsOf, Tag } from "./backend"
+import { Asset, ComputeChecksum, GetAsset, GetAssetAbsPath } from "./backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "./context-provider"
 import formatFileSize from "./util"
 import { darkenContentStyleHook } from "./styling"
 
-type TaggedAsset = {
-    asset: Asset,
-    tags: Tag[]
-}
-
 export default function DetailInfo() {
-    const [tagged, setTagged] = useState<TaggedAsset | undefined>()
+    const [asset, setAsset] = useState<Asset | undefined>()
+    const [assetAbsPath, setAssetAbsPath] = useState<string | undefined>()
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
     const darkenContentStyle = darkenContentStyleHook()
 
@@ -25,11 +21,11 @@ export default function DetailInfo() {
 
     useEffect(() => {
         if (!selected || selectedAssets?.data?.size != 1) {
-            setTagged(undefined)
+            setAsset(undefined)
             return
         }
 
-        if (tagged && tagged.asset.meta.id == selected[0]) { return }
+        if (asset && asset.id == selected[0]) { return }
 
         async function fetch() {
             if (!selected) { return }
@@ -39,14 +35,14 @@ export default function DetailInfo() {
                     // TODO error handling
                     console.error(err)
                 })
-            const tags = await GetTagsOf({ asset: selected[0] })
+            const absPath = await GetAssetAbsPath({ asset: selected[0] })
                 .catch(err => {
-                    // TODO error handling
                     console.error(err)
                 })
 
-            if (asset && tags) {
-                setTagged({ asset, tags })
+            if (asset && absPath) {
+                setAsset(asset)
+                setAssetAbsPath(absPath)
             }
         }
 
@@ -72,25 +68,25 @@ export default function DetailInfo() {
                     {selectedCount == 0 ? "No asset selected" : "Multiple assets selected"}
                 </Text>
             )
-        } else if (tagged) {
+        } else if (asset && assetAbsPath) {
             return (
                 <>
                     <Image
                         className="w-full"
-                        src={convertFileSrc(tagged.asset.path)}
+                        src={convertFileSrc(assetAbsPath)}
                         shape="rounded"
                         shadow
                     />
                     <List className="flex flex-col gap-2">
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="bold">File Name</Text>
-                            <Text>{tagged.asset.name}</Text>
+                            <Text>{asset.name}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="bold">Tags</Text>
                             <TagsContainer
-                                tags={tagged.tags}
-                                associatedItem={tagged.asset.meta.id}
+                                tags={asset.tags}
+                                associatedItem={asset.id}
                             />
                         </ListItem>
                     </List>
@@ -99,49 +95,40 @@ export default function DetailInfo() {
                             <Text as="h5" size={500} weight="bold" font="monospace">File Properties</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
-                            <Text weight="semibold" font="monospace">Full Path</Text>
-                            <Text font="monospace">{tagged.asset.path}</Text>
-                        </ListItem>
-                        <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Size</Text>
-                            <Text font="monospace">{formatFileSize(tagged.asset.meta.byte_size)}</Text>
+                            <Text font="monospace">{formatFileSize(asset.meta.byte_size)}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Created At</Text>
-                            <Text font="monospace">{new Date(tagged.asset.meta.created_at).toLocaleString()}</Text>
+                            <Text font="monospace">{new Date(asset.meta.created_at).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Last Modified</Text>
-                            <Text font="monospace">{new Date(tagged.asset.meta.last_modified).toLocaleString()}</Text>
+                            <Text font="monospace">{new Date(asset.meta.last_modified).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Id</Text>
-                            <Text font="monospace">{tagged.asset.meta.id}</Text>
+                            <Text font="monospace">{asset.id}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Checksums</Text>
                             {
-                                tagged.asset.checksums
+                                asset.checksums
                                     ? <div className={mergeClasses("w-full flex flex-col overflow-x-auto", darkenContentStyle.root)}>
-                                        <Text font="monospace">[CRC32]{tagged.asset.checksums.crc32}</Text>
-                                        <Text font="monospace">[MD5]{tagged.asset.checksums.md5}</Text>
-                                        <Text font="monospace">[SHA1]{tagged.asset.checksums.sha1}</Text>
-                                        <Text font="monospace">[SHA256]{tagged.asset.checksums.sha256}</Text>
+                                        <Text font="monospace">[CRC32]{asset.checksums.crc32}</Text>
+                                        <Text font="monospace">[MD5]{asset.checksums.md5}</Text>
+                                        <Text font="monospace">[SHA1]{asset.checksums.sha1}</Text>
+                                        <Text font="monospace">[SHA256]{asset.checksums.sha256}</Text>
                                     </div>
                                     : <Button onClick={async () => {
-                                        const computed = await ComputeChecksum({ asset: tagged.asset.meta.id })
+                                        const computed = await ComputeChecksum({ asset: asset.id })
                                             .catch(err => {
                                                 // TODO error handling
                                                 console.error(err)
                                             })
 
                                         if (computed) {
-                                            console.log(computed.checksums)
-                                            setTagged({
-                                                asset: computed,
-                                                tags: tagged.tags,
-                                            })
-                                            console.log(tagged.asset.checksums)
+                                            setAsset(computed)
                                         }
                                     }}>
                                         <Text>Compute</Text>

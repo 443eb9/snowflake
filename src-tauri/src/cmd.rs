@@ -1,32 +1,22 @@
-use std::sync::Mutex;
+use std::{path::PathBuf, sync::Mutex};
 
 use hashbrown::HashMap;
 use tauri::State;
-use uuid::Uuid;
 
 use crate::{
-    err::{asset_doesnt_exist, cache_not_built, folder_doesnt_exist, storage_not_initialized},
-    models::{Asset, Checksums, Folder, FsCache, Storage, Tag},
+    err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
+    models::{Asset, AssetId, Checksums, Folder, FolderId, Storage, Tag, TagId, IMAGE_ASSETS},
 };
 
 #[tauri::command]
 pub fn load_library(
     root_folder: String,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Start loading library at {}", root_folder);
 
-    let mut new_storage = Storage::from_path(&root_folder).map_err(|e| e.to_string())?;
-    let new_cache = FsCache::build(&root_folder, &mut new_storage).map_err(|e| e.to_string())?;
-    let mut fs_cache = fs_cache.lock().map_err(|e| e.to_string())?;
-
+    let new_storage = Storage::from_existing(&root_folder).map_err(|e| e.to_string())?;
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
-    new_storage
-        .save_to(&new_cache.root_path)
-        .map_err(|e| e.to_string())?;
-
-    fs_cache.replace(new_cache);
     storage.replace(new_storage);
 
     log::info!("Successfully loaded library!");
@@ -35,65 +25,113 @@ pub fn load_library(
 }
 
 #[tauri::command]
-pub fn save_library(
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+pub fn initialize_library(
+    src_root_folder: String,
+    root_folder: String,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
+    log::info!("Start initializing library at {}", root_folder);
+
+    let new_storage =
+        Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
+    let mut storage = storage.lock().map_err(|e| e.to_string())?;
+    storage.replace(new_storage);
+
+    log::info!("Successfully initialized library!");
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn save_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), String> {
     log::info!("Saving library...");
 
-    if let (Ok(Some(fs_cache)), Ok(Some(storage))) =
-        (fs_cache.lock().as_deref(), storage.lock().as_deref())
-    {
-        storage
-            .save_to(&fs_cache.root_path)
-            .map_err(|e| e.to_string())?;
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage.save().map_err(|e| e.to_string())?;
     }
 
     Ok(())
 }
 
 #[tauri::command]
-pub fn get_folder_tree(
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
-) -> Result<HashMap<Uuid, Folder>, String> {
-    log::info!("Getting folder tree.");
+pub fn get_asset_abs_path(
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<PathBuf, String> {
+    log::info!("Getting absolute path of asset {:?}.", asset);
 
-    match fs_cache.lock() {
-        Ok(ok) => {
-            if let Some(cache) = ok.as_ref() {
-                Ok(cache.folders.clone())
-            } else {
-                Ok(Default::default())
-            }
-        }
-        Err(err) => Err(err.to_string()),
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage.get_asset_abs_path(asset).map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
-pub fn get_root_folder_id(fs_cache: State<'_, Mutex<Option<FsCache>>>) -> Result<Uuid, String> {
+pub fn get_asset_virtual_path(
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<String>, String> {
+    log::info!("Getting virtual path of asset {:?}.", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage
+            .get_asset_virtual_path(asset)
+            .map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_folder_virtual_path(
+    folder: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<String>, String> {
+    log::info!("Getting virtual path of folder {:?}.", folder);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage
+            .get_folder_virtual_path(folder)
+            .map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_folder_tree(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<HashMap<FolderId, Folder>, String> {
+    log::info!("Getting folder tree.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage.folders.clone())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_root_folder_id(storage: State<'_, Mutex<Option<Storage>>>) -> Result<FolderId, String> {
     log::info!("Getting root folder id.");
 
-    fs_cache
-        .lock()
-        .as_deref()
-        .ok()
-        .and_then(Option::as_ref)
-        .map(|cache| cache.root)
-        .ok_or_else(cache_not_built)
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage.root_id)
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]
 pub fn get_all_tags(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Tag>, String> {
     log::info!("Getting all tags");
 
-    storage
-        .lock()
-        .as_deref()
-        .ok()
-        .and_then(Option::as_ref)
-        .map(|st| st.tags.values().into_iter().cloned().collect())
-        .ok_or_else(storage_not_initialized)
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage.tags.values().cloned().collect())
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]
@@ -101,139 +139,104 @@ pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> R
     log::info!("Modifying tag: {:?}", new_tag);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage.tags.insert(new_tag.meta.id, new_tag);
+        storage.tags.insert(new_tag.id, new_tag);
+        Ok(())
+    } else {
+        Err(storage_not_initialized())
     }
-
-    Ok(())
 }
 
 #[tauri::command]
 pub fn get_assets_at(
-    folder: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    folder: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Asset>, String> {
-    log::info!("Getting assets at {}", folder);
+    log::info!("Getting assets at {:?}", folder);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref() {
-        cache
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        let folder = storage
             .folders
             .get(&folder)
-            .map(|folder| {
-                folder
-                    .content
-                    .iter()
-                    .filter_map(|id| cache.assets.get(id).cloned())
-                    .collect()
-            })
-            .ok_or_else(|| folder_doesnt_exist(folder))
+            .ok_or_else(|| folder_doesnt_exist(folder))?;
+        Ok(folder
+            .content
+            .iter()
+            .filter_map(|a| storage.assets.get(a))
+            .cloned()
+            .collect())
     } else {
-        Ok(Vec::new())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn get_folder(
-    folder: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    folder: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Folder, String> {
-    log::info!("Getting folder {}", folder);
+    log::info!("Getting folder {:?}", folder);
 
-    fs_cache
-        .lock()
-        .as_deref()
-        .ok()
-        .and_then(Option::as_ref)
-        .and_then(|cache| cache.folders.get(&folder).cloned())
-        .ok_or_else(|| folder_doesnt_exist(folder))
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage
+            .folders
+            .get(&folder)
+            .ok_or_else(|| folder_doesnt_exist(folder))
+            .cloned()
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]
 pub fn get_asset(
-    asset: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Asset, String> {
-    log::info!("Getting asset {}", asset);
+    log::info!("Getting asset {:?}", asset);
 
-    fs_cache
-        .lock()
-        .as_deref()
-        .ok()
-        .and_then(Option::as_ref)
-        .and_then(|cache| cache.assets.get(&asset).cloned())
-        .ok_or_else(|| asset_doesnt_exist(asset))
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage
+            .assets
+            .get(&asset)
+            .ok_or_else(|| asset_doesnt_exist(asset))
+            .cloned()
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]
 pub fn get_assets(
-    assets: Vec<Uuid>,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    assets: Vec<AssetId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Asset>, String> {
     log::info!("Getting assets {:?}", assets);
 
-    fs_cache
-        .lock()
-        .as_deref()
-        .ok()
-        .and_then(Option::as_ref)
-        .map(|cache| {
-            assets
-                .iter()
-                .filter_map(|id| cache.assets.get(id).cloned())
-                .collect()
-        })
-        .ok_or_else(cache_not_built)
-}
-
-#[tauri::command]
-pub fn get_tags_of(
-    asset: Uuid,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<Tag>, String> {
-    log::info!("Getting tags of {}", asset);
-
-    storage
-        .lock()
-        .as_deref()
-        .map_err(|e| e.to_string())
-        .and_then(|s| s.as_ref().ok_or_else(storage_not_initialized))
-        .and_then(|storage| {
-            storage
-                .item_tags
-                .get(&asset)
-                .map(|ids| {
-                    Ok(ids
-                        .iter()
-                        .filter_map(|id| storage.tags.get(id).cloned())
-                        .collect())
-                })
-                .unwrap_or_else(|| Ok(Vec::new()))
-        })
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(assets
+            .into_iter()
+            .filter_map(|a| storage.assets.get(&a))
+            .cloned()
+            .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]
 pub fn modify_tags_of(
-    asset: Uuid,
-    new_tags: Vec<Tag>,
+    asset: AssetId,
+    new_tags: Vec<TagId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Modifying tags of {}, new tags: {:?}", asset, new_tags);
+    log::info!("Modifying tags of {:?}, new tags: {:?}", asset, new_tags);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        if new_tags.is_empty() {
-            storage.item_tags.remove(&asset);
-        } else {
-            storage.item_tags.insert(
-                asset,
-                new_tags
-                    .into_iter()
-                    .map(|tag| {
-                        let id = tag.meta.id;
-                        storage.tags.insert(tag.meta.id, tag);
-                        id
-                    })
-                    .collect(),
-            );
-        }
+        let asset = storage
+            .assets
+            .get_mut(&asset)
+            .ok_or_else(|| asset_doesnt_exist(asset))?;
+        asset.tags = new_tags;
         Ok(())
     } else {
         Err(storage_not_initialized())
@@ -242,16 +245,16 @@ pub fn modify_tags_of(
 
 #[tauri::command]
 pub fn get_assets_containing_tag(
-    tag: Uuid,
+    tag: TagId,
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<Uuid>, String> {
-    log::info!("Getting assets containing tag {}", tag);
+) -> Result<Vec<AssetId>, String> {
+    log::info!("Getting assets containing tag {:?}", tag);
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage
-            .item_tags
-            .iter()
-            .filter_map(|(item, tags)| tags.contains(&tag).then_some(*item))
+            .assets
+            .values()
+            .filter_map(|asset| asset.tags.contains(&tag).then_some(asset.id))
             .collect())
     } else {
         Err(storage_not_initialized())
@@ -260,133 +263,140 @@ pub fn get_assets_containing_tag(
 
 #[tauri::command]
 pub fn compute_checksum(
-    asset: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Asset, String> {
-    log::info!("Compute checksum of {}", asset);
+    log::info!("Compute checksum of {:?}", asset);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
-        if let Some(asset) = cache.assets.get_mut(&asset) {
-            if asset.checksums.is_none() {
-                match Checksums::from_path(&asset.path) {
-                    Ok(checksum) => {
-                        asset.checksums.replace(checksum);
-                    }
-                    Err(err) => return Err(err.to_string()),
-                }
-            }
-
-            Ok(asset.clone())
-        } else {
-            Err(asset_doesnt_exist(asset))
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        let asset = storage
+            .assets
+            .get_mut(&asset)
+            .ok_or_else(|| asset_doesnt_exist(asset))?;
+        if asset.checksums.is_none() {
+            asset.checksums.replace(
+                Checksums::from_path(storage.root.join(IMAGE_ASSETS).join(&asset.name)).unwrap(),
+            );
         }
+
+        Ok(asset.clone())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn delete_assets(
-    assets: Vec<Uuid>,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    assets: Vec<AssetId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Deleting assets {:?}", assets);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for asset in assets {
-            cache.delete_asset(asset).map_err(|e| e.to_string())?
+            if let Err(e) = storage.delete_asset(asset) {
+                return Err(e.to_string());
+            }
         }
+
         Ok(())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn delete_folders(
-    folders: Vec<Uuid>,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    folders: Vec<FolderId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Deleting folders {:?}", folders);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for folder in folders {
-            cache.delete_folder(folder).map_err(|e| e.to_string())?
+            if let Err(e) = storage.delete_folder(folder) {
+                return Err(e.to_string());
+            }
         }
+
         Ok(())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn rename_asset(
-    asset: Uuid,
+    asset: AssetId,
     name_no_ext: String,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Renaming asset {}", asset);
+    log::info!("Renaming asset {:?}", asset);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
-        cache
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        storage
             .rename_asset(asset, name_no_ext)
             .map_err(|e| e.to_string())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn rename_folder(
-    folder: Uuid,
+    folder: FolderId,
     name: String,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Renaming folder {} -> {}", folder, name);
+    log::info!("Renaming folder {:?} -> {}", folder, name);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
-        cache.rename_folder(folder, name).map_err(|e| e.to_string())
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        storage
+            .rename_folder(folder, name)
+            .map_err(|e| e.to_string())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn move_assets_to(
-    assets: Vec<Uuid>,
-    folder: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    assets: Vec<AssetId>,
+    folder: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Moving assets {:?} to {}", assets, folder);
+    log::info!("Moving assets {:?} to {:?}", assets, folder);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for asset in assets {
-            cache
-                .move_asset_to(asset, folder)
-                .map_err(|e| e.to_string())?
+            if let Err(e) = storage.move_asset_to(asset, folder) {
+                return Err(e.to_string());
+            }
         }
+
         Ok(())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }
 
 #[tauri::command]
 pub fn move_folders_to(
-    src_folders: Vec<Uuid>,
-    dst_folder: Uuid,
-    fs_cache: State<'_, Mutex<Option<FsCache>>>,
+    src_folders: Vec<FolderId>,
+    dst_folder: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Moving folders {:?} to {}", src_folders, dst_folder);
+    log::info!("Moving folders {:?} to {:?}", src_folders, dst_folder);
 
-    if let Ok(Some(cache)) = fs_cache.lock().as_deref_mut() {
-        for src_folder in src_folders {
-            cache
-                .move_folder_to(src_folder, dst_folder)
-                .map_err(|e| e.to_string())?;
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        for folder in src_folders {
+            if let Err(e) = storage.move_folder_to(folder, dst_folder) {
+                return Err(e.to_string());
+            }
         }
+
         Ok(())
     } else {
-        Err(cache_not_built())
+        Err(storage_not_initialized())
     }
 }

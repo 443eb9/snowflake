@@ -54,7 +54,6 @@ export function FolderTree() {
             browsingFolder?.setter({
                 id: folderId,
                 content: folder.content,
-                path: folder.path,
                 collection: false,
             })
         }

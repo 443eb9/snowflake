@@ -1,9 +1,11 @@
-import { useContext } from "react"
+import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext } from "../context-provider"
-import { Folder, GetFolderTree } from "../backend"
+import { Folder, GetFolderTree, GetFolderVirtualPath } from "../backend"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
 
 export function BrowsingPath() {
+    const [virtualPath, setVirtualPath] = useState<string[] | undefined>()
+
     const browsingFolder = useContext(browsingFolderContext)
 
     const pathChangeHandler = async (pop: number) => {
@@ -19,35 +21,52 @@ export function BrowsingPath() {
 
         if (folderTree) {
             let currentFolder = folderTree.get(browsingFolder.data.id) as Folder
-            while (pop--) {
+            while (pop-- && currentFolder.parent) {
                 currentFolder = folderTree.get(currentFolder.parent) as Folder
             }
 
             browsingFolder.setter({
-                id: currentFolder.meta.id,
+                id: currentFolder.id,
                 content: currentFolder.content,
-                path: currentFolder.path,
                 collection: false
             })
         }
     }
 
+    useEffect(() => {
+        async function fetch() {
+            if (browsingFolder?.data?.id) {
+                const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
+                    .catch(err => {
+                        // TODO error handling
+                        console.error(err)
+                    })
+                if (path) {
+                    setVirtualPath(path)
+                }
+            }
+        }
 
-    const pathSegs = browsingFolder?.data?.path.replaceAll("\\", "/").split("/") ?? []
+        fetch()
+    }, [browsingFolder])
+
+    if (!virtualPath) {
+        return <></>
+    }
 
     return (
         <Breadcrumb>
             {
-                pathSegs.length == 0
+                virtualPath.length == 0
                     ? <BreadcrumbButton>Void</BreadcrumbButton>
-                    : pathSegs.map((seg, index) =>
+                    : virtualPath.map((seg, index) =>
                         <>
                             <BreadcrumbItem key={index * 2}>
-                                <BreadcrumbButton onClick={() => pathChangeHandler(pathSegs.length - 1 - index)}>
+                                <BreadcrumbButton onClick={() => pathChangeHandler(virtualPath.length - 1 - index)}>
                                     {seg}
                                 </BreadcrumbButton>
                             </BreadcrumbItem>
-                            {index != pathSegs.length - 1 && <BreadcrumbDivider key={index * 2 + 1} />}
+                            {index != virtualPath.length - 1 && <BreadcrumbDivider key={index * 2 + 1} />}
                         </>
                     )
             }

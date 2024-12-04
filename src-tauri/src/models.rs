@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    fs::{metadata, read_dir, ReadDir},
+    fs::{copy, create_dir_all, metadata, read_dir, ReadDir},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
@@ -8,215 +8,277 @@ use std::{
 
 use chrono::{DateTime, FixedOffset};
 use filetime::FileTime;
-use hashbrown::{hash_map::Entry, HashMap, HashSet};
+use hashbrown::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
 pub const LIBRARY_STORAGE: &str = "snowflake.json";
-pub const TEMP_RECYCLE_BIN: &str = "removed";
+pub const TEMP_RECYCLE_BIN: &str = "recycle_bin";
+pub const IMAGE_ASSETS: &str = "images";
 
-#[derive(Default)]
-pub struct FsCache {
-    pub root: Uuid,
-    pub bin: Uuid,
-    pub root_path: PathBuf,
-    pub folders: HashMap<Uuid, Folder>,
-    pub assets: HashMap<Uuid, Asset>,
-}
-
-impl FsCache {
-    pub fn build(
-        root_path: impl AsRef<Path>,
-        storage: &mut Storage,
-    ) -> Result<Self, std::io::Error> {
-        let root_path = root_path.as_ref();
-        let root_meta = Metadata::new(root_path);
-
-        let bin_path = root_path.join(TEMP_RECYCLE_BIN);
-        if !bin_path.exists() {
-            let _ = std::fs::create_dir_all(&bin_path);
-        }
-        let bin_meta = Metadata::new(&bin_path);
-
-        let mut cache = Self {
-            root: root_meta.id,
-            bin: bin_meta.id,
-            root_path: root_path.to_path_buf(),
-            ..Default::default()
-        };
-        cache
-            .folders
-            .insert(bin_meta.id, Folder::new(root_meta.id, bin_path, bin_meta));
-        let mut root_folder = Folder::new(root_meta.id, root_path.to_path_buf(), root_meta);
-
-        collect_cache(
-            root_path,
-            read_dir(root_path)?,
-            &mut root_folder,
-            &mut cache,
-            storage,
-        )?;
-
-        cache.folders.insert(root_folder.meta.id, root_folder);
-
-        Ok(cache)
-    }
-
-    pub fn delete_asset(&mut self, id: Uuid) -> Result<(), std::io::Error> {
-        self.move_asset_to(id, self.bin)?;
-        self.assets.remove(&id);
-
-        Ok(())
-    }
-    pub fn delete_folder(&mut self, id: Uuid) -> Result<(), std::io::Error> {
-        self.move_folder_to(id, self.bin)?;
-        self.folders.remove(&id);
-
-        Ok(())
-    }
-
-    pub fn rename_asset(
-        &mut self,
-        id: Uuid,
-        new_name_no_ext: String,
-    ) -> Result<(), std::io::Error> {
-        if let Some(asset) = self.assets.get_mut(&id) {
-            let ext = asset
-                .path
-                .extension()
-                .map(|e| e.to_string_lossy().to_string());
-            std::fs::rename(
-                &asset.path,
-                asset.path.with_file_name(match ext {
-                    Some(ext) => format!("{}.{}", new_name_no_ext, ext),
-                    None => new_name_no_ext,
-                }),
-            )?;
-        }
-
-        Ok(())
-    }
-
-    pub fn rename_folder(&mut self, id: Uuid, new_name: String) -> Result<(), std::io::Error> {
-        if let Some(folder) = self.folders.get_mut(&id) {
-            std::fs::rename(&folder.path, folder.path.with_file_name(new_name))?;
-        }
-
-        Ok(())
-    }
-
-    pub fn move_asset_to(&mut self, asset_id: Uuid, folder_id: Uuid) -> Result<(), std::io::Error> {
-        if let Some(asset) = self.assets.get(&asset_id) {
-            if let Some(parent) = self.folders.get_mut(&asset_id) {
-                parent.content.remove(&asset_id);
-            }
-            if let Some(new_parent) = self.folders.get_mut(&folder_id) {
-                new_parent.content.insert(asset_id);
-                std::fs::rename(
-                    &asset.path,
-                    new_parent.path.join(asset.path.file_name().unwrap()),
-                )?;
-            }
-        }
-
-        Ok(())
-    }
-
-    pub fn move_folder_to(&mut self, src_id: Uuid, dst_id: Uuid) -> Result<(), std::io::Error> {
-        if let Some(src_folder) = self.folders.get(&src_id).cloned() {
-            if let Some(parent) = self.folders.get_mut(&src_folder.parent) {
-                parent.content.remove(&src_id);
-            }
-            if let Some(new_parent) = self.folders.get_mut(&dst_id) {
-                new_parent.content.insert(src_id);
-                std::fs::rename(
-                    &src_folder.path,
-                    new_parent.path.join(src_folder.path.file_name().unwrap()),
-                )?;
-            }
-        }
-
-        Ok(())
-    }
-}
-
-fn collect_cache(
-    root_path: &Path,
+fn collect_folders(
+    src: &Path,
+    root: &Path,
     dir: ReadDir,
     parent: &mut Folder,
-    cache: &mut FsCache,
-    storage: &mut Storage,
+    folders: &mut HashMap<FolderId, Folder>,
+    assets: &mut HashMap<AssetId, Asset>,
 ) -> Result<(), std::io::Error> {
     for entry in dir {
         let entry = entry?;
         let std_meta = entry.metadata()?;
         let path = entry.path();
-        let mut meta = Metadata::from_std_meta(&std_meta);
-        let relative = pathdiff::diff_paths(&path, &root_path).unwrap();
-
-        match storage.path_to_id.entry(relative) {
-            Entry::Occupied(e) => {
-                meta.id = *e.get();
-            }
-            Entry::Vacant(e) => {
-                e.insert(meta.id);
-            }
-        }
+        let meta = Metadata::from_std_meta(&std_meta);
+        let name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
 
         if std_meta.is_dir() {
-            let mut folder = Folder::new(parent.meta.id, path.to_path_buf(), meta);
-            collect_cache(root_path, read_dir(&path)?, &mut folder, cache, storage)?;
+            let mut folder = Folder::new(Some(parent.id), name, meta);
+            collect_folders(
+                src,
+                root,
+                read_dir(entry.path())?,
+                &mut folder,
+                folders,
+                assets,
+            )?;
 
-            parent.children.insert(folder.meta.id);
-            cache.folders.insert(folder.meta.id, folder);
+            parent.children.insert(folder.id);
+            folders.insert(folder.id, folder);
         } else {
-            parent.content.insert(meta.id);
-            cache.assets.insert(
-                meta.id,
-                Asset {
-                    parent: parent.meta.id,
-                    ty: AssetType::from_extension(path.extension()),
-                    name: path.file_name().unwrap().to_string_lossy().to_string(),
-                    path,
-                    meta,
-                    checksums: None,
-                },
+            let ext = path
+                .extension()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            let asset = Asset::new(
+                parent.id,
+                name,
+                ext.into(),
+                meta,
+                AssetType::from_extension(path.extension()),
             );
+
+            copy(&path, root.join(IMAGE_ASSETS).join(asset.get_file_name()))?;
+            parent.content.insert(asset.id);
+            assets.insert(asset.id, asset);
         }
     }
 
     Ok(())
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Debug, Error)]
+pub enum StorageError {
+    #[error("Asset {0:?} not found.")]
+    AssetNotFount(AssetId),
+    #[error("Folder {0:?} not found.")]
+    FolderNotFount(FolderId),
+}
+
+pub type StorageResult<T> = Result<T, StorageError>;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct FolderId(pub Uuid);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AssetId(pub Uuid);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct TagId(pub Uuid);
+
+#[derive(Serialize, Deserialize)]
 pub struct Storage {
-    pub path_to_id: HashMap<PathBuf, Uuid>,
-    pub tags: HashMap<Uuid, Tag>,
-    pub item_tags: HashMap<Uuid, HashSet<Uuid>>,
+    #[serde(skip)]
+    pub root: PathBuf,
+    pub root_id: FolderId,
+    pub tags: HashMap<TagId, Tag>,
+    pub folders: HashMap<FolderId, Folder>,
+    pub assets: HashMap<AssetId, Asset>,
 }
 
 impl Storage {
-    pub fn from_path(root_folder: impl AsRef<Path>) -> Result<Self, Box<dyn Error>> {
+    pub fn from_constructed(
+        src_root_folder: impl AsRef<Path>,
+        root_folder: impl AsRef<Path>,
+    ) -> Result<Self, Box<dyn Error>> {
+        let src_root_folder = src_root_folder.as_ref();
+        let root_path = root_folder.as_ref();
+        let root_meta = metadata(root_path)?;
+        let mut root_folder = Folder::new(
+            None,
+            root_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string(),
+            Metadata::from_std_meta(&root_meta),
+        );
+
+        let _ = create_dir_all(root_path.join(IMAGE_ASSETS));
+        let _ = create_dir_all(root_path.join(TEMP_RECYCLE_BIN));
+
+        let mut folders = Default::default();
+        let mut assets = Default::default();
+
+        collect_folders(
+            src_root_folder,
+            root_path,
+            read_dir(src_root_folder)?,
+            &mut root_folder,
+            &mut folders,
+            &mut assets,
+        )?;
+
+        let root_id = root_folder.id;
+        folders.insert(root_folder.id, root_folder);
+
+        Ok(Self {
+            root: root_path.to_path_buf(),
+            root_id,
+            tags: Default::default(),
+            folders,
+            assets,
+        })
+    }
+
+    pub fn from_existing(root_folder: impl AsRef<Path>) -> Result<Self, std::io::Error> {
         let path = root_folder.as_ref().join(LIBRARY_STORAGE);
-        if !path.exists() {
-            Ok(Default::default())
+        let reader = std::fs::File::open(&path)?;
+        Ok(serde_json::from_reader(reader)?)
+    }
+
+    pub fn save(&self) -> Result<(), std::io::Error> {
+        Ok(std::fs::File::create(self.root.join(LIBRARY_STORAGE))?
+            .write_all(serde_json::to_string(self)?.as_bytes())?)
+    }
+
+    pub fn delete_asset(&mut self, id: AssetId) -> StorageResult<()> {
+        if let Some(asset) = self.assets.remove(&id) {
+            if let Some(parent) = self.folders.get_mut(&asset.parent) {
+                parent.content.remove(&id);
+            }
+
+            let file_name = asset.get_file_name();
+            let _ = std::fs::rename(
+                self.root.join(IMAGE_ASSETS).join(&file_name),
+                self.root.join(TEMP_RECYCLE_BIN).join(file_name),
+            );
+
+            Ok(())
         } else {
-            let reader = std::fs::File::open(&path)?;
-            Ok(serde_json::from_reader(reader)?)
+            Err(StorageError::AssetNotFount(id))
+        }
+    }
+    pub fn delete_folder(&mut self, id: FolderId) -> StorageResult<()> {
+        if let Some(folder) = self.folders.remove(&id) {
+            if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
+                parent.children.remove(&id);
+            }
+            Ok(())
+        } else {
+            Err(StorageError::FolderNotFount(id))
         }
     }
 
-    pub fn save_to(&self, root_folder: impl AsRef<Path>) -> Result<(), Box<dyn Error>> {
-        Ok(
-            std::fs::File::create(root_folder.as_ref().join(LIBRARY_STORAGE))?
-                .write_all(serde_json::to_string(self)?.as_bytes())?,
-        )
+    pub fn rename_asset(&mut self, id: AssetId, new_name_no_ext: String) -> StorageResult<()> {
+        if let Some(asset) = self.assets.get_mut(&id) {
+            let path = Path::new(&asset.name);
+
+            asset.name = match path.extension() {
+                Some(ext) => format!("{}.{}", new_name_no_ext, ext.to_string_lossy().to_string()),
+                None => new_name_no_ext,
+            };
+
+            Ok(())
+        } else {
+            Err(StorageError::AssetNotFount(id))
+        }
+    }
+
+    pub fn rename_folder(&mut self, id: FolderId, new_name: String) -> StorageResult<()> {
+        if let Some(folder) = self.folders.get_mut(&id) {
+            folder.name = new_name;
+            Ok(())
+        } else {
+            Err(StorageError::FolderNotFount(id))
+        }
+    }
+
+    pub fn move_asset_to(&mut self, asset_id: AssetId, folder_id: FolderId) -> StorageResult<()> {
+        if let Some(asset) = self.assets.get(&asset_id) {
+            if let Some(parent) = self.folders.get_mut(&asset.parent) {
+                parent.content.remove(&asset_id);
+            }
+            if let Some(new_parent) = self.folders.get_mut(&folder_id) {
+                new_parent.content.insert(asset_id);
+                Ok(())
+            } else {
+                Err(StorageError::FolderNotFount(folder_id))
+            }
+        } else {
+            Err(StorageError::AssetNotFount(asset_id))
+        }
+    }
+
+    pub fn move_folder_to(&mut self, src_id: FolderId, dst_id: FolderId) -> StorageResult<()> {
+        if let Some(src_folder) = self.folders.get(&src_id).cloned() {
+            if let Some(parent) = src_folder.parent.and_then(|p| self.folders.get_mut(&p)) {
+                parent.children.remove(&src_id);
+            }
+            if let Some(new_parent) = self.folders.get_mut(&dst_id) {
+                new_parent.children.insert(src_id);
+                Ok(())
+            } else {
+                Err(StorageError::FolderNotFount(dst_id))
+            }
+        } else {
+            Err(StorageError::FolderNotFount(src_id))
+        }
+    }
+
+    pub fn get_asset_abs_path(&self, id: AssetId) -> StorageResult<PathBuf> {
+        self.assets
+            .get(&id)
+            .map(|a| self.root.join(IMAGE_ASSETS).join(a.get_file_name()))
+            .ok_or_else(|| StorageError::AssetNotFount(id))
+    }
+
+    pub fn get_asset_virtual_path(&self, id: AssetId) -> StorageResult<Vec<String>> {
+        if let Some(asset) = self.assets.get(&id) {
+            self.get_folder_virtual_path(asset.parent).map(|mut p| {
+                p.push(asset.get_file_name());
+                p
+            })
+        } else {
+            Err(StorageError::AssetNotFount(id))
+        }
+    }
+
+    pub fn get_folder_virtual_path(&self, id: FolderId) -> StorageResult<Vec<String>> {
+        let mut res = Vec::new();
+        let mut cur_id = Some(id);
+        while let Some(id) = cur_id {
+            if let Some(folder) = self.folders.get(&id) {
+                res.push(folder.name.clone());
+                cur_id = folder.parent;
+            } else {
+                return Err(StorageError::FolderNotFount(id));
+            }
+        }
+
+        Ok(res)
     }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Tag {
+    pub id: TagId,
     pub name: String,
     pub color: Color,
     pub meta: Metadata,
@@ -295,40 +357,73 @@ impl<'de> Deserialize<'de> for Color {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Folder {
-    pub parent: Uuid,
+    pub parent: Option<FolderId>,
+    pub id: FolderId,
     pub name: String,
-    pub path: PathBuf,
-    pub children: HashSet<Uuid>,
-    pub content: HashSet<Uuid>,
+    pub children: HashSet<FolderId>,
+    pub content: HashSet<AssetId>,
     pub meta: Metadata,
+    pub tags: Vec<TagId>,
 }
 
 impl Folder {
-    pub fn new(parent: Uuid, path: PathBuf, meta: Metadata) -> Self {
+    pub fn new(parent: Option<FolderId>, name: String, meta: Metadata) -> Self {
         Self {
             parent,
-            name: path.file_name().unwrap().to_string_lossy().to_string(),
-            path,
+            id: FolderId(Uuid::new_v4()),
+            name,
             children: Default::default(),
             content: Default::default(),
             meta,
+            tags: Default::default(),
         }
     }
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Asset {
-    pub parent: Uuid,
-    pub ty: AssetType,
+    pub parent: FolderId,
+    pub id: AssetId,
     pub name: String,
-    pub path: PathBuf,
+    pub ty: AssetType,
+    pub ext: Arc<str>,
     pub meta: Metadata,
     pub checksums: Option<Checksums>,
+    pub tags: Vec<TagId>,
 }
 
-#[derive(Serialize, Debug, Clone, Copy)]
+impl Asset {
+    pub fn new(
+        parent: FolderId,
+        name: String,
+        ext: Arc<str>,
+        meta: Metadata,
+        ty: AssetType,
+    ) -> Self {
+        Self {
+            parent,
+            id: AssetId(Uuid::new_v4()),
+            ty,
+            name,
+            ext,
+            meta,
+            checksums: None,
+            tags: Default::default(),
+        }
+    }
+
+    pub fn get_file_name(&self) -> String {
+        if self.ext.is_empty() {
+            self.id.clone().0.to_string()
+        } else {
+            format!("{}.{}", self.id.0, self.ext)
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AssetType {
     Image,
     Unknown,
@@ -348,20 +443,14 @@ impl AssetType {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Metadata {
-    pub id: Uuid,
     pub byte_size: u64,
     pub created_at: Option<DateTime<FixedOffset>>,
     pub last_modified: DateTime<FixedOffset>,
 }
 
 impl Metadata {
-    pub fn new(path: impl AsRef<Path>) -> Self {
-        Self::from_std_meta(metadata(path).as_ref().unwrap())
-    }
-
     pub fn from_std_meta(meta: &std::fs::Metadata) -> Self {
         Self {
-            id: Uuid::new_v4(),
             byte_size: meta.len(),
             created_at: FileTime::from_creation_time(&meta).map(|t| {
                 DateTime::from_timestamp(t.unix_seconds() as i64, 0)

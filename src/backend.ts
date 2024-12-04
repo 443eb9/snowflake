@@ -1,33 +1,36 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export type Folder = {
-    parent: string,
+    parent: string | undefined,
+    id: string,
     name: string,
-    path: string,
     children: string[],
     content: string[],
     meta: Metadata,
+    tags: Tag[],
+}
+
+export type Asset = {
+    parent: string,
+    id: string,
+    name: string,
+    ty: AssetType,
+    meta: Metadata,
+    checksums: Checksums | undefined,
+    tags: Tag[],
 }
 
 export type Tag = {
+    id: string,
     name: string,
     color: string,
     meta: Metadata,
 }
 
 export type Metadata = {
-    id: string,
     byte_size: number,
     created_at: Date,
     last_modified: Date,
-}
-
-export type Asset = {
-    ty: AssetType,
-    name: string,
-    path: string,
-    meta: Metadata,
-    checksums: Checksums | undefined,
 }
 
 export type Checksums = {
@@ -43,8 +46,24 @@ export function LoadLibrary(params: { rootFolder: string }): Promise<void> {
     return invoke("load_library", params)
 }
 
+export function InitializeLibrary(params: { srcRootFolder: string, rootFolder: string }): Promise<void> {
+    return invoke("initialize_library", params)
+}
+
 export function SaveLibrary(): Promise<void> {
     return invoke("save_library")
+}
+
+export function GetAssetAbsPath(params: { asset: string }): Promise<string> {
+    return invoke("get_asset_abs_path", params)
+}
+
+export function GetAssetVirtualPath(params: { asset: string }): Promise<string[]> {
+    return invoke("get_asset_virtual_path", params)
+}
+
+export function GetFolderVirtualPath(params: { folder: string }): Promise<string[]> {
+    return invoke("get_folder_virtual_path", params)
 }
 
 export async function GetFolderTree(): Promise<Map<string, Folder>> {
@@ -78,10 +97,6 @@ export function GetAsset(params: { asset: string }): Promise<Asset> {
 
 export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
     return invoke("get_assets", params)
-}
-
-export function GetTagsOf(params: { asset: string }): Promise<Tag[]> {
-    return invoke("get_tags_of", params)
 }
 
 export function ModifyTagsOf(params: { asset: string, newTags: Tag[] }): Promise<void> {

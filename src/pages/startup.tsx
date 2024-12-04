@@ -4,7 +4,7 @@ import WindowControls from "../widgets/window-controls";
 import MsgToast from "../widgets/toast";
 import { NavigateFunction, useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
-import { LoadLibrary } from "../backend";
+import { InitializeLibrary, LoadLibrary } from "../backend";
 
 function openLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
     return async () => {
@@ -14,6 +14,29 @@ function openLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
 
         if (path) {
             await LoadLibrary({ rootFolder: path })
+                .then(() => {
+                    nav("/app")
+                })
+                .catch(err => {
+                    dispatch(err)
+                })
+        }
+    }
+}
+
+function initializeLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
+    return async () => {
+        const srcPath = await open({
+            directory: true,
+            title: "Choose the source root path.",
+        })
+        const path = await open({
+            directory: true,
+            title: "Choose the library root path.",
+        })
+
+        if (srcPath && path) {
+            await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
                 .then(() => {
                     nav("/app")
                 })
@@ -44,7 +67,7 @@ export default function Startup() {
                         <div className="flex flex-col gap-2">
                             <Title1 className="italic">Snowflake ❄</Title1>
                             <Button icon={<Library20Regular />} className="h-12" onClick={openLibrary(dispatch, nav)}>Open Library</Button>
-                            <Button icon={<New20Regular />} className="h-12" onClick={openLibrary(dispatch, nav)}>Initialize Library</Button>
+                            <Button icon={<New20Regular />} className="h-12" onClick={initializeLibrary(dispatch, nav)}>Initialize Library</Button>
                             <Text as="i" className="opacity-50">Or drop the library root folder here.</Text>
                         </div>
                     </div>

@@ -1,20 +1,21 @@
 import { Button, Image, Text } from "@fluentui/react-components";
-import { Asset } from "../backend";
+import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { useContext, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { selectedAssetsContext, selectedAssetsCountContext } from "../context-provider";
 
 export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const selectedAssets = useContext(selectedAssetsContext)
     const selectedAssetsCount = useContext(selectedAssetsCountContext)
+    const [absPath, setAbsPath] = useState<string | undefined>()
 
     useEffect(() => {
         if (thisRef.current) {
             const selectedHandler = () => {
                 if (selectedAssets?.data) {
                     thisRef.current?.classList.add("selected-asset")
-                    selectedAssets.data.add(asset.meta.id)
+                    selectedAssets.data.add(asset.id)
                     selectedAssets.setter(selectedAssets.data)
                     selectedAssetsCount?.setter(selectedAssets.data.size)
                 }
@@ -23,7 +24,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             const deselectHandler = () => {
                 if (selectedAssets?.data) {
                     thisRef.current?.classList.remove("selected-asset")
-                    selectedAssets.data.delete(asset.meta.id)
+                    selectedAssets.data.delete(asset.id)
                     selectedAssets.setter(selectedAssets.data)
                     selectedAssetsCount?.setter(selectedAssets.data.size)
                 }
@@ -37,7 +38,26 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
                 thisRef.current?.removeEventListener("deselected", deselectHandler)
             }
         }
-    }, [asset.meta.id])
+    }, [asset.id])
+
+    useEffect(() => {
+        async function fetch() {
+            const path = await GetAssetAbsPath({ asset: asset.id })
+                .catch(err => {
+                    // TODO error handling
+                    console.log(err)
+                })
+            if (path) {
+                setAbsPath(path)
+            }
+        }
+
+        fetch()
+    }, [asset.id])
+
+    if (!absPath) {
+        return <></>
+    }
 
     return (
         <Button
@@ -48,7 +68,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             <div className="flex h-full items-center">
                 <Image
                     className="max-w-48 max-h-48"
-                    src={convertFileSrc(asset.path)}
+                    src={convertFileSrc(absPath)}
                     shape="rounded"
                     shadow
                 />
