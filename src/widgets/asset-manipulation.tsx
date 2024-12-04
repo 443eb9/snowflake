@@ -33,6 +33,10 @@ export default function AssetManipulation() {
                 //TODO error handling
                 console.error(err)
             })
+
+        selectedAssets.setter([])
+        document.querySelectorAll("selected-asset")
+            .forEach(elem => elem.classList.remove("selected-asset"))
     }
 
     const handleRename = async () => {
@@ -48,6 +52,14 @@ export default function AssetManipulation() {
 
         browsingFolder.setter(browsingFolder.data)
         setPopoverOpen(false)
+
+        selectedAssets.setter([])
+        document.querySelectorAll("selected-asset")
+            .forEach(elem => elem.classList.remove("selected-asset"))
+
+        browsingFolder.setter({
+            ...browsingFolder.data
+        })
     }
 
     const selectedCount = selectedAssets?.data?.length ?? 0
