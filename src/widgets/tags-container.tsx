@@ -16,7 +16,7 @@ export default function TagsContainer({
 
     const update = (newTags: Tag[], isDismiss: boolean) => {
         if (associatedItem) {
-            ModifyTagsOf({ asset: associatedItem, newTags: newTags.map(t => t.id) })
+            ModifyTagsOf({ assets: [associatedItem], newTags: newTags.map(t => t.id) })
                 .catch(err => {
                     // TODO error handling
                     console.error(err)

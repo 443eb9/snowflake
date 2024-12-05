@@ -117,7 +117,11 @@ export function GetTags(params: { tags: string[] }): Promise<Tag[]> {
     return invoke("get_tags", params)
 }
 
-export function ModifyTagsOf(params: { asset: string, newTags: string[] }): Promise<void> {
+export function DeltaTagsOf(params: { assets: string[], tags: string[], mode: "Add" | "Remove" }): Promise<void> {
+    return invoke("delta_tags_of", params)
+}
+
+export function ModifyTagsOf(params: { assets: string[], newTags: string[] }): Promise<void> {
     return invoke("modify_tags_of", params)
 }
 

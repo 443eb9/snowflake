@@ -116,8 +116,8 @@ export default function TagsManager() {
                                     color: randomColor().substring(1),
                                     meta: {
                                         byteSize: 0,
-                                        createdAt: new Date().toTimeString(),
-                                        lastModified: new Date().toTimeString(),
+                                        createdAt: new Date().toISOString(),
+                                        lastModified: new Date().toISOString(),
                                     },
                                     isEditingName: true,
                                     isEditingColor: false,

@@ -1,10 +1,11 @@
 import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-contexify";
 import "../context.css"
-import { Button, CompoundButton, Input, makeStyles, Text } from "@fluentui/react-components";
-import { ArrowForward20Regular, Delete20Regular, Edit20Regular, FolderArrowRight20Regular } from "@fluentui/react-icons";
+import { Button, CompoundButton, makeStyles, Text } from "@fluentui/react-components";
+import { ArrowForward20Regular, Delete20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
-import { Folder, GetFolderTree } from "../backend";
+import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, Tag } from "../backend";
+import FilterableSearch from "./filterable-search";
 
 export const CtxMenuId = "context-menu"
 
@@ -15,13 +16,6 @@ const buttonStyleHook = makeStyles({
     }
 })
 
-const inputStyleHook = makeStyles({
-    root: {
-        "width": "100%",
-        "padding": "4px",
-    }
-})
-
 export default function ContextMenu() {
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
@@ -29,10 +23,10 @@ export default function ContextMenu() {
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const [allFolders, setAllFolders] = useState<Folder[] | undefined>()
-    const [filter, setFilter] = useState("")
+    const [allTags, setAllTags] = useState<Tag[] | undefined>()
+    const [focused, setFocused] = useState(-1)
 
     const buttonStyle = buttonStyleHook()
-    const inputStyle = inputStyleHook()
 
     useEffect(() => {
         async function fetch() {
@@ -45,10 +39,19 @@ export default function ContextMenu() {
             if (folders) {
                 setAllFolders(Array.from(folders.values()))
             }
+
+            const tags = await GetAllTags()
+                .catch(err => {
+                    // TODO error handling
+                    console.error(err)
+                })
+
+            if (tags) {
+                setAllTags(tags)
+            }
         }
 
         fetch()
-        setFilter("")
     }, [contextMenuProp])
 
     const handleDelete = (ev: ItemParams) => {
@@ -94,9 +97,9 @@ export default function ContextMenu() {
 
         switch (target) {
             case "folder":
-                if (contextMenuProp.data?.id) {
+                if (contextMenuProp.data?.extra) {
                     fileManipulation?.setter({
-                        id: [contextMenuProp.data?.id],
+                        id: [contextMenuProp.data?.extra],
                         id_ty: "folder",
                         ty: "move",
                         submit: [dst.id],
@@ -116,10 +119,23 @@ export default function ContextMenu() {
         }
     }
 
+    const handleTagDelta = async (tag: Tag, add: boolean) => {
+        const assets = selectedAssets?.data
+        if (assets) {
+            await DeltaTagsOf({ assets, tags: [tag.id], mode: add ? "Add" : "Remove" })
+                .catch(err => {
+                    // TODO error handling
+                    console.error(err)
+                })
+        }
+    }
+
     const multipleSelected = contextMenuProp?.data?.target == "assets" &&
         selectedAssets?.data?.length != undefined && selectedAssets.data.length > 1
 
-    const standardizeFilter = filter.toLowerCase()
+    if (!allFolders || !allTags) {
+        return <></>
+    }
 
     return (
         <CtxMenu id={CtxMenuId} theme="dark">
@@ -147,36 +163,118 @@ export default function ContextMenu() {
                         className={buttonStyle.root}
                         icon={<ArrowForward20Regular />}
                         appearance="subtle"
+                        onClick={() => setFocused(0)}
                     >
                         <Text>Move To</Text>
                     </Button>
                 }
             >
-                <Input
-                    className={inputStyle.root}
-                    autoFocus
-                    appearance="underline"
-                    onChange={ev => setFilter(ev.target.value)}
-                />
-                <div className="max-h-[300px] overflow-auto mt-1">
-                    {
-                        allFolders
-                            ?.filter(folder => folder.name.toLowerCase().includes(standardizeFilter))
-                            .map((folder, index) =>
-                                <CtxItem key={index} onClick={() => handleMove(folder)}>
-                                    <CompoundButton
-                                        className={buttonStyle.root}
-                                        icon={<FolderArrowRight20Regular />}
-                                        secondaryContent={folder.id}
-                                        appearance="subtle"
-                                        size="small"
-                                    >
-                                        <Text>{folder.name}</Text>
-                                    </CompoundButton>
-                                </CtxItem>
-                            )
+                <FilterableSearch
+                    range={allFolders}
+                    searchKey={folder => folder.name}
+                    component={folder =>
+                        <CompoundButton
+                            className={buttonStyle.root}
+                            icon={<FolderArrowRight20Regular />}
+                            secondaryContent={folder.id}
+                            appearance="subtle"
+                            size="small"
+                        >
+                            <Text>{folder.name}</Text>
+                        </CompoundButton>
                     }
-                </div>
+                    noMatch={
+                        <CompoundButton appearance="transparent" size="small">
+                            <Text>No tag matches query.</Text>
+                        </CompoundButton>
+                    }
+                    itemProps={folder => {
+                        return { onClick: () => handleMove(folder) }
+                    }}
+                    focused={() => focused == 0}
+                />
+            </Submenu>
+            <Submenu
+                label={
+                    <Button
+                        className={buttonStyle.root}
+                        icon={<Tag20Regular />}
+                        appearance="subtle"
+                        onClick={() => setFocused(1)}
+                    >
+                        <Text>Add tag</Text>
+                    </Button>
+                }
+                disabled={contextMenuProp?.data?.target == "folder"}
+            >
+                {
+                    contextMenuProp?.data?.target != "folder" &&
+                    <FilterableSearch
+                        range={allTags}
+                        searchKey={tag => tag.name}
+                        component={tag =>
+                            <CompoundButton
+                                className={buttonStyle.root}
+                                icon={<TagMultiple20Regular />}
+                                secondaryContent={tag.id}
+                                appearance="subtle"
+                                size="small"
+                            >
+                                <Text style={{ color: `#${tag.color}` }}>{tag.name}</Text>
+                            </CompoundButton>
+                        }
+                        noMatch={
+                            <CompoundButton appearance="transparent" size="small">
+                                <Text>No tag matches query.</Text>
+                            </CompoundButton>
+                        }
+                        itemProps={tag => {
+                            return { onClick: () => handleTagDelta(tag, true) }
+                        }}
+                        focused={() => focused == 1}
+                    />
+                }
+            </Submenu>
+            <Submenu
+                label={
+                    <Button
+                        className={buttonStyle.root}
+                        icon={<TagDismiss20Regular />}
+                        appearance="subtle"
+                        onClick={() => setFocused(2)}
+                    >
+                        <Text>Remove tag</Text>
+                    </Button>
+                }
+                disabled={contextMenuProp?.data?.target == "folder"}
+            >
+                {
+                    contextMenuProp?.data?.target != "folder" &&
+                    <FilterableSearch
+                        range={allTags}
+                        searchKey={tag => tag.name}
+                        component={tag =>
+                            <CompoundButton
+                                className={buttonStyle.root}
+                                icon={<Tag20Regular />}
+                                secondaryContent={tag.id}
+                                appearance="subtle"
+                                size="small"
+                            >
+                                <Text style={{ color: `#${tag.color}` }}>{tag.name}</Text>
+                            </CompoundButton>
+                        }
+                        noMatch={
+                            <CompoundButton appearance="transparent" size="small">
+                                <Text>No tag matches query.</Text>
+                            </CompoundButton>
+                        }
+                        itemProps={tag => {
+                            return { onClick: () => handleTagDelta(tag, false) }
+                        }}
+                        focused={() => focused == 2}
+                    />
+                }
             </Submenu>
         </CtxMenu>
     )

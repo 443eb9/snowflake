@@ -110,24 +110,26 @@ export default function Startup() {
 
                             <MenuPopover>
                                 {
-                                    recentLibs?.map((lib, index) =>
-                                        <MenuItem
-                                            key={index}
-                                            secondaryContent={(new Date(lib.lastOpen).toLocaleString())}
-                                            icon={<Book20Regular />}
-                                            onClick={async () => {
-                                                await LoadLibrary({ rootFolder: lib.path })
-                                                    .then(() => {
-                                                        nav("/app")
-                                                    })
-                                                    .catch(err => {
-                                                        dispatch(err)
-                                                    })
-                                            }}
-                                        >
-                                            <Text>{lib.name}</Text>
-                                        </MenuItem>
-                                    )
+                                    recentLibs?.length == 0
+                                        ? <MenuItem><Text>No recent libraries.</Text></MenuItem>
+                                        : recentLibs?.map((lib, index) =>
+                                            <MenuItem
+                                                key={index}
+                                                secondaryContent={(new Date(lib.lastOpen).toLocaleString())}
+                                                icon={<Book20Regular />}
+                                                onClick={async () => {
+                                                    await LoadLibrary({ rootFolder: lib.path })
+                                                        .then(() => {
+                                                            nav("/app")
+                                                        })
+                                                        .catch(err => {
+                                                            dispatch(err)
+                                                        })
+                                                }}
+                                            >
+                                                <Text>{lib.name}</Text>
+                                            </MenuItem>
+                                        )
                                 }
                             </MenuPopover>
                         </Menu>

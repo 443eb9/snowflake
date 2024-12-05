@@ -21,8 +21,8 @@ export type FileManipulation = {
 }
 
 export type ContextMenuProp = {
-    id: string | undefined,
     target: "folder" | "assets",
+    extra: string | undefined,
 }
 
 export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)

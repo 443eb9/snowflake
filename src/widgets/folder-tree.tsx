@@ -107,7 +107,7 @@ export function FolderTree() {
                                 onClick={() => updateBrowsingFolder(id)}
                                 onContextMenu={(e) => {
                                     contextMenuProp?.setter({
-                                        id,
+                                        extra: id,
                                         target: "folder",
                                     })
                                     fileManipulation?.setter({

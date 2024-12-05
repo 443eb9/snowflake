@@ -31,6 +31,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
         }
         contextMenuProp?.setter({
             target: "assets",
+            extra: undefined,
         })
         showCtxMenu({ event: e })
     }

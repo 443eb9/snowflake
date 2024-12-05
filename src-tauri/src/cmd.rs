@@ -1,7 +1,7 @@
 use std::{path::PathBuf, sync::Mutex};
 
 use chrono::Local;
-use hashbrown::HashMap;
+use hashbrown::{HashMap, HashSet};
 use tauri::State;
 
 use crate::{
@@ -300,18 +300,62 @@ pub fn get_tags(
 
 #[tauri::command]
 pub fn modify_tags_of(
-    asset: AssetId,
+    assets: Vec<AssetId>,
     new_tags: Vec<TagId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Modifying tags of {:?}, new tags: {:?}", asset, new_tags);
+    log::info!("Modifying tags of {:?}, new tags: {:?}", assets, new_tags);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let asset = storage
-            .assets
-            .get_mut(&asset)
-            .ok_or_else(|| asset_doesnt_exist(asset))?;
-        asset.tags = new_tags;
+        for asset in assets {
+            let asset = storage
+                .assets
+                .get_mut(&asset)
+                .ok_or_else(|| asset_doesnt_exist(asset))?;
+            asset.tags = new_tags.clone();
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub enum DeltaMode {
+    Add,
+    Remove,
+}
+
+#[tauri::command]
+pub fn delta_tags_of(
+    assets: Vec<AssetId>,
+    tags: HashSet<TagId>,
+    mode: DeltaMode,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Delating tags of {:?}, {:?} tags: {:?}", assets, mode, tags);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        for asset in assets {
+            let asset = storage
+                .assets
+                .get_mut(&asset)
+                .ok_or_else(|| asset_doesnt_exist(asset))?;
+
+            let unique_tags = asset
+                .tags
+                .clone()
+                .into_iter()
+                .filter(|t| !tags.contains(t))
+                .collect();
+
+            asset.tags = match mode {
+                DeltaMode::Add => tags.clone().into_iter().chain(unique_tags).collect(),
+                DeltaMode::Remove => unique_tags,
+            }
+        }
+
         storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
