@@ -16,6 +16,7 @@ export default function FileManipulator() {
                     handleFolderRename(browsingFolder, selectedAssets, fileManipulation.data.id[0], fileManipulation.data.submit[0])
                     break
                 case "deletion":
+                    // console.log(fileManipulation)
                     handleFolderDeletion(browsingFolder, selectedAssets, fileManipulation.data.id)
                     break
                 case "create":

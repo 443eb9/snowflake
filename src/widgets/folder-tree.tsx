@@ -23,6 +23,7 @@ export function FolderTree() {
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
+    const [newName, setNewName] = useState("")
 
     const inputStyle = inputStyleHook()
 
@@ -71,71 +72,6 @@ export function FolderTree() {
 
     const flatTree = useHeadlessFlatTree_unstable(folderTree ?? [])
 
-    const DraggableTreeItem = ({ flatTreeItem }: { flatTreeItem: any }) => {
-        const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
-        // const [disabled, setDisabled] = useState(false)
-        const [newName, setNewName] = useState(name)
-
-        const id = treeItemProps.value as string
-        const editing = fileManipulation?.data?.ty != undefined && fileManipulation.data.id.includes(id)
-        // const open = openItems.includes(id)
-
-        // const { attributes, listeners, setNodeRef, transform, isDragging, ...rest } = useDraggable({ id, disabled })
-
-        return (
-            <FlatTreeItem
-                {...treeItemProps}
-                onClick={ev => {
-                    if (editing) {
-                        ev.preventDefault()
-                    }
-                }}
-            >
-                <TreeItemLayout
-                    iconBefore={<Folder20Regular />}
-                    onClick={() => updateBrowsingFolder(id)}
-                    onContextMenu={(e) => {
-                        fileManipulation?.setter({
-                            id: [id],
-                            is_folder: true,
-                            ty: undefined,
-                            submit: undefined,
-                        })
-                        showContextMenu({ event: e })
-                    }}
-                >
-                    {
-                        editing
-                            ? <Input
-                                className={inputStyle.root}
-                                defaultValue={newName}
-                                onChange={ev => {
-                                    console.log(ev.target.value)
-                                    setNewName(ev.target.value)
-                                }}
-                                autoFocus
-                                onKeyDown={ev => {
-                                    if (ev.key == "Enter") {
-                                        if (fileManipulation.data) {
-                                            fileManipulation.setter({
-                                                ...fileManipulation.data,
-                                                submit: [newName],
-                                            })
-                                        }
-                                    } else if (ev.key == "Escape") {
-                                        fileManipulation.setter(undefined)
-                                    }
-                                }}
-                            />
-                            : <Text>
-                                {newName}
-                            </Text>
-                    }
-                </TreeItemLayout>
-            </FlatTreeItem>
-        )
-    }
-
     if (!folderTree) {
         return <></>
     }
@@ -147,9 +83,70 @@ export function FolderTree() {
             aria-label="Folder Tree"
         >
             {
-                Array.from(flatTree.items(), (flatTreeItem, index) =>
-                    <DraggableTreeItem key={index} flatTreeItem={flatTreeItem} />
-                )
+                Array.from(flatTree.items(), (flatTreeItem, index) => {
+                    const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
+
+                    const id = treeItemProps.value as string
+                    const editing = fileManipulation?.data?.ty != undefined && fileManipulation.data.id.includes(id)
+
+                    return (
+                        <FlatTreeItem
+                            id={id}
+                            key={index}
+                            {...treeItemProps}
+                            onClick={ev => {
+                                if (editing) {
+                                    ev.preventDefault()
+                                }
+                            }}
+                        >
+                            <TreeItemLayout
+                                id={id}
+                                iconBefore={<Folder20Regular />}
+                                onClick={() => updateBrowsingFolder(id)}
+                                onContextMenu={(e) => {
+                                    fileManipulation?.setter({
+                                        id: [id],
+                                        is_folder: true,
+                                        ty: undefined,
+                                        submit: undefined,
+                                    })
+                                    showContextMenu({ event: e })
+                                }}
+                            >
+                                {
+                                    editing
+                                        ? <Input
+                                            className={inputStyle.root}
+                                            defaultValue={newName}
+                                            onChange={ev => {
+                                                console.log(ev.target.value)
+                                                setNewName(ev.target.value)
+                                            }}
+                                            autoFocus
+                                            onKeyDown={ev => {
+                                                if (ev.key == "Enter") {
+                                                    if (fileManipulation.data) {
+                                                        fileManipulation.setter({
+                                                            ...fileManipulation.data,
+                                                            submit: [newName],
+                                                        })
+                                                    }
+                                                } else if (ev.key == "Escape") {
+                                                    fileManipulation.setter(undefined)
+                                                }
+                                            }}
+                                        />
+                                        : <Text
+                                            id={id}
+                                        >
+                                            {name}
+                                        </Text>
+                                }
+                            </TreeItemLayout>
+                        </FlatTreeItem>
+                    )
+                })
             }
         </FlatTree>
     )

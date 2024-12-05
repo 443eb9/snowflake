@@ -1,4 +1,4 @@
-import { Menu as CtxMenu, Item as CtxItem } from "react-contexify";
+import { Menu as CtxMenu, Item as CtxItem, ItemParams } from "react-contexify";
 import "../context.css"
 import { Button, makeStyles } from "@fluentui/react-components";
 import { Delete20Regular, Edit20Regular } from "@fluentui/react-icons";
@@ -21,8 +21,16 @@ export default function ContextMenu() {
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
 
-    const handleDelete = () => {
-        if (selectedAssets?.data && browsingFolder && selectedAssets && fileManipulation) {
+    const handleDelete = (ev: ItemParams) => {
+        const folderId = (ev.triggerEvent.target as HTMLElement).id
+        if (folderId.length > 0) {
+            fileManipulation?.setter({
+                id: [folderId],
+                is_folder: true,
+                ty: "deletion",
+                submit: [],
+            })
+        } else if (selectedAssets?.data && browsingFolder && selectedAssets && fileManipulation) {
             fileManipulation.setter({
                 id: selectedAssets.data,
                 is_folder: false,
@@ -33,6 +41,13 @@ export default function ContextMenu() {
     }
 
     const handleRename = () => {
+        if (fileManipulation?.data?.is_folder) {
+            fileManipulation.setter({
+                ...fileManipulation.data,
+                ty: "rename",
+            })
+        }
+
         if (selectedAssets?.data?.length == 1 && browsingFolder && selectedAssets && fileManipulation) {
             fileManipulation.setter({
                 id: selectedAssets.data,
@@ -41,33 +56,24 @@ export default function ContextMenu() {
                 submit: undefined,
             })
         }
-
-        if (fileManipulation?.data?.is_folder) {
-            fileManipulation.setter({
-                ...fileManipulation.data,
-                ty: "rename",
-            })
-        }
     }
 
     return (
         <CtxMenu id={CtxMenuId} theme="dark">
-            <CtxItem>
+            <CtxItem onClick={handleDelete}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Delete20Regular />}
                     appearance="subtle"
-                    onClick={handleDelete}
                 >
                     Delete
                 </Button>
             </CtxItem>
-            <CtxItem>
+            <CtxItem onClick={handleRename}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Edit20Regular />}
                     appearance="subtle"
-                    onClick={handleRename}
                 >
                     Rename
                 </Button>
