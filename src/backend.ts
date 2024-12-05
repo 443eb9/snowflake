@@ -68,6 +68,10 @@ export function ImportAssets(params: { path: string[], parent: string }): Promis
     return invoke("import_assets", params)
 }
 
+export function ImportWebAssets(params: { urls: string[], parent: string }): Promise<void> {
+    return invoke("import_web_assets", params)
+}
+
 export function GetAssetAbsPath(params: { asset: string }): Promise<string> {
     return invoke("get_asset_abs_path", params)
 }

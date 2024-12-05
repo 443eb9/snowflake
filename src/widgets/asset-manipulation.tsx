@@ -1,12 +1,19 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
-import { Add20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
+import { Add20Regular, ArrowDownload20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
+import { ImportWebAssets } from "../backend"
 
-const inputStyleHook = makeStyles({
+const renameInputStyleHook = makeStyles({
     root: {
         "width": "150px",
+    }
+})
+
+const downloadInputStyleHook = makeStyles({
+    root: {
+        "width": "100%",
     }
 })
 
@@ -15,9 +22,13 @@ export default function AssetManipulation() {
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
 
-    const inputStyle = inputStyleHook()
+    const inputStyle = renameInputStyleHook()
+    const downloadInput = downloadInputStyleHook()
+
     const [newName, setNewName] = useState("")
-    const [popoverOpen, setPopoverOpen] = useState(false)
+    const [webUrl, setWebUrl] = useState("")
+    const [renamePopoverOpen, setRenamePopoverOpen] = useState(false)
+    const [webUrlPopoverOpen, setWebUrlPopoverOpen] = useState(false)
 
     const handleDelete = () => {
         if (fileManipulation && selectedAssets?.data) {
@@ -38,7 +49,7 @@ export default function AssetManipulation() {
                 id_ty: "assets",
                 submit: [newName],
             })
-            setPopoverOpen(false)
+            setRenamePopoverOpen(false)
         }
     }
 
@@ -80,7 +91,7 @@ export default function AssetManipulation() {
         <div className="flex gap-1 justify-between">
             <div className="flex gap-1">
                 <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
-                <Menu inline open={popoverOpen} onOpenChange={(_, d) => setPopoverOpen(d.open)}>
+                <Menu inline open={renamePopoverOpen} onOpenChange={(_, d) => setRenamePopoverOpen(d.open)}>
                     <MenuTrigger>
                         <MenuButton
                             icon={<Edit20Regular />}
@@ -110,6 +121,37 @@ export default function AssetManipulation() {
                         <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
                         <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />
                         <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} />
+                        <Menu inline open={webUrlPopoverOpen} onOpenChange={(_, d) => setWebUrlPopoverOpen(d.open)}>
+                            <MenuTrigger>
+                                <Button icon={<ArrowDownload20Regular />} />
+                            </MenuTrigger>
+                            <MenuPopover
+                                className="z-10 flex flex-col gap-2"
+                                style={{
+                                    width: "200px"
+                                }}
+                            >
+                                <Text>Download from web URL</Text>
+                                <Input
+                                    className={downloadInput.root}
+                                    autoFocus
+                                    onChange={ev => setWebUrl(ev.target.value)}
+                                    onKeyDown={async ev => {
+                                        if (ev.key == "Enter") {
+                                            const parent = browsingFolder?.data?.id
+                                            if (parent) {
+                                                await ImportWebAssets({ urls: [webUrl], parent })
+                                                    .catch(err => {
+                                                        // TODO error handling
+                                                        console.error(err)
+                                                    })
+                                            }
+                                            setWebUrlPopoverOpen(false)
+                                        }
+                                    }}
+                                />
+                            </MenuPopover>
+                        </Menu>
                     </>
                 }
             </div>

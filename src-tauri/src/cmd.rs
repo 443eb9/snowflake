@@ -111,6 +111,27 @@ pub fn import_assets(
 }
 
 #[tauri::command]
+pub fn import_web_assets(
+    urls: Vec<String>,
+    parent: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!(
+        "Importing assets from web {:?} into folder {:?}.",
+        urls,
+        parent
+    );
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        futures_lite::future::block_on(storage.add_web_assets(urls, parent))
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_asset_abs_path(
     asset: AssetId,
     storage: State<'_, Mutex<Option<Storage>>>,

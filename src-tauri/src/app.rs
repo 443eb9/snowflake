@@ -1,5 +1,5 @@
 use std::{
-    fs::{copy, create_dir_all, metadata, read_dir},
+    fs::{copy, create_dir_all, metadata, read_dir, File},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
@@ -233,6 +233,81 @@ impl Storage {
         Ok(())
     }
 
+    pub async fn add_web_assets(
+        &mut self,
+        urls: Vec<String>,
+        parent: FolderId,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let Some(parent) = self.folders.get_mut(&parent) else {
+            return Err(StorageModificationError::FolderNotFount(parent).into());
+        };
+
+        let (tx, rx) =
+            std::sync::mpsc::channel::<Result<(Vec<u8>, Option<String>), reqwest::Error>>();
+
+        let url_len = urls.len();
+        for url in urls {
+            let tx = tx.clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let response = futures_lite::future::block_on(reqwest::get(url));
+                match response {
+                    Ok(ok) => {
+                        let ctnt_ty = ok
+                            .headers()
+                            .get("content-type")
+                            .and_then(|t| t.to_str().ok())
+                            .map(|e| e.to_string());
+                        let body = futures_lite::future::block_on(ok.bytes()).map(|b| b.to_vec());
+                        log::info!("Response get.");
+                        tx.send(body.map(|b| (b, ctnt_ty)))
+                    }
+                    Err(err) => tx.send(Err(err)),
+                }
+            });
+        }
+
+        for i in 0..url_len {
+            let result = match rx.recv() {
+                Ok(ok) => ok,
+                Err(e) => return Err(e.into()),
+            };
+
+            let (data, ctnt_ty) = match result {
+                Ok(r) => r,
+                Err(e) => return Err(e.into()),
+            };
+
+            let ctnt_ty = ctnt_ty.unwrap_or_default();
+            let mut ctnt_ty_iter = ctnt_ty.split('/');
+            let ext = ctnt_ty_iter.nth(1).unwrap_or_default();
+
+            let id = Uuid::new_v4();
+            let path = self.root.join(IMAGE_ASSETS).join(if ext.is_empty() {
+                id.to_string()
+            } else {
+                format!("{}.{}", id, ext)
+            });
+
+            dbg!(&path);
+            let mut file = File::create(&path)?;
+            file.write(&data)?;
+            file.flush()?;
+
+            let ty = AssetType::from_ext_str(ext);
+            let meta = Metadata::from_std_meta(&file.metadata()?);
+            let mut asset = Asset::new(parent.id, id.to_string(), ext.into(), meta, ty);
+            asset.id = AssetId(id);
+
+            dbg!(&parent.name);
+
+            parent.content.insert(asset.id);
+            log::info!("Downloaded No.{} asset {}", i, asset.name);
+            self.assets.insert(asset.id, asset);
+        }
+
+        Ok(())
+    }
+
     pub fn delete_asset(&mut self, id: AssetId) -> StorageModificationResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
@@ -276,11 +351,7 @@ impl Storage {
         Ok(())
     }
 
-    pub fn rename_asset(
-        &mut self,
-        id: AssetId,
-        new_name: String,
-    ) -> StorageModificationResult<()> {
+    pub fn rename_asset(&mut self, id: AssetId, new_name: String) -> StorageModificationResult<()> {
         if let Some(asset) = self.assets.get_mut(&id) {
             asset.name = new_name;
 
@@ -529,20 +600,25 @@ impl Asset {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
 pub enum AssetType {
     Image,
+    #[default]
     Unknown,
 }
 
 impl AssetType {
     pub fn from_extension(ext: Option<&std::ffi::OsStr>) -> Self {
         match ext.and_then(|e| e.to_str()) {
-            Some(ext) => match ext {
-                "png" | "jpg" => Self::Image,
-                _ => Self::Unknown,
-            },
+            Some(ext) => Self::from_ext_str(ext),
             None => Self::Unknown,
+        }
+    }
+
+    pub fn from_ext_str(ext: &str) -> Self {
+        match ext {
+            "png" | "jpg" | "jpeg" => Self::Image,
+            _ => Self::Unknown,
         }
     }
 }
