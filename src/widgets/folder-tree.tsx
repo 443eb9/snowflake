@@ -24,9 +24,9 @@ export function FolderTree() {
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const contextMenuProp = useContext(contextMenuPropContext)
-    
+
     const inputStyle = inputStyleHook()
-    
+
     const [newName, setNewName] = useState("")
     const { show: showContextMenu } = useContextMenu({ id: CtxMenuId })
 
@@ -47,7 +47,7 @@ export function FolderTree() {
             }
         }
 
-        if (fileManipulation && fileManipulation.data?.is_folder) { return }
+        if (fileManipulation && fileManipulation.data?.id_ty == "folder") { return }
 
         fetch()
     }, [fileManipulation?.data])
@@ -107,11 +107,12 @@ export function FolderTree() {
                                 onClick={() => updateBrowsingFolder(id)}
                                 onContextMenu={(e) => {
                                     contextMenuProp?.setter({
+                                        id,
                                         target: "folder",
                                     })
                                     fileManipulation?.setter({
                                         id: [id],
-                                        is_folder: true,
+                                        id_ty: "folder",
                                         ty: undefined,
                                         submit: undefined,
                                     })
@@ -123,10 +124,7 @@ export function FolderTree() {
                                         ? <Input
                                             className={inputStyle.root}
                                             defaultValue={newName}
-                                            onChange={ev => {
-                                                console.log(ev.target.value)
-                                                setNewName(ev.target.value)
-                                            }}
+                                            onChange={ev => setNewName(ev.target.value)}
                                             autoFocus
                                             onKeyDown={ev => {
                                                 if (ev.key == "Enter") {

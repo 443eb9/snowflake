@@ -25,7 +25,7 @@ export default function AssetsGrid() {
             const assets = await GetAssets({ assets: browsingFolder.data.content })
                 .catch(err => {
                     // TODO error handling
-                    console.log(err)
+                    console.error(err)
                 })
 
             if (assets) {

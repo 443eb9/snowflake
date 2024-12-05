@@ -24,7 +24,7 @@ export default function AssetManipulation() {
             fileManipulation.setter({
                 id: selectedAssets.data,
                 ty: "deletion",
-                is_folder: false,
+                id_ty: "assets",
                 submit: [],
             })
         }
@@ -35,7 +35,7 @@ export default function AssetManipulation() {
             fileManipulation.setter({
                 id: selectedAssets.data,
                 ty: "rename",
-                is_folder: false,
+                id_ty: "assets",
                 submit: [newName],
             })
             setPopoverOpen(false)
@@ -56,7 +56,7 @@ export default function AssetManipulation() {
             fileManipulation?.setter({
                 id: [parent],
                 ty: "import",
-                is_folder: folder,
+                id_ty: folder ? "folder" : "assets",
                 submit: items,
             })
         }
@@ -68,7 +68,7 @@ export default function AssetManipulation() {
 
         fileManipulation?.setter({
             id: [parent],
-            is_folder: true,
+            id_ty: "folder",
             ty: "create",
             submit: ["New Folder"],
         })

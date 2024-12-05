@@ -40,7 +40,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             const path = await GetAssetAbsPath({ asset: asset.id })
                 .catch(err => {
                     // TODO error handling
-                    console.log(err)
+                    console.error(err)
                 })
             if (path) {
                 setAbsPath(path)

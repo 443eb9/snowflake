@@ -101,7 +101,10 @@ pub fn import_assets(
     log::info!("Importing assets {:?} into folder {:?}.", path, parent);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage.add_assets(path, parent).map_err(|e| e.to_string())
+        storage
+            .add_assets(path, parent)
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -194,7 +197,7 @@ pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> R
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         storage.tags.insert(new_tag.id, new_tag);
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -309,7 +312,7 @@ pub fn modify_tags_of(
             .get_mut(&asset)
             .ok_or_else(|| asset_doesnt_exist(asset))?;
         asset.tags = new_tags;
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -356,7 +359,9 @@ pub fn compute_checksum(
                 .replace(Checksums::from_path(path).map_err(|e| e.to_string())?);
         }
 
-        Ok(asset.clone())
+        let asset = asset.clone();
+        storage.save().map_err(|e| e.to_string())?;
+        Ok(asset)
     } else {
         Err(storage_not_initialized())
     }
@@ -376,7 +381,7 @@ pub fn delete_assets(
             }
         }
 
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -396,7 +401,7 @@ pub fn delete_folders(
             }
         }
 
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -417,7 +422,7 @@ pub fn create_folders(
                 .map_err(|e| e.to_string())?;
         }
 
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -432,7 +437,10 @@ pub fn rename_asset(
     log::info!("Renaming asset {:?}", asset);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage.rename_asset(asset, name).map_err(|e| e.to_string())
+        storage
+            .rename_asset(asset, name)
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -449,7 +457,8 @@ pub fn rename_folder(
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         storage
             .rename_folder(folder, name)
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -470,7 +479,7 @@ pub fn move_assets_to(
             }
         }
 
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -491,7 +500,7 @@ pub fn move_folders_to(
             }
         }
 
-        Ok(())
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }

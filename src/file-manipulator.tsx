@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
-import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, RenameAsset, RenameFolder } from "./backend"
+import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "./backend"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -8,48 +8,39 @@ export default function FileManipulator() {
     const fileManipulation = useContext(fileManipulationContext)
 
     useEffect(() => {
-        if (fileManipulation?.data?.submit == undefined || !browsingFolder || !selectedAssets) { return }
+        const data = fileManipulation?.data
+        if (data?.submit == undefined || !browsingFolder || !selectedAssets) { return }
 
-        if (fileManipulation.data.is_folder) {
-            switch (fileManipulation.data.ty) {
-                case "rename":
-                    handleFolderRename(browsingFolder, selectedAssets, fileManipulation.data.id[0], fileManipulation.data.submit[0])
-                    break
-                case "deletion":
-                    // console.log(fileManipulation)
-                    handleFolderDeletion(browsingFolder, selectedAssets, fileManipulation.data.id)
-                    break
-                case "create":
-                    handleFolderCreation(fileManipulation.data.submit, fileManipulation.data.id[0])
-                    break
-                case "import":
-                    handleFoldersImport(fileManipulation.data.submit, fileManipulation.data.id[0])
-                    break
-            }
-        } else {
-            switch (fileManipulation.data.ty) {
-                case "rename":
-                    handleAssetRename(browsingFolder, selectedAssets, fileManipulation.data.submit[0])
-                    break
-                case "deletion":
-                    handleAssetDeletion(browsingFolder, selectedAssets)
-                    break
-                case "create":
-                    console.error("Creating an asset is invalid.")
-                    break
-                case "import":
-                    handleAssetsImport(browsingFolder, fileManipulation.data.submit, fileManipulation.data.id[0])
-                    break
-            }
+        switch (data.id_ty) {
+            case "folder":
+                switch (data.ty) {
+                    case "rename": handleFolderRename(browsingFolder, selectedAssets, data.id[0], data.submit[0]); break
+                    case "deletion": handleFolderDeletion(browsingFolder, selectedAssets, data.id); break
+                    case "create": handleFolderCreation(data.submit, data.id[0]); break
+                    case "import": handleFoldersImport(data.submit, data.id[0]); break
+                    case "move": handleFoldersMove(selectedAssets, data.id, data.submit[0]); break
+                }
+                break
+            case "assets":
+                switch (data.ty) {
+                    case "rename": handleAssetRename(browsingFolder, selectedAssets, data.submit[0]); break
+                    case "deletion": handleAssetDeletion(browsingFolder, selectedAssets); break
+                    case "create": console.error("Creating an asset is invalid."); break
+                    case "import": handleAssetsImport(browsingFolder, data.submit, data.id[0]); break
+                    case "move": handleAssetsMove(browsingFolder, selectedAssets, data.id, data.submit[0]); break
+                }
+                break
+            case "collection":
+                break
         }
 
-        fileManipulation.setter(undefined)
+        fileManipulation?.setter(undefined)
     }, [fileManipulation])
 
     return <></>
 }
 
-export async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>) {
+async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>) {
     if (!browsingFolder?.data || !selectedAssets?.data) {
         return
     }
@@ -69,7 +60,7 @@ export async function handleAssetDeletion(browsingFolder: StateContext<VirtualFo
         .forEach(elem => elem.classList.remove("selected-asset"))
 }
 
-export async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>, newName: string) {
+async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>, newName: string) {
     if (!browsingFolder?.data || !selectedAssets?.data || selectedAssets.data.length != 1) {
         return
     }
@@ -91,7 +82,7 @@ export async function handleAssetRename(browsingFolder: StateContext<VirtualFold
     })
 }
 
-export async function handleFolderDeletion(
+async function handleFolderDeletion(
     browsingFolder: StateContext<VirtualFolder>,
     selectedAssets: StateContext<string[]>,
     targetIds: string[],
@@ -108,7 +99,7 @@ export async function handleFolderDeletion(
     }
 }
 
-export async function handleFolderCreation(
+async function handleFolderCreation(
     newNames: string[],
     parent: string
 ) {
@@ -119,7 +110,7 @@ export async function handleFolderCreation(
         })
 }
 
-export async function handleFolderRename(
+async function handleFolderRename(
     browsingFolder: StateContext<VirtualFolder>,
     selectedAssets: StateContext<string[]>,
     targetId: string,
@@ -137,7 +128,7 @@ export async function handleFolderRename(
     }
 }
 
-export async function handleFoldersImport(
+async function handleFoldersImport(
     items: string[],
     parent: string,
 ) {
@@ -148,7 +139,7 @@ export async function handleFoldersImport(
         })
 }
 
-export async function handleAssetsImport(
+async function handleAssetsImport(
     browsingFolder: StateContext<VirtualFolder>,
     items: string[],
     parent: string,
@@ -169,4 +160,39 @@ export async function handleAssetsImport(
             collection: false,
         })
     }
+}
+
+async function handleAssetsMove(
+    browsingFolder: StateContext<VirtualFolder>,
+    selectedAssets: StateContext<string[]>,
+    moved: string[],
+    target: string,
+) {
+    await MoveAssetsTo({ assets: moved, folder: target })
+        .catch(err => {
+            // TODO error handling
+            console.error(err)
+        })
+
+    selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
+    if (browsingFolder.data) {
+        browsingFolder.setter({
+            ...browsingFolder.data,
+            content: browsingFolder.data.content.filter(c => !moved.includes(c))
+        })
+    }
+}
+
+async function handleFoldersMove(
+    selectedAssets: StateContext<string[]>,
+    moved: string[],
+    target: string,
+) {
+    await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
+        .catch(err => {
+            // TODO error handling
+            console.error(err)
+        })
+
+    selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
 }

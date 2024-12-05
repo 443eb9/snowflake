@@ -8,7 +8,7 @@
     --contexify-menu-negatePadding: var(--contexify-menu-padding);
     --contexify-separator-color: rgba(0, 0, 0, .2);
     --contexify-separator-margin: 5px;
-    --contexify-itemContent-padding: 8px;
+    --contexify-itemContent-padding: 2px;
     --contexify-activeItem-radius: 4px;
     --contexify-item-color: #333;
     --contexify-activeItem-color: #fff;

@@ -15,12 +15,13 @@ export type VirtualFolder = {
 
 export type FileManipulation = {
     id: string[],
-    is_folder: boolean,
-    ty: "rename" | "deletion" | "create" | "import" | undefined,
+    id_ty: "folder" | "assets" | "collection",
+    ty: "rename" | "deletion" | "create" | "import" | "move" | undefined,
     submit: string[] | undefined,
 }
 
 export type ContextMenuProp = {
+    id: string | undefined,
     target: "folder" | "assets",
 }
 
