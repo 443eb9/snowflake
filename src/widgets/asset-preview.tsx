@@ -25,7 +25,9 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
     const fileManipulation = useContext(fileManipulationContext)
 
     const handleContextMenu = (e: TriggerEvent) => {
-        selectedAssets?.setter([asset.id])
+        if (!selectedAssets?.data) {
+            selectedAssets?.setter([asset.id])
+        }
         showCtxMenu({ event: e })
     }
 

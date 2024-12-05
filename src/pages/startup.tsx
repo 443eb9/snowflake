@@ -1,14 +1,11 @@
-import { Button, Menu, MenuItem, MenuPopover, MenuTrigger, mergeClasses, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
+import { Button, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
 import { Book20Regular, Clock20Regular, Library20Regular, New20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
 import MsgToast from "../widgets/toast";
 import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../backend";
-import { darkenContentStyleHook } from "../styling";
-import { List } from "@fluentui/react-list-preview";
 import { useEffect, useState } from "react";
-import { BaseDirectory, readTextFile } from "@tauri-apps/plugin-fs";
 
 export default function Startup() {
     const toasterId = useId("toaster");

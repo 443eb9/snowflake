@@ -22,7 +22,7 @@ export default function ContextMenu() {
     const fileManipulation = useContext(fileManipulationContext)
 
     const handleDelete = () => {
-        if (selectedAssets?.data?.length == 1 && browsingFolder && selectedAssets && fileManipulation) {
+        if (selectedAssets?.data && browsingFolder && selectedAssets && fileManipulation) {
             fileManipulation.setter({
                 id: selectedAssets.data,
                 is_folder: false,
