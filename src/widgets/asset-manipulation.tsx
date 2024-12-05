@@ -77,38 +77,42 @@ export default function AssetManipulation() {
     const selectedCount = selectedAssets?.data?.length ?? 0
 
     return (
-        <div className="flex gap-1">
-            <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
-            <Menu inline open={popoverOpen} onOpenChange={(_, d) => setPopoverOpen(d.open)}>
-                <MenuTrigger>
-                    <MenuButton
-                        icon={<Edit20Regular />}
-                        disabled={selectedCount != 1}
-                    />
-                </MenuTrigger>
-                <MenuPopover>
-                    <div className="flex flex-grow gap-2 items-center p-1">
-                        <Text>New name</Text>
-                        <Input
-                            className={inputStyle.root}
-                            onChange={ev => setNewName(ev.target.value)}
-                            onKeyDown={ev => {
-                                if (ev.key == "Enter") {
-                                    handleRename()
-                                }
-                            }}
+        <div className="flex gap-1 justify-between">
+            <div className="flex gap-1">
+                <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
+                <Menu inline open={popoverOpen} onOpenChange={(_, d) => setPopoverOpen(d.open)}>
+                    <MenuTrigger>
+                        <MenuButton
+                            icon={<Edit20Regular />}
+                            disabled={selectedCount != 1}
                         />
-                    </div>
-                </MenuPopover>
-            </Menu>
-            {
-                !browsingFolder?.data?.collection &&
-                <>
-                    <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
-                    <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />
-                    <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} />
-                </>
-            }
+                    </MenuTrigger>
+                    <MenuPopover>
+                        <div className="flex flex-grow gap-2 items-center p-1">
+                            <Text>New name</Text>
+                            <Input
+                                className={inputStyle.root}
+                                onChange={ev => setNewName(ev.target.value)}
+                                onKeyDown={ev => {
+                                    if (ev.key == "Enter") {
+                                        handleRename()
+                                    }
+                                }}
+                            />
+                        </div>
+                    </MenuPopover>
+                </Menu>
+            </div>
+            <div className="flex gap-1">
+                {
+                    !browsingFolder?.data?.collection &&
+                    <>
+                        <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
+                        <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />
+                        <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} />
+                    </>
+                }
+            </div>
         </div>
     )
 }

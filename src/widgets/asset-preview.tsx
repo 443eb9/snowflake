@@ -4,7 +4,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { useContext, useEffect, useState } from "react";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
-import { fileManipulationContext, selectedAssetsContext } from "../context-provider";
+import { contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -23,11 +23,15 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
 
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
+    const contextMenuProp = useContext(contextMenuPropContext)
 
     const handleContextMenu = (e: TriggerEvent) => {
         if (!selectedAssets?.data || selectedAssets.data.length == 0) {
             selectedAssets?.setter([asset.id])
         }
+        contextMenuProp?.setter({
+            target: "assets",
+        })
         showCtxMenu({ event: e })
     }
 

@@ -3,7 +3,7 @@ import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, T
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 
@@ -23,10 +23,11 @@ export function FolderTree() {
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
-    const [newName, setNewName] = useState("")
-
+    const contextMenuProp = useContext(contextMenuPropContext)
+    
     const inputStyle = inputStyleHook()
-
+    
+    const [newName, setNewName] = useState("")
     const { show: showContextMenu } = useContextMenu({ id: CtxMenuId })
 
     useEffect(() => {
@@ -105,6 +106,9 @@ export function FolderTree() {
                                 iconBefore={<Folder20Regular />}
                                 onClick={() => updateBrowsingFolder(id)}
                                 onContextMenu={(e) => {
+                                    contextMenuProp?.setter({
+                                        target: "folder",
+                                    })
                                     fileManipulation?.setter({
                                         id: [id],
                                         is_folder: true,
