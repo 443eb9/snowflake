@@ -116,8 +116,8 @@ export default function TagsManager() {
                                     color: randomColor().substring(1),
                                     meta: {
                                         byteSize: 0,
-                                        createdAt: new Date(),
-                                        lastModified: new Date(),
+                                        createdAt: new Date().toTimeString(),
+                                        lastModified: new Date().toTimeString(),
                                     },
                                     isEditingName: true,
                                     isEditingColor: false,
@@ -147,6 +147,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
                                     item.name = data.value
                                 }}
                                 className={inputStyle.root}
+                                autoFocus
                             />
                             : <TagName name={item.name} />
                     }

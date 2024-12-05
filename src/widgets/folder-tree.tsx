@@ -1,11 +1,13 @@
 import { useContext, useEffect, useState } from "react"
-import { Button, FlatTree, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { Button, FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import { Checkmark20Regular, Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
+import { DndContext, useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -19,7 +21,6 @@ export function FolderTree() {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
-    const [newName, setNewName] = useState("")
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
@@ -74,64 +75,93 @@ export function FolderTree() {
 
     const flatTree = useHeadlessFlatTree_unstable(folderTree ?? [])
 
+    const DraggableTreeItem = ({ flatTreeItem }: { flatTreeItem: any }) => {
+        const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
+        const [disabled, setDisabled] = useState(true)
+        const [newName, setNewName] = useState(name)
+        const id = treeItemProps.value as string
+        const editing = fileManipulation?.data?.ty != undefined && fileManipulation.data.id.includes(id)
+
+        const { attributes, listeners, setNodeRef, transform, isDragging, ...rest } = useDraggable({ id, disabled })
+
+        return (
+            <FlatTreeItem
+                {...treeItemProps}
+                onClick={ev => {
+                    setDisabled(true)
+                    if (editing) {
+                        ev.preventDefault()
+                    }
+                }}
+                style={{
+                    transform: CSS.Translate.toString(transform),
+                    zIndex: isDragging && "10"
+                }}
+                ref={setNodeRef}
+                {...listeners}
+                {...attributes}
+                {...rest}
+            >
+                <TreeItemLayout
+                    iconBefore={<Folder20Regular />}
+                    onClick={() => updateBrowsingFolder(id)}
+                    onContextMenu={(e) => {
+                        fileManipulation?.setter({
+                            id: [id],
+                            is_folder: true,
+                            ty: undefined,
+                            submit: undefined,
+                        })
+                        showContextMenu({ event: e })
+                    }}
+                >
+                    {
+                        editing
+                            ? <Input
+                                className={inputStyle.root}
+                                defaultValue={newName}
+                                onChange={ev => setNewName(ev.target.value)}
+                                autoFocus
+                                onKeyDown={ev => {
+                                    if (ev.key == "Enter") {
+                                        if (fileManipulation.data) {
+                                            fileManipulation.setter({
+                                                ...fileManipulation.data,
+                                                submit: newName,
+                                            })
+                                        }
+                                    } else if (ev.key == "Escape") {
+                                        fileManipulation.setter(undefined)
+                                    }
+                                }}
+                            />
+                            : <Text>
+                                {name}
+                            </Text>
+                    }
+                </TreeItemLayout>
+            </FlatTreeItem>
+        )
+    }
+
     if (!folderTree) {
         return <></>
     }
 
     return (
-        <FlatTree
-            {...flatTree.getTreeProps()}
-            aria-label="Folder Tree"
-        >
-            {
-                Array.from(flatTree.items(), (flatTreeItem, index) => {
-                    const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
-                    const editing = fileManipulation?.data?.id == treeItemProps.value as string && fileManipulation.data.ty != undefined
-
-                    return (
-                        <TreeItem {...treeItemProps} key={index} onClick={ev => { if (editing) { ev.preventDefault() } }}>
-                            <TreeItemLayout
-                                iconBefore={<Folder20Regular />}
-                                onClick={() => updateBrowsingFolder(treeItemProps.value as string)}
-                                onContextMenu={(e) => {
-                                    fileManipulation?.setter({
-                                        id: treeItemProps.value as string,
-                                        is_folder: true,
-                                        ty: undefined,
-                                        submit: undefined,
-                                    })
-                                    showContextMenu({ event: e })
-                                }}
-                            >
-                                {
-                                    editing
-                                        ? <div className="flex gap-1">
-                                            <Input
-                                                className={inputStyle.root}
-                                                onChange={ev => setNewName(ev.target.value)}
-                                            />
-                                            <Button
-                                                icon={<Checkmark20Regular />}
-                                                onClick={() => {
-                                                    if (fileManipulation.data) {
-                                                        fileManipulation.setter({
-                                                            ...fileManipulation.data,
-                                                            submit: newName,
-                                                        })
-                                                    }
-                                                }}
-                                            />
-                                        </div>
-                                        : <Text>
-                                            {name}
-                                        </Text>
-                                }
-                            </TreeItemLayout>
-                        </TreeItem>
+        <DndContext>
+            <FlatTree
+                className="overflow-hidden"
+                {...flatTree.getTreeProps()}
+                aria-label="Folder Tree"
+            >
+                {
+                    Array.from(flatTree.items(), (flatTreeItem, index) =>
+                        <DraggableTreeItem key={index} flatTreeItem={flatTreeItem} />
                     )
-                })
-            }
-        </FlatTree>
+                }
+            </FlatTree>
+        </DndContext>
     )
 }
 

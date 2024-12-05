@@ -5,7 +5,8 @@ import { useContext, useEffect, useRef, useState } from "react";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import { fileManipulationContext, selectedAssetsContext } from "../context-provider";
-import { Checkmark20Regular, Dismiss20Regular } from "@fluentui/react-icons";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -16,8 +17,13 @@ const inputStyleHook = makeStyles({
 export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const [absPath, setAbsPath] = useState<string | undefined>()
-    const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
     const inputStyle = inputStyleHook()
+
+    const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
+    // @ts-ignore
+    const { attributes, listeners, setNodeRef, transform, ...rest } = useDraggable({
+        id: asset.id,
+    })
 
     const [newName, setNewName] = useState<string>()
 
@@ -25,7 +31,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
     const fileManipulation = useContext(fileManipulationContext)
 
     const handleContextMenu = (e: TriggerEvent) => {
-        if (!selectedAssets?.data) {
+        if (!selectedAssets?.data || selectedAssets.data.length == 0) {
             selectedAssets?.setter([asset.id])
         }
         showCtxMenu({ event: e })
@@ -34,6 +40,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
     useEffect(() => {
         if (thisRef.current) {
             thisRef.current.setAttribute("asset-id", asset.id)
+            setNodeRef(thisRef.current)
         }
     })
 
@@ -64,6 +71,12 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             appearance="subtle"
             ref={thisRef}
             onContextMenu={handleContextMenu}
+            style={{
+                transform: CSS.Translate.toString(transform),
+            }}
+            {...listeners}
+            {...attributes}
+            {...rest}
         >
             <div className="flex h-full items-center">
                 <Image
@@ -75,32 +88,26 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             </div>
             {
                 onRename
-                    ? <div className="flex justify-center gap-2">
-                        <Input
-                            defaultValue={asset.name}
-                            className={inputStyle.root}
-                            appearance="underline"
-                            size="small"
-                            onChange={ev => setNewName(ev.target.value)}
-                        />
-                        <Button
-                            icon={<Checkmark20Regular />}
-                            size="small"
-                            onClick={() => {
+                    ? <Input
+                        defaultValue={asset.name}
+                        className={inputStyle.root}
+                        appearance="underline"
+                        size="small"
+                        onChange={ev => setNewName(ev.target.value)}
+                        autoFocus
+                        onKeyDown={ev => {
+                            if (ev.key == "Enter") {
                                 if (fileManipulation?.data) {
                                     fileManipulation.setter({
                                         ...fileManipulation.data,
                                         submit: newName
                                     })
                                 }
-                            }}
-                        />
-                        <Button
-                            icon={<Dismiss20Regular />}
-                            size="small"
-                            onClick={() => fileManipulation?.setter(undefined)}
-                        />
-                    </div>
+                            } else if (ev.key == "Escape") {
+                                fileManipulation.setter(undefined)
+                            }
+                        }}
+                    />
                     : <Text align="center" as="p">{asset.name}</Text>
             }
         </Button>
