@@ -14,9 +14,9 @@ export type VirtualFolder = {
 }
 
 export type FileManipulation = {
-    id: string,
+    id: string[],
     is_folder: boolean,
-    ty: "rename" | "deletion",
+    ty: "rename" | "deletion" | undefined,
     submit: string | undefined,
 }
 

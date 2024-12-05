@@ -13,7 +13,7 @@ const inputStyleHook = makeStyles({
     }
 })
 
-export default function AssetPreview({ asset, onRename }: { asset: Asset, onRename: boolean }) {
+export default function AssetPreview({ asset }: { asset: Asset }) {
     const thisRef = useRef<HTMLButtonElement>(null)
     const [absPath, setAbsPath] = useState<string | undefined>()
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
@@ -53,6 +53,8 @@ export default function AssetPreview({ asset, onRename }: { asset: Asset, onRena
     if (!absPath) {
         return <></>
     }
+
+    const onRename = fileManipulation?.data?.ty == "rename" && fileManipulation.data.id[0] == asset.id
 
     return (
         <Button

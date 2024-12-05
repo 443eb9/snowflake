@@ -1,11 +1,17 @@
 import { useContext, useEffect, useState } from "react"
-import { FlatTree, HeadlessFlatTreeItemProps, Text, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { Button, FlatTree, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
-import { Folder20Regular } from "@fluentui/react-icons";
+import { Checkmark20Regular, Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext, selectedAssetsContext } from "../context-provider";
+import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
+
+const inputStyleHook = makeStyles({
+    root: {
+        "width": "100px",
+    }
+})
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
@@ -13,14 +19,16 @@ export function FolderTree() {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
+    const [newName, setNewName] = useState("")
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
+    const fileManipulation = useContext(fileManipulationContext)
+
+    const inputStyle = inputStyleHook()
 
     const { show: showContextMenu } = useContextMenu({ id: CtxMenuId })
 
     useEffect(() => {
-        if (folderTree) { return }
-
         async function fetch() {
             const map = await GetFolderTree()
             const rootFolderId = await GetRootFolderId()
@@ -37,8 +45,10 @@ export function FolderTree() {
             }
         }
 
+        if (fileManipulation && fileManipulation.data?.is_folder) { return }
+
         fetch()
-    }, [])
+    }, [fileManipulation?.data])
 
     const updateBrowsingFolder = (folderId: string) => {
         if (folderId == browsingFolder?.data?.id) {
@@ -76,19 +86,46 @@ export function FolderTree() {
             {
                 Array.from(flatTree.items(), (flatTreeItem, index) => {
                     const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
+                    const editing = fileManipulation?.data?.id == treeItemProps.value as string && fileManipulation.data.ty != undefined
+
                     return (
-                        <TreeItem {...treeItemProps} key={index}>
+                        <TreeItem {...treeItemProps} key={index} onClick={ev => { if (editing) { ev.preventDefault() } }}>
                             <TreeItemLayout
                                 iconBefore={<Folder20Regular />}
                                 onClick={() => updateBrowsingFolder(treeItemProps.value as string)}
                                 onContextMenu={(e) => {
-                                    console.log(e)
+                                    fileManipulation?.setter({
+                                        id: treeItemProps.value as string,
+                                        is_folder: true,
+                                        ty: undefined,
+                                        submit: undefined,
+                                    })
                                     showContextMenu({ event: e })
                                 }}
                             >
-                                <Text>
-                                    {name}
-                                </Text>
+                                {
+                                    editing
+                                        ? <div className="flex gap-1">
+                                            <Input
+                                                className={inputStyle.root}
+                                                onChange={ev => setNewName(ev.target.value)}
+                                            />
+                                            <Button
+                                                icon={<Checkmark20Regular />}
+                                                onClick={() => {
+                                                    if (fileManipulation.data) {
+                                                        fileManipulation.setter({
+                                                            ...fileManipulation.data,
+                                                            submit: newName,
+                                                        })
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        : <Text>
+                                            {name}
+                                        </Text>
+                                }
                             </TreeItemLayout>
                         </TreeItem>
                     )

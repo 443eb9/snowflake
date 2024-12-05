@@ -43,7 +43,7 @@ export default function AssetsGrid() {
                 selectableTargets={[".selectable-asset"]}
                 hitRate={0}
                 selectByClick
-                dragCondition={() => fileManipulation?.data == undefined}
+                dragCondition={() => fileManipulation?.data?.ty != "rename"}
                 onSelect={ev => {
                     ev.added.forEach(elem => elem.classList.add("selected-asset"))
                     ev.removed.forEach(elem => elem.classList.remove("selected-asset"))
@@ -68,7 +68,6 @@ export default function AssetsGrid() {
                             return <AssetPreview
                                 key={index}
                                 asset={asset}
-                                onRename={fileManipulation?.data?.id == asset.id && fileManipulation.data.ty == "rename"}
                             />
                         })
                     }

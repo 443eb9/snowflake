@@ -4,7 +4,6 @@ import { Button, makeStyles } from "@fluentui/react-components";
 import { Delete20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { useContext } from "react";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
-import { handleAssetDeletion } from "./asset-manipulation";
 
 export const CtxMenuId = "context-menu"
 
@@ -23,18 +22,30 @@ export default function ContextMenu() {
     const fileManipulation = useContext(fileManipulationContext)
 
     const handleDelete = () => {
-        if (browsingFolder && selectedAssets) {
-            handleAssetDeletion(browsingFolder, selectedAssets)
+        if (selectedAssets?.data?.length == 1 && browsingFolder && selectedAssets && fileManipulation) {
+            fileManipulation.setter({
+                id: selectedAssets.data,
+                is_folder: false,
+                ty: "deletion",
+                submit: "",
+            })
         }
     }
 
     const handleRename = () => {
         if (selectedAssets?.data?.length == 1 && browsingFolder && selectedAssets && fileManipulation) {
             fileManipulation.setter({
-                id: selectedAssets.data[0],
+                id: selectedAssets.data,
                 is_folder: false,
                 ty: "rename",
                 submit: undefined,
+            })
+        }
+
+        if (fileManipulation?.data?.is_folder) {
+            fileManipulation.setter({
+                ...fileManipulation.data,
+                ty: "rename",
             })
         }
     }

@@ -192,6 +192,7 @@ impl Storage {
             Err(StorageQueryError::AssetNotFount(id))
         }
     }
+
     pub fn delete_folder(&mut self, id: FolderId) -> StorageQueryResult<()> {
         if let Some(folder) = self.folders.remove(&id) {
             if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {

@@ -10,6 +10,7 @@ import ContextProvider from "./context-provider";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
 import ContextMenu from "./widgets/context-menu";
+import FileManipulator from "./file-manipulator";
 
 const KeyMap = {
     SAVE: "ctrl+s"
@@ -53,6 +54,7 @@ export default function MainApp() {
                     <DetailInfo />
                 </div>
                 <ContextMenu />
+                <FileManipulator />
             </HotKeys>
         </ContextProvider>
     )

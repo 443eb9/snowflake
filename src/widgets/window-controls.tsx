@@ -1,6 +1,7 @@
 import { Button, makeStyles } from "@fluentui/react-components";
 import { Dismiss20Regular, FullScreenMaximize20Regular, FullScreenMinimize20Regular } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { HTMLAttributes } from "react";
 
 const useCloseWindowStyles = makeStyles({
     root: {
@@ -12,12 +13,12 @@ const useCloseWindowStyles = makeStyles({
 
 const appWindow = getCurrentWindow()
 
-export default function WindowControls() {
+export default function WindowControls(props: HTMLAttributes<HTMLDivElement>) {
     const closeWindow = useCloseWindowStyles()
 
     return (
         <div
-            className="flex gap-1 w-full justify-end"
+            className={`flex gap-1 w-full justify-end ${props.className}`}
             data-tauri-drag-region
             onClick={ev => {
                 if (ev.buttons == 1) {
