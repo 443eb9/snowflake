@@ -1,13 +1,11 @@
 import { useContext, useEffect, useState } from "react"
-import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, TreeItemValue, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
-import { DndContext, useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -21,7 +19,6 @@ export function FolderTree() {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
-    // const [openItems, setOpenItems] = useState<TreeItemValue[]>([])
 
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
@@ -88,29 +85,11 @@ export function FolderTree() {
         return (
             <FlatTreeItem
                 {...treeItemProps}
-                // open={open}
                 onClick={ev => {
-                    // setDisabled(true)
-                    // console.log("AAAAAAAAA")
-
-                    // if (open) {
-                    //     setOpenItems(openItems.filter(id => id != treeItemProps.value))
-                    // } else {
-                    //     setOpenItems([...openItems, id])
-                    // }
-
                     if (editing) {
                         ev.preventDefault()
                     }
                 }}
-                // style={{
-                //     transform: CSS.Translate.toString(transform),
-                //     zIndex: isDragging && "10"
-                // }}
-                // ref={setNodeRef}
-                // {...listeners}
-                // {...attributes}
-                // {...rest}
             >
                 <TreeItemLayout
                     iconBefore={<Folder20Regular />}
@@ -162,19 +141,17 @@ export function FolderTree() {
     }
 
     return (
-        <DndContext autoScroll={false}>
-            <FlatTree
-                className="overflow-hidden"
-                {...flatTree.getTreeProps()}
-                aria-label="Folder Tree"
-            >
-                {
-                    Array.from(flatTree.items(), (flatTreeItem, index) =>
-                        <DraggableTreeItem key={index} flatTreeItem={flatTreeItem} />
-                    )
-                }
-            </FlatTree>
-        </DndContext>
+        <FlatTree
+            className="overflow-hidden"
+            {...flatTree.getTreeProps()}
+            aria-label="Folder Tree"
+        >
+            {
+                Array.from(flatTree.items(), (flatTreeItem, index) =>
+                    <DraggableTreeItem key={index} flatTreeItem={flatTreeItem} />
+                )
+            }
+        </FlatTree>
     )
 }
 
