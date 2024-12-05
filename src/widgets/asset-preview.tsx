@@ -97,10 +97,10 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
                         autoFocus
                         onKeyDown={ev => {
                             if (ev.key == "Enter") {
-                                if (fileManipulation?.data) {
+                                if (fileManipulation?.data && newName) {
                                     fileManipulation.setter({
                                         ...fileManipulation.data,
-                                        submit: newName
+                                        submit: [newName]
                                     })
                                 }
                             } else if (ev.key == "Escape") {

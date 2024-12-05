@@ -64,6 +64,10 @@ export function SaveLibrary(): Promise<void> {
     return invoke("save_library")
 }
 
+export function ImportAssets(params: { path: string[], parent: string }): Promise<void> {
+    return invoke("import_assets", params)
+}
+
 export function GetAssetAbsPath(params: { asset: string }): Promise<string> {
     return invoke("get_asset_abs_path", params)
 }
@@ -131,6 +135,10 @@ export function DeleteAssets(params: { assets: string[] }): Promise<void> {
 
 export function DeleteFolders(params: { folders: string[] }): Promise<void> {
     return invoke("delete_folders", params)
+}
+
+export function CreateFolders(params: { folderNames: string[], parent: string }): Promise<void> {
+    return invoke("create_folders", params)
 }
 
 export function RenameAsset(params: { asset: string, nameNoExt: string }): Promise<void> {

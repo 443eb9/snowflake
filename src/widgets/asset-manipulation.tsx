@@ -1,7 +1,9 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
-import { Delete20Regular, Edit20Regular } from "@fluentui/react-icons"
+import { Add20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
+import { open } from "@tauri-apps/plugin-dialog"
+import { GetFolder, ImportAssets } from "../backend"
 
 const inputStyleHook = makeStyles({
     root: {
@@ -24,7 +26,7 @@ export default function AssetManipulation() {
                 id: selectedAssets.data,
                 ty: "deletion",
                 is_folder: false,
-                submit: "",
+                submit: [],
             })
         }
     }
@@ -35,10 +37,42 @@ export default function AssetManipulation() {
                 id: selectedAssets.data,
                 ty: "rename",
                 is_folder: false,
-                submit: newName,
+                submit: [newName],
             })
             setPopoverOpen(false)
         }
+    }
+
+    async function handleAdd(folder: boolean) {
+        const parent = browsingFolder?.data?.id
+        if (!parent) { return }
+
+        const items = await open({
+            title: "Select assets you want to import",
+            multiple: true,
+            directory: folder,
+        })
+
+        if (items) {
+            fileManipulation?.setter({
+                id: [parent],
+                ty: "import",
+                is_folder: folder,
+                submit: items,
+            })
+        }
+    }
+
+    function handleCreate() {
+        const parent = browsingFolder?.data?.id
+        if (!parent) { return }
+
+        fileManipulation?.setter({
+            id: [parent],
+            is_folder: true,
+            ty: "create",
+            submit: ["New Folder"],
+        })
     }
 
     const selectedCount = selectedAssets?.data?.length ?? 0
@@ -68,6 +102,14 @@ export default function AssetManipulation() {
                     </div>
                 </MenuPopover>
             </Menu>
+            {
+                !browsingFolder?.data?.collection &&
+                <>
+                    <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
+                    <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />
+                    <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} />
+                </>
+            }
         </div>
     )
 }

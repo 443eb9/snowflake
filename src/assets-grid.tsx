@@ -18,6 +18,9 @@ export default function AssetsGrid() {
     const fileManipulation = useContext(fileManipulationContext)
 
     const handleDragMove = (ev: DragMoveEvent) => {
+        selectedAssets?.setter([])
+        document.querySelectorAll(".selected-asset")
+            .forEach(elem => elem.classList.remove("selected-asset"))
         setDragging(true)
     }
 
@@ -50,8 +53,8 @@ export default function AssetsGrid() {
         <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}>
             {
                 assets &&
-                <DndContext onDragMove={handleDragMove} onDragEnd={handleDragEnd}>
-                    <div className="flex w-full flex-wrap gap-2" ref={gridRef}>
+                <DndContext onDragMove={handleDragMove} onDragEnd={handleDragEnd} autoScroll={false}>
+                    <div className="flex w-full flex-wrap gap-2 overflow-x-hidden" ref={gridRef}>
                         {
                             assets.map((asset, index) => {
                                 if (asset.ty != "Image") {
@@ -69,24 +72,27 @@ export default function AssetsGrid() {
                     </div>
                 </DndContext>
             }
-            <Selecto
-                container={gridRef.current}
-                selectableTargets={[".selectable-asset"]}
-                hitRate={0}
-                selectByClick
-                dragCondition={() => fileManipulation?.data?.ty != "rename" || !isDragging}
-                onSelect={ev => {
-                    ev.added.forEach(elem => elem.classList.add("selected-asset"))
-                    ev.removed.forEach(elem => elem.classList.remove("selected-asset"))
+            {
+                !isDragging &&
+                <Selecto
+                    container={gridRef.current}
+                    selectableTargets={[".selectable-asset"]}
+                    hitRate={0}
+                    selectByClick
+                    dragCondition={() => fileManipulation?.data?.ty != "rename" || !isDragging}
+                    onSelect={ev => {
+                        ev.added.forEach(elem => elem.classList.add("selected-asset"))
+                        ev.removed.forEach(elem => elem.classList.remove("selected-asset"))
 
-                    const removed = new Set(ev.removed.map(elem => elem.getAttribute("asset-id")))
-                    const selected = ev.added.map(elem => elem.getAttribute("asset-id"))
-                        .concat(selectedAssets?.data ?? [])
-                        .filter(id => !removed.has(id))
-                        .filter(id => id != null)
-                    selectedAssets?.setter(selected)
-                }}
-            />
+                        const removed = new Set(ev.removed.map(elem => elem.getAttribute("asset-id")))
+                        const selected = ev.added.map(elem => elem.getAttribute("asset-id"))
+                            .concat(selectedAssets?.data ?? [])
+                            .filter(id => !removed.has(id))
+                            .filter(id => id != null)
+                        selectedAssets?.setter(selected)
+                    }}
+                />
+            }
         </div>
     )
 }

@@ -16,8 +16,8 @@ export type VirtualFolder = {
 export type FileManipulation = {
     id: string[],
     is_folder: boolean,
-    ty: "rename" | "deletion" | undefined,
-    submit: string | undefined,
+    ty: "rename" | "deletion" | "create" | "import" | undefined,
+    submit: string[] | undefined,
 }
 
 export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)

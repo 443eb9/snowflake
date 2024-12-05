@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
-import { DeleteAssets, DeleteFolders, RenameAsset, RenameFolder } from "./backend"
+import { CreateFolders, DeleteAssets, DeleteFolders, ImportAssets, RenameAsset, RenameFolder } from "./backend"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -14,20 +14,31 @@ export default function FileManipulator() {
         if (fileManipulation.data.is_folder) {
             switch (fileManipulation.data.ty) {
                 case "rename":
-                    handleFolderRename(browsingFolder, selectedAssets, fileManipulation.data.id[0], fileManipulation.data.submit)
+                    handleFolderRename(browsingFolder, selectedAssets, fileManipulation.data.id[0], fileManipulation.data.submit[0])
                     break
                 case "deletion":
                     handleFolderDeletion(browsingFolder, selectedAssets, fileManipulation.data.id)
+                    break
+                case "create":
+                    handleFolderCreation(fileManipulation.data.submit, fileManipulation.data.id[0])
+                    break
+                case "import":
+                    handleAssetsImport(fileManipulation.data.submit, fileManipulation.data.id[0])
                     break
             }
         } else {
             switch (fileManipulation.data.ty) {
                 case "rename":
-                    handleAssetRename(browsingFolder, selectedAssets, fileManipulation.data.submit)
+                    handleAssetRename(browsingFolder, selectedAssets, fileManipulation.data.submit[0])
                     break
                 case "deletion":
-                    console.log("AAAAAAAAAAAA")
                     handleAssetDeletion(browsingFolder, selectedAssets)
+                    break
+                case "create":
+                    console.error("Creating an asset is invalid.")
+                    break
+                case "import":
+                    console.error("Importing an asset is invalid. Set is_folder to true.")
                     break
             }
         }
@@ -97,6 +108,17 @@ export async function handleFolderDeletion(
     }
 }
 
+export async function handleFolderCreation(
+    newNames: string[],
+    parent: string
+) {
+    await CreateFolders({ folderNames: newNames, parent })
+        .catch(err => {
+            // TODO error handling
+            console.error(err)
+        })
+}
+
 export async function handleFolderRename(
     browsingFolder: StateContext<VirtualFolder>,
     selectedAssets: StateContext<string[]>,
@@ -115,3 +137,13 @@ export async function handleFolderRename(
     }
 }
 
+export async function handleAssetsImport(
+    items: string[],
+    parent: string,
+) {
+    await ImportAssets({ parent, path: items })
+        .catch(err => {
+            // TODO error handling
+            console.error(err)
+        })
+}

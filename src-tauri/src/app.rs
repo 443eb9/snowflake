@@ -1,11 +1,11 @@
 use std::{
-    fs::{copy, create_dir_all, metadata, read_dir, ReadDir},
+    fs::{copy, create_dir_all, metadata, read_dir},
     io::{Read, Write},
     path::{Path, PathBuf},
     sync::Arc,
 };
 
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, FixedOffset, Local};
 use filetime::FileTime;
 use hashbrown::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
@@ -62,68 +62,71 @@ pub struct RecentLib {
     pub name: String,
     pub last_open: DateTime<FixedOffset>,
 }
-fn collect_folders(
-    src: &Path,
+
+fn collect_path(
     root: &Path,
-    dir: ReadDir,
-    parent: &mut Folder,
+    path: PathBuf,
+    parent: Option<FolderId>,
     folders: &mut HashMap<FolderId, Folder>,
     assets: &mut HashMap<AssetId, Asset>,
-) -> Result<(), std::io::Error> {
-    for entry in dir {
-        let entry = entry?;
-        let std_meta = entry.metadata()?;
-        let path = entry.path();
-        let meta = Metadata::from_std_meta(&std_meta);
-        let name = path
-            .file_stem()
+) -> Result<Option<FolderId>, std::io::Error> {
+    let std_meta = metadata(&path)?;
+    let meta = Metadata::from_std_meta(&std_meta);
+    let name = path
+        .file_stem()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    if path.is_dir() {
+        let folder = Folder::new(parent, name, meta);
+        let folder_id = folder.id;
+
+        if let Some(parent) = parent.and_then(|p| folders.get_mut(&p)) {
+            parent.children.insert(folder_id);
+        }
+
+        folders.insert(folder_id, folder);
+
+        for entry in read_dir(path)? {
+            collect_path(root, entry?.path(), Some(folder_id), folders, assets)?;
+        }
+
+        Ok(Some(folder_id))
+    } else if path.is_file() {
+        let parent = folders.get_mut(&parent.unwrap()).unwrap();
+        let ext = path
+            .extension()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
 
-        if std_meta.is_dir() {
-            let mut folder = Folder::new(Some(parent.id), name, meta);
-            collect_folders(
-                src,
-                root,
-                read_dir(entry.path())?,
-                &mut folder,
-                folders,
-                assets,
-            )?;
+        let asset = Asset::new(
+            parent.id,
+            name,
+            ext.into(),
+            meta,
+            AssetType::from_extension(path.extension()),
+        );
 
-            parent.children.insert(folder.id);
-            folders.insert(folder.id, folder);
-        } else {
-            let ext = path
-                .extension()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string();
+        copy(&path, root.join(IMAGE_ASSETS).join(asset.get_file_name()))?;
+        parent.content.insert(asset.id);
+        assets.insert(asset.id, asset);
 
-            let asset = Asset::new(
-                parent.id,
-                name,
-                ext.into(),
-                meta,
-                AssetType::from_extension(path.extension()),
-            );
-
-            copy(&path, root.join(IMAGE_ASSETS).join(asset.get_file_name()))?;
-            parent.content.insert(asset.id);
-            assets.insert(asset.id, asset);
-        }
+        Ok(None)
+    } else {
+        unreachable!()
     }
-
-    Ok(())
 }
 
 #[derive(Debug, Error)]
-pub enum StorageQueryError {
+pub enum StorageModificationError {
     #[error("Asset {0:?} not found.")]
     AssetNotFount(AssetId),
     #[error("Folder {0:?} not found.")]
     FolderNotFount(FolderId),
+    #[error("Io error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
 #[derive(Debug, Error)]
@@ -134,7 +137,7 @@ pub enum StorageCreationError {
     Io(#[from] std::io::Error),
 }
 
-pub type StorageQueryResult<T> = Result<T, StorageQueryError>;
+pub type StorageModificationResult<T> = Result<T, StorageModificationError>;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FolderId(pub Uuid);
@@ -170,34 +173,20 @@ impl Storage {
             ));
         }
 
-        let root_meta = metadata(root_path)?;
-        let mut root_folder = Folder::new(
-            None,
-            root_path
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string(),
-            Metadata::from_std_meta(&root_meta),
-        );
-
         let _ = create_dir_all(root_path.join(IMAGE_ASSETS));
         let _ = create_dir_all(root_path.join(TEMP_RECYCLE_BIN));
 
-        let mut folders = Default::default();
-        let mut assets = Default::default();
+        let mut folders = HashMap::default();
+        let mut assets = HashMap::default();
 
-        collect_folders(
-            src_root_folder,
+        let root_id = collect_path(
             root_path,
-            read_dir(src_root_folder)?,
-            &mut root_folder,
+            src_root_folder.to_path_buf(),
+            None,
             &mut folders,
             &mut assets,
-        )?;
-
-        let root_id = root_folder.id;
-        folders.insert(root_folder.id, root_folder);
+        )?
+        .unwrap();
 
         Ok(Self {
             root: root_path.to_path_buf(),
@@ -222,7 +211,29 @@ impl Storage {
             .write_all(serde_json::to_string(self)?.as_bytes())?)
     }
 
-    pub fn delete_asset(&mut self, id: AssetId) -> StorageQueryResult<()> {
+    pub fn add_assets(
+        &mut self,
+        path: Vec<PathBuf>,
+        parent: FolderId,
+    ) -> StorageModificationResult<()> {
+        if !self.folders.contains_key(&parent) {
+            return Err(StorageModificationError::FolderNotFount(parent));
+        }
+
+        for path in path {
+            collect_path(
+                &self.root,
+                path,
+                Some(parent),
+                &mut self.folders,
+                &mut self.assets,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn delete_asset(&mut self, id: AssetId) -> StorageModificationResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
                 parent.content.remove(&id);
@@ -236,22 +247,40 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(StorageQueryError::AssetNotFount(id))
+            Err(StorageModificationError::AssetNotFount(id))
         }
     }
 
-    pub fn delete_folder(&mut self, id: FolderId) -> StorageQueryResult<()> {
+    pub fn delete_folder(&mut self, id: FolderId) -> StorageModificationResult<()> {
         if let Some(folder) = self.folders.remove(&id) {
             if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
                 parent.children.remove(&id);
             }
             Ok(())
         } else {
-            Err(StorageQueryError::FolderNotFount(id))
+            Err(StorageModificationError::FolderNotFount(id))
         }
     }
 
-    pub fn rename_asset(&mut self, id: AssetId, new_name_no_ext: String) -> StorageQueryResult<()> {
+    pub fn create_folder(
+        &mut self,
+        name: String,
+        parent: FolderId,
+    ) -> StorageModificationResult<()> {
+        let folder = Folder::new(Some(parent), name, Metadata::now(0));
+        let Some(parent) = self.folders.get_mut(&parent) else {
+            return Err(StorageModificationError::FolderNotFount(parent));
+        };
+        parent.children.insert(folder.id);
+        self.folders.insert(folder.id, folder);
+        Ok(())
+    }
+
+    pub fn rename_asset(
+        &mut self,
+        id: AssetId,
+        new_name_no_ext: String,
+    ) -> StorageModificationResult<()> {
         if let Some(asset) = self.assets.get_mut(&id) {
             asset.name = if asset.ext.is_empty() {
                 new_name_no_ext
@@ -261,16 +290,20 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(StorageQueryError::AssetNotFount(id))
+            Err(StorageModificationError::AssetNotFount(id))
         }
     }
 
-    pub fn rename_folder(&mut self, id: FolderId, new_name: String) -> StorageQueryResult<()> {
+    pub fn rename_folder(
+        &mut self,
+        id: FolderId,
+        new_name: String,
+    ) -> StorageModificationResult<()> {
         if let Some(folder) = self.folders.get_mut(&id) {
             folder.name = new_name;
             Ok(())
         } else {
-            Err(StorageQueryError::FolderNotFount(id))
+            Err(StorageModificationError::FolderNotFount(id))
         }
     }
 
@@ -278,7 +311,7 @@ impl Storage {
         &mut self,
         asset_id: AssetId,
         folder_id: FolderId,
-    ) -> StorageQueryResult<()> {
+    ) -> StorageModificationResult<()> {
         if let Some(asset) = self.assets.get(&asset_id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
                 parent.content.remove(&asset_id);
@@ -287,14 +320,18 @@ impl Storage {
                 new_parent.content.insert(asset_id);
                 Ok(())
             } else {
-                Err(StorageQueryError::FolderNotFount(folder_id))
+                Err(StorageModificationError::FolderNotFount(folder_id))
             }
         } else {
-            Err(StorageQueryError::AssetNotFount(asset_id))
+            Err(StorageModificationError::AssetNotFount(asset_id))
         }
     }
 
-    pub fn move_folder_to(&mut self, src_id: FolderId, dst_id: FolderId) -> StorageQueryResult<()> {
+    pub fn move_folder_to(
+        &mut self,
+        src_id: FolderId,
+        dst_id: FolderId,
+    ) -> StorageModificationResult<()> {
         if let Some(src_folder) = self.folders.get(&src_id).cloned() {
             if let Some(parent) = src_folder.parent.and_then(|p| self.folders.get_mut(&p)) {
                 parent.children.remove(&src_id);
@@ -303,32 +340,32 @@ impl Storage {
                 new_parent.children.insert(src_id);
                 Ok(())
             } else {
-                Err(StorageQueryError::FolderNotFount(dst_id))
+                Err(StorageModificationError::FolderNotFount(dst_id))
             }
         } else {
-            Err(StorageQueryError::FolderNotFount(src_id))
+            Err(StorageModificationError::FolderNotFount(src_id))
         }
     }
 
-    pub fn get_asset_abs_path(&self, id: AssetId) -> StorageQueryResult<PathBuf> {
+    pub fn get_asset_abs_path(&self, id: AssetId) -> StorageModificationResult<PathBuf> {
         self.assets
             .get(&id)
             .map(|a| self.root.join(IMAGE_ASSETS).join(a.get_file_name()))
-            .ok_or_else(|| StorageQueryError::AssetNotFount(id))
+            .ok_or_else(|| StorageModificationError::AssetNotFount(id))
     }
 
-    pub fn get_asset_virtual_path(&self, id: AssetId) -> StorageQueryResult<Vec<String>> {
+    pub fn get_asset_virtual_path(&self, id: AssetId) -> StorageModificationResult<Vec<String>> {
         if let Some(asset) = self.assets.get(&id) {
             self.get_folder_virtual_path(asset.parent).map(|mut p| {
                 p.push(asset.get_file_name());
                 p
             })
         } else {
-            Err(StorageQueryError::AssetNotFount(id))
+            Err(StorageModificationError::AssetNotFount(id))
         }
     }
 
-    pub fn get_folder_virtual_path(&self, id: FolderId) -> StorageQueryResult<Vec<String>> {
+    pub fn get_folder_virtual_path(&self, id: FolderId) -> StorageModificationResult<Vec<String>> {
         let mut res = Vec::new();
         let mut cur_id = Some(id);
         while let Some(id) = cur_id {
@@ -336,7 +373,7 @@ impl Storage {
                 res.push(folder.name.clone());
                 cur_id = folder.parent;
             } else {
-                return Err(StorageQueryError::FolderNotFount(id));
+                return Err(StorageModificationError::FolderNotFount(id));
             }
         }
 
@@ -537,6 +574,14 @@ impl Metadata {
             )
             .unwrap()
             .into(),
+        }
+    }
+
+    pub fn now(byte_size: u64) -> Self {
+        Self {
+            byte_size,
+            created_at: Some(Local::now().into()),
+            last_modified: Local::now().into(),
         }
     }
 }

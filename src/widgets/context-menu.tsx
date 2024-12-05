@@ -27,7 +27,7 @@ export default function ContextMenu() {
                 id: selectedAssets.data,
                 is_folder: false,
                 ty: "deletion",
-                submit: "",
+                submit: [],
             })
         }
     }
@@ -51,7 +51,7 @@ export default function ContextMenu() {
     }
 
     return (
-        <CtxMenu id={CtxMenuId} className="ctx-menu" theme="dark">
+        <CtxMenu id={CtxMenuId} theme="dark">
             <CtxItem>
                 <Button
                     className={buttonStyle.root}

@@ -28,10 +28,7 @@ export default function TagsCollections() {
         if (browsingFolder?.data && assets) {
             selectedAssets?.setter([])
             document.querySelectorAll(".selected-asset")
-                .forEach(elem => {
-                    elem.dispatchEvent(new Event("deselect"))
-                    elem.classList.remove("selected-asset")
-                })
+                .forEach(elem => elem.classList.remove("selected-asset"))
             browsingFolder.setter({
                 id: tag.id,
                 name: tag.name,

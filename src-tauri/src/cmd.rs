@@ -93,6 +93,21 @@ pub fn save_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), St
 }
 
 #[tauri::command]
+pub fn import_assets(
+    path: Vec<PathBuf>,
+    parent: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Importing assets {:?} into folder {:?}.", path, parent);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        storage.add_assets(path, parent).map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_asset_abs_path(
     asset: AssetId,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -379,6 +394,27 @@ pub fn delete_folders(
             if let Err(e) = storage.delete_folder(folder) {
                 return Err(e.to_string());
             }
+        }
+
+        Ok(())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn create_folders(
+    folder_names: Vec<String>,
+    parent: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Creating folders {:?} in {:?}", folder_names, parent);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        for folder in folder_names {
+            storage
+                .create_folder(folder, parent)
+                .map_err(|e| e.to_string())?;
         }
 
         Ok(())

@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, TreeItemValue, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
@@ -21,6 +21,8 @@ export function FolderTree() {
     const nav = useNavigate()
     const [folderTree, setFolderTree] = useState<FlatTreeNode[] | undefined>()
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
+    // const [openItems, setOpenItems] = useState<TreeItemValue[]>([])
+
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
@@ -60,10 +62,7 @@ export function FolderTree() {
         if (folder) {
             selectedAssets?.setter([])
             document.querySelectorAll(".selected-asset")
-                .forEach(elem => {
-                    elem.dispatchEvent(new Event("deselect"))
-                    elem.classList.remove("selected-asset")
-                })
+                .forEach(elem => elem.classList.remove("selected-asset"))
             browsingFolder?.setter({
                 id: folderId,
                 name: folder.name,
@@ -77,30 +76,41 @@ export function FolderTree() {
 
     const DraggableTreeItem = ({ flatTreeItem }: { flatTreeItem: any }) => {
         const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
-        const [disabled, setDisabled] = useState(true)
+        // const [disabled, setDisabled] = useState(false)
         const [newName, setNewName] = useState(name)
+
         const id = treeItemProps.value as string
         const editing = fileManipulation?.data?.ty != undefined && fileManipulation.data.id.includes(id)
+        // const open = openItems.includes(id)
 
-        const { attributes, listeners, setNodeRef, transform, isDragging, ...rest } = useDraggable({ id, disabled })
+        // const { attributes, listeners, setNodeRef, transform, isDragging, ...rest } = useDraggable({ id, disabled })
 
         return (
             <FlatTreeItem
                 {...treeItemProps}
+                // open={open}
                 onClick={ev => {
-                    setDisabled(true)
+                    // setDisabled(true)
+                    // console.log("AAAAAAAAA")
+
+                    // if (open) {
+                    //     setOpenItems(openItems.filter(id => id != treeItemProps.value))
+                    // } else {
+                    //     setOpenItems([...openItems, id])
+                    // }
+
                     if (editing) {
                         ev.preventDefault()
                     }
                 }}
-                style={{
-                    transform: CSS.Translate.toString(transform),
-                    zIndex: isDragging && "10"
-                }}
-                ref={setNodeRef}
-                {...listeners}
-                {...attributes}
-                {...rest}
+                // style={{
+                //     transform: CSS.Translate.toString(transform),
+                //     zIndex: isDragging && "10"
+                // }}
+                // ref={setNodeRef}
+                // {...listeners}
+                // {...attributes}
+                // {...rest}
             >
                 <TreeItemLayout
                     iconBefore={<Folder20Regular />}
@@ -149,7 +159,7 @@ export function FolderTree() {
     }
 
     return (
-        <DndContext>
+        <DndContext autoScroll={false}>
             <FlatTree
                 className="overflow-hidden"
                 {...flatTree.getTreeProps()}
