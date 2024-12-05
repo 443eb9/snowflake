@@ -1,22 +1,13 @@
 import { Menu as CtxMenu, Item as CtxItem, ItemParams } from "react-contexify";
 import "../context.css"
-import { Button, makeStyles } from "@fluentui/react-components";
+import { Text } from "@fluentui/react-components";
 import { Delete20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { useContext } from "react";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 
 export const CtxMenuId = "context-menu"
 
-const buttonStyleHook = makeStyles({
-    root: {
-        "width": "100%",
-        "justifyContent": "start",
-    }
-})
-
 export default function ContextMenu() {
-    const buttonStyle = buttonStyleHook()
-
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
@@ -61,23 +52,17 @@ export default function ContextMenu() {
     return (
         <CtxMenu id={CtxMenuId} theme="dark">
             <CtxItem onClick={handleDelete}>
-                <Button
-                    className={buttonStyle.root}
-                    icon={<Delete20Regular />}
-                    appearance="subtle"
-                >
-                    Delete
-                </Button>
+                <div className="flex gap-2 items-center">
+                    <Delete20Regular />
+                    <Text>Delete</Text>
+                </div>
             </CtxItem>
             <CtxItem onClick={handleRename}>
-                <Button
-                    className={buttonStyle.root}
-                    icon={<Edit20Regular />}
-                    appearance="subtle"
-                >
-                    Rename
-                </Button>
+                <div className="flex gap-2 items-center">
+                    <Edit20Regular />
+                    <Text>Rename</Text>
+                </div>
             </CtxItem>
-        </CtxMenu>
+        </CtxMenu >
     )
 }

@@ -1,30 +1,23 @@
 import { Button, Image, Input, makeStyles, Text } from "@fluentui/react-components";
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import { fileManipulationContext, selectedAssetsContext } from "../context-provider";
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
 const inputStyleHook = makeStyles({
     root: {
         "width": "100px",
+        "textAlign": "center",
     }
 })
 
 export default function AssetPreview({ asset }: { asset: Asset }) {
-    const thisRef = useRef<HTMLButtonElement>(null)
     const [absPath, setAbsPath] = useState<string | undefined>()
     const inputStyle = inputStyleHook()
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
-    // @ts-ignore
-    const { attributes, listeners, setNodeRef, transform, ...rest } = useDraggable({
-        id: asset.id,
-        disabled: true,
-    })
 
     const [newName, setNewName] = useState<string>()
 
@@ -37,13 +30,6 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
         }
         showCtxMenu({ event: e })
     }
-
-    useEffect(() => {
-        if (thisRef.current) {
-            thisRef.current.setAttribute("asset-id", asset.id)
-            setNodeRef(thisRef.current)
-        }
-    })
 
     useEffect(() => {
         async function fetch() {
@@ -68,16 +54,10 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
 
     return (
         <Button
+            id={asset.id}
             className="flex flex-col gap-2 selectable-asset"
             appearance="subtle"
-            ref={thisRef}
             onContextMenu={handleContextMenu}
-            style={{
-                transform: CSS.Translate.toString(transform),
-            }}
-            {...listeners}
-            {...attributes}
-            {...rest}
         >
             <div className="flex h-full items-center">
                 <Image
@@ -93,7 +73,6 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
                         defaultValue={asset.name}
                         className={inputStyle.root}
                         appearance="underline"
-                        size="small"
                         onChange={ev => setNewName(ev.target.value)}
                         autoFocus
                         onKeyDown={ev => {

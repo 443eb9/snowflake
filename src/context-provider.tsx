@@ -26,23 +26,19 @@ export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(und
 export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)
 export const selectedAssetsContext = createContext<StateContext<string[]> | undefined>(undefined)
 export const fileManipulationContext = createContext<StateContext<FileManipulation> | undefined>(undefined)
-export const contextMenuTargetContext = createContext<StateContext<ContextMenuTarget> | undefined>(undefined)
 
 export default function ContextProvider({ children }: { children?: ReactNode }) {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [browsingFolder, setBrowsingFolder] = useState<VirtualFolder | undefined>()
     const [selectedAssets, setSelectedAssets] = useState<string[] | undefined>([])
     const [fileManipulation, setFileManipulation] = useState<FileManipulation | undefined>()
-    const [contextMenuTarget, setContextMenuTarget] = useState<ContextMenuTarget | undefined>()
 
     return (
         <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
             <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
                 <selectedAssetsContext.Provider value={{ data: selectedAssets, setter: setSelectedAssets }}>
                     <fileManipulationContext.Provider value={{ data: fileManipulation, setter: setFileManipulation }}>
-                        <contextMenuTargetContext.Provider value={{ data: contextMenuTarget, setter: setContextMenuTarget }}>
-                            {children}
-                        </contextMenuTargetContext.Provider>
+                        {children}
                     </fileManipulationContext.Provider>
                 </selectedAssetsContext.Provider>
             </browsingFolderContext.Provider>

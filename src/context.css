@@ -8,11 +8,11 @@
     --contexify-menu-negatePadding: var(--contexify-menu-padding);
     --contexify-separator-color: rgba(0, 0, 0, .2);
     --contexify-separator-margin: 5px;
-    --contexify-itemContent-padding: 2px;
+    --contexify-itemContent-padding: 8px;
     --contexify-activeItem-radius: 4px;
     --contexify-item-color: #333;
     --contexify-activeItem-color: #fff;
-    /* --contexify-activeItem-bgColor: #383838; */
+    --contexify-activeItem-bgColor: #383838;
     --contexify-rightSlot-color: #6f6e77;
     --contexify-activeRightSlot-color: #fff;
     --contexify-arrow-color: #6f6e77;

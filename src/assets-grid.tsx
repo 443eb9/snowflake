@@ -48,8 +48,8 @@ export default function AssetsGrid() {
                     ev.added.forEach(elem => elem.classList.add("selected-asset"))
                     ev.removed.forEach(elem => elem.classList.remove("selected-asset"))
 
-                    const removed = new Set(ev.removed.map(elem => elem.getAttribute("asset-id")))
-                    const selected = ev.added.map(elem => elem.getAttribute("asset-id"))
+                    const removed = new Set(ev.removed.map(elem => elem.id))
+                    const selected = ev.added.map(elem => elem.id)
                         .concat(selectedAssets?.data ?? [])
                         .filter(id => !removed.has(id))
                         .filter(id => id != null)
