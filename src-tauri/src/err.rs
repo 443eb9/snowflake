@@ -1,4 +1,4 @@
-use crate::models::{AssetId, FolderId};
+use crate::app::{AssetId, FolderId};
 
 pub fn storage_not_initialized() -> String {
     format!("Storage not initialized.")

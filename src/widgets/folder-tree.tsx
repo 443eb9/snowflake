@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react"
-import { Button, FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItem, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
-import { Checkmark20Regular, Folder20Regular } from "@fluentui/react-icons";
+import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";

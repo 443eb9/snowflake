@@ -3,12 +3,11 @@ use std::sync::Mutex;
 use log::LevelFilter;
 use tauri::Manager;
 
-use crate::{app::AppData, models::Storage};
+use crate::app::{AppData, Storage};
 
 mod app;
 mod cmd;
 mod err;
-mod models;
 mod util;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

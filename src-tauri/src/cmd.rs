@@ -5,9 +5,8 @@ use hashbrown::HashMap;
 use tauri::State;
 
 use crate::{
-    app::{AppData, RecentLib},
+    app::{AppData, Asset, AssetId, Checksums, Folder, FolderId, RecentLib, Storage, Tag, TagId},
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
-    models::{Asset, AssetId, Checksums, Folder, FolderId, Storage, Tag, TagId},
 };
 
 #[tauri::command]

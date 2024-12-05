@@ -1,5 +1,5 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
-import { Delete20Regular, Edit20Regular, Checkmark20Regular } from "@fluentui/react-icons"
+import { Delete20Regular, Edit20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
 
@@ -31,7 +31,6 @@ export default function AssetManipulation() {
 
     const handleRename = () => {
         if (browsingFolder && fileManipulation && selectedAssets?.data) {
-            console.log("AAAA")
             fileManipulation.setter({
                 id: selectedAssets.data,
                 ty: "rename",
@@ -49,13 +48,23 @@ export default function AssetManipulation() {
             <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
             <Menu inline open={popoverOpen} onOpenChange={(_, d) => setPopoverOpen(d.open)}>
                 <MenuTrigger>
-                    <MenuButton icon={<Edit20Regular />} disabled={selectedCount != 1} />
+                    <MenuButton
+                        icon={<Edit20Regular />}
+                        disabled={selectedCount != 1}
+                    />
                 </MenuTrigger>
                 <MenuPopover>
                     <div className="flex flex-grow gap-2 items-center p-1">
                         <Text>New name</Text>
-                        <Input className={inputStyle.root} onChange={ev => setNewName(ev.target.value)} />
-                        <Button icon={<Checkmark20Regular />} onClick={handleRename} />
+                        <Input
+                            className={inputStyle.root}
+                            onChange={ev => setNewName(ev.target.value)}
+                            onKeyDown={ev => {
+                                if (ev.key == "Enter") {
+                                    handleRename()
+                                }
+                            }}
+                        />
                     </div>
                 </MenuPopover>
             </Menu>
