@@ -279,14 +279,10 @@ impl Storage {
     pub fn rename_asset(
         &mut self,
         id: AssetId,
-        new_name_no_ext: String,
+        new_name: String,
     ) -> StorageModificationResult<()> {
         if let Some(asset) = self.assets.get_mut(&id) {
-            asset.name = if asset.ext.is_empty() {
-                new_name_no_ext
-            } else {
-                format!("{}.{}", new_name_no_ext, asset.ext)
-            };
+            asset.name = new_name;
 
             Ok(())
         } else {

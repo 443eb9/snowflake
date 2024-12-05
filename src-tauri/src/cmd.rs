@@ -426,15 +426,13 @@ pub fn create_folders(
 #[tauri::command]
 pub fn rename_asset(
     asset: AssetId,
-    name_no_ext: String,
+    name: String,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Renaming asset {:?}", asset);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage
-            .rename_asset(asset, name_no_ext)
-            .map_err(|e| e.to_string())
+        storage.rename_asset(asset, name).map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }

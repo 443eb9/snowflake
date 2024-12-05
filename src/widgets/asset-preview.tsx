@@ -23,6 +23,7 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
     // @ts-ignore
     const { attributes, listeners, setNodeRef, transform, ...rest } = useDraggable({
         id: asset.id,
+        disabled: true,
     })
 
     const [newName, setNewName] = useState<string>()

@@ -141,7 +141,7 @@ export function CreateFolders(params: { folderNames: string[], parent: string })
     return invoke("create_folders", params)
 }
 
-export function RenameAsset(params: { asset: string, nameNoExt: string }): Promise<void> {
+export function RenameAsset(params: { asset: string, name: string }): Promise<void> {
     return invoke("rename_asset", params)
 }
 

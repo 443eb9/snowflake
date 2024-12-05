@@ -3,7 +3,6 @@ import { Add20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, Folde
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
-import { GetFolder, ImportAssets } from "../backend"
 
 const inputStyleHook = makeStyles({
     root: {

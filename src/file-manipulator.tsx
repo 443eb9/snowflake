@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
-import { CreateFolders, DeleteAssets, DeleteFolders, ImportAssets, RenameAsset, RenameFolder } from "./backend"
+import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, RenameAsset, RenameFolder } from "./backend"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -9,7 +9,6 @@ export default function FileManipulator() {
 
     useEffect(() => {
         if (fileManipulation?.data?.submit == undefined || !browsingFolder || !selectedAssets) { return }
-        console.log(fileManipulation)
 
         if (fileManipulation.data.is_folder) {
             switch (fileManipulation.data.ty) {
@@ -23,7 +22,7 @@ export default function FileManipulator() {
                     handleFolderCreation(fileManipulation.data.submit, fileManipulation.data.id[0])
                     break
                 case "import":
-                    handleAssetsImport(fileManipulation.data.submit, fileManipulation.data.id[0])
+                    handleFoldersImport(fileManipulation.data.submit, fileManipulation.data.id[0])
                     break
             }
         } else {
@@ -38,7 +37,7 @@ export default function FileManipulator() {
                     console.error("Creating an asset is invalid.")
                     break
                 case "import":
-                    console.error("Importing an asset is invalid. Set is_folder to true.")
+                    handleAssetsImport(browsingFolder, fileManipulation.data.submit, fileManipulation.data.id[0])
                     break
             }
         }
@@ -74,7 +73,7 @@ export async function handleAssetRename(browsingFolder: StateContext<VirtualFold
         return
     }
     const target = selectedAssets.data.values().next().value as string
-    await RenameAsset({ asset: target, nameNoExt: newName })
+    await RenameAsset({ asset: target, name: newName })
         .catch(err => {
             // TODO error handling
             console.error(err)
@@ -137,7 +136,7 @@ export async function handleFolderRename(
     }
 }
 
-export async function handleAssetsImport(
+export async function handleFoldersImport(
     items: string[],
     parent: string,
 ) {
@@ -146,4 +145,27 @@ export async function handleAssetsImport(
             // TODO error handling
             console.error(err)
         })
+}
+
+export async function handleAssetsImport(
+    browsingFolder: StateContext<VirtualFolder>,
+    items: string[],
+    parent: string,
+) {
+    await ImportAssets({ parent, path: items })
+        .catch(err => {
+            // TODO error handling
+            console.error(err)
+        })
+    const folder = await GetFolder({ folder: parent })
+        .catch(err => {
+            // TODO error handling
+            console.error(err)
+        })
+    if (folder) {
+        browsingFolder.setter({
+            ...folder,
+            collection: false,
+        })
+    }
 }

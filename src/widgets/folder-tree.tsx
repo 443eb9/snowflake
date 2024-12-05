@@ -130,14 +130,17 @@ export function FolderTree() {
                             ? <Input
                                 className={inputStyle.root}
                                 defaultValue={newName}
-                                onChange={ev => setNewName(ev.target.value)}
+                                onChange={ev => {
+                                    console.log(ev.target.value)
+                                    setNewName(ev.target.value)
+                                }}
                                 autoFocus
                                 onKeyDown={ev => {
                                     if (ev.key == "Enter") {
                                         if (fileManipulation.data) {
                                             fileManipulation.setter({
                                                 ...fileManipulation.data,
-                                                submit: newName,
+                                                submit: [newName],
                                             })
                                         }
                                     } else if (ev.key == "Escape") {
@@ -146,7 +149,7 @@ export function FolderTree() {
                                 }}
                             />
                             : <Text>
-                                {name}
+                                {newName}
                             </Text>
                     }
                 </TreeItemLayout>
