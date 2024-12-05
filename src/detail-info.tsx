@@ -100,15 +100,15 @@ export default function DetailInfo() {
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Size</Text>
-                            <Text font="monospace">{formatFileSize(asset.meta.byte_size)}</Text>
+                            <Text font="monospace">{formatFileSize(asset.meta.byteSize)}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Created At</Text>
-                            <Text font="monospace">{new Date(asset.meta.created_at).toLocaleString()}</Text>
+                            <Text font="monospace">{new Date(asset.meta.createdAt).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Last Modified</Text>
-                            <Text font="monospace">{new Date(asset.meta.last_modified).toLocaleString()}</Text>
+                            <Text font="monospace">{new Date(asset.meta.lastModified).toLocaleString()}</Text>
                         </ListItem>
                         <ListItem className="flex flex-col gap-1">
                             <Text weight="semibold" font="monospace">Id</Text>

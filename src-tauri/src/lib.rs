@@ -3,8 +3,9 @@ use std::sync::Mutex;
 use log::LevelFilter;
 use tauri::Manager;
 
-use crate::models::Storage;
+use crate::{app::AppData, models::Storage};
 
+mod app;
 mod cmd;
 mod err;
 mod models;
@@ -24,10 +25,12 @@ pub fn run() {
         )
         .setup(|app| {
             app.manage(Mutex::new(Option::<Storage>::None));
+            app.manage(Mutex::new(AppData::read().unwrap()));
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
+            cmd::get_recent_libraries,
             cmd::load_library,
             cmd::initialize_library,
             cmd::save_library,

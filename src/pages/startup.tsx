@@ -1,13 +1,43 @@
-import { Button, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
-import { Library20Regular, New20Regular } from "@fluentui/react-icons";
+import { Button, Menu, MenuItem, MenuPopover, MenuTrigger, mergeClasses, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
+import { Book20Regular, Clock20Regular, Library20Regular, New20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
 import MsgToast from "../widgets/toast";
-import { NavigateFunction, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
-import { InitializeLibrary, LoadLibrary } from "../backend";
+import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../backend";
+import { darkenContentStyleHook } from "../styling";
+import { List } from "@fluentui/react-list-preview";
+import { useEffect, useState } from "react";
+import { BaseDirectory, readTextFile } from "@tauri-apps/plugin-fs";
 
-function openLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
-    return async () => {
+export default function Startup() {
+    const toasterId = useId("toaster");
+    const { dispatchToast } = useToastController(toasterId)
+    const [recentLibs, setRecentLibs] = useState<RecentLib[] | undefined>()
+
+    useEffect(() => {
+        async function fetch() {
+            const recentLibs = await GetRecentLibs()
+                .catch(err => {
+                    // TODO error handling
+                    console.error(err)
+                })
+
+            if (recentLibs) {
+                setRecentLibs(recentLibs)
+            }
+        }
+
+        fetch()
+    }, [])
+
+    const dispatch = (ctn: string) => {
+        console.error(ctn)
+        dispatchToast(<MsgToast title="Error" body={ctn}></MsgToast>, { intent: "error" })
+    }
+    const nav = useNavigate()
+
+    async function openLibrary() {
         const path = await open({
             directory: true,
         })
@@ -22,10 +52,8 @@ function openLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
                 })
         }
     }
-}
 
-function initializeLibrary(dispatch: (ctn: string) => void, nav: NavigateFunction) {
-    return async () => {
+    async function initializeLibrary() {
         const srcPath = await open({
             directory: true,
             title: "Choose the source root path.",
@@ -48,16 +76,6 @@ function initializeLibrary(dispatch: (ctn: string) => void, nav: NavigateFunctio
             }
         }
     }
-}
-
-export default function Startup() {
-    const toasterId = useId("toaster");
-    const { dispatchToast } = useToastController(toasterId);
-
-    const dispatch = (ctn: string) => {
-        dispatchToast(<MsgToast title="Error" body={ctn}></MsgToast>, { intent: "error" })
-    }
-    const nav = useNavigate()
 
     return (
         <div className="h-full">
@@ -71,19 +89,51 @@ export default function Startup() {
                         <Title1 className="italic">Snowflake ❄</Title1>
                         <Button
                             icon={<Library20Regular />}
-                            onClick={openLibrary(dispatch, nav)}
+                            onClick={openLibrary}
                             className="h-12"
                         >
                             Open Library
                         </Button>
                         <Button
                             icon={<New20Regular />}
-                            onClick={initializeLibrary(dispatch, nav)}
+                            onClick={initializeLibrary}
                             className="h-12"
                         >
                             Initialize Library
                         </Button>
-                        <Text as="i" className="opacity-50">Or drop the library root folder here.</Text>
+                        <Menu inline>
+                            <MenuTrigger>
+                                <Button
+                                    icon={<Clock20Regular />}
+                                    className="h-12"
+                                >
+                                    Open Recent
+                                </Button>
+                            </MenuTrigger>
+
+                            <MenuPopover>
+                                {
+                                    recentLibs?.map((lib, index) =>
+                                        <MenuItem
+                                            key={index}
+                                            secondaryContent={(new Date(lib.lastOpen).toLocaleString())}
+                                            icon={<Book20Regular />}
+                                            onClick={async () => {
+                                                await LoadLibrary({ rootFolder: lib.path })
+                                                    .then(() => {
+                                                        nav("/app")
+                                                    })
+                                                    .catch(err => {
+                                                        dispatch(err)
+                                                    })
+                                            }}
+                                        >
+                                            <Text>{lib.name}</Text>
+                                        </MenuItem>
+                                    )
+                                }
+                            </MenuPopover>
+                        </Menu>
                     </div>
                 </div>
             </div>

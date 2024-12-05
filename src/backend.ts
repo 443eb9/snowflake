@@ -28,9 +28,9 @@ export type Tag = {
 }
 
 export type Metadata = {
-    byte_size: number,
-    created_at: Date,
-    last_modified: Date,
+    byteSize: number,
+    createdAt: string,
+    lastModified: string,
 }
 
 export type Checksums = {
@@ -41,6 +41,16 @@ export type Checksums = {
 }
 
 export type AssetType = "Image" | "Unknown"
+
+export type RecentLib = {
+    path: string,
+    name: string,
+    lastOpen: string,
+}
+
+export function GetRecentLibs(): Promise<RecentLib[]> {
+    return invoke("get_recent_libraries")
+}
 
 export function LoadLibrary(params: { rootFolder: string }): Promise<void> {
     return invoke("load_library", params)

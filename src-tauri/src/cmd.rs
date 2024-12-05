@@ -1,23 +1,47 @@
 use std::{path::PathBuf, sync::Mutex};
 
+use chrono::Local;
 use hashbrown::HashMap;
 use tauri::State;
 
 use crate::{
+    app::{AppData, RecentLib},
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     models::{Asset, AssetId, Checksums, Folder, FolderId, Storage, Tag, TagId},
 };
 
 #[tauri::command]
+pub fn get_recent_libraries(data: State<'_, Mutex<AppData>>) -> Result<Vec<RecentLib>, String> {
+    let data = data.lock().map_err(|e| e.to_string())?;
+    Ok(data.recent_libs.values().cloned().collect())
+}
+
+#[tauri::command]
 pub fn load_library(
-    root_folder: String,
+    root_folder: PathBuf,
     storage: State<'_, Mutex<Option<Storage>>>,
+    data: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
-    log::info!("Start loading library at {}", root_folder);
+    log::info!("Start loading library at {:?}", root_folder);
 
     let new_storage = Storage::from_existing(&root_folder).map_err(|e| e.to_string())?;
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
     storage.replace(new_storage);
+
+    let mut data = data.lock().map_err(|e| e.to_string())?;
+    data.recent_libs.insert(
+        root_folder.clone(),
+        RecentLib {
+            name: root_folder
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+            path: root_folder,
+            last_open: Local::now().into(),
+        },
+    );
+    data.save().map_err(|e| e.to_string())?;
 
     log::info!("Successfully loaded library!");
 
@@ -26,16 +50,32 @@ pub fn load_library(
 
 #[tauri::command]
 pub fn initialize_library(
-    src_root_folder: String,
-    root_folder: String,
+    src_root_folder: PathBuf,
+    root_folder: PathBuf,
     storage: State<'_, Mutex<Option<Storage>>>,
+    data: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
-    log::info!("Start initializing library at {}", root_folder);
+    log::info!("Start initializing library at {:?}", root_folder);
 
     let new_storage =
         Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
     storage.replace(new_storage);
+
+    let mut data = data.lock().map_err(|e| e.to_string())?;
+    data.recent_libs.insert(
+        root_folder.clone(),
+        RecentLib {
+            name: root_folder
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .to_string(),
+            path: root_folder,
+            last_open: Local::now().into(),
+        },
+    );
+    data.save().map_err(|e| e.to_string())?;
 
     log::info!("Successfully initialized library!");
 

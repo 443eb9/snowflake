@@ -12,9 +12,7 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use uuid::Uuid;
 
-pub const LIBRARY_STORAGE: &str = "snowflake.json";
-pub const TEMP_RECYCLE_BIN: &str = "recycle_bin";
-pub const IMAGE_ASSETS: &str = "images";
+use crate::app::{IMAGE_ASSETS, LIBRARY_STORAGE, TEMP_RECYCLE_BIN};
 
 fn collect_folders(
     src: &Path,
@@ -100,6 +98,7 @@ pub struct AssetId(pub Uuid);
 pub struct TagId(pub Uuid);
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Storage {
     #[serde(skip)]
     pub root: PathBuf,
@@ -301,6 +300,7 @@ impl Storage {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Tag {
     pub id: TagId,
     pub name: String,
@@ -382,6 +382,7 @@ impl<'de> Deserialize<'de> for Color {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Folder {
     pub parent: Option<FolderId>,
     pub id: FolderId,
@@ -407,6 +408,7 @@ impl Folder {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Asset {
     pub parent: FolderId,
     pub id: AssetId,
@@ -466,6 +468,7 @@ impl AssetType {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Metadata {
     pub byte_size: u64,
     pub created_at: Option<DateTime<FixedOffset>>,
@@ -492,6 +495,7 @@ impl Metadata {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct Checksums {
     pub crc32: u32,
     pub md5: Arc<str>,
