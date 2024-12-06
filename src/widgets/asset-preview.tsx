@@ -1,7 +1,7 @@
 import { Button, Image, Input, makeStyles, Text } from "@fluentui/react-components";
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { useContext, useEffect, useState } from "react";
+import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import { contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
@@ -13,28 +13,29 @@ const inputStyleHook = makeStyles({
     }
 })
 
-export default function AssetPreview({ asset }: { asset: Asset }) {
+export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTMLAttributes<HTMLButtonElement>) {
     const [absPath, setAbsPath] = useState<string | undefined>()
+    const [newName, setNewName] = useState<string>()
     const inputStyle = inputStyleHook()
 
-    const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
+    // const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
 
-    const [newName, setNewName] = useState<string>()
 
-    const selectedAssets = useContext(selectedAssetsContext)
+    // const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
-    const contextMenuProp = useContext(contextMenuPropContext)
+    // const contextMenuProp = useContext(contextMenuPropContext)
 
-    const handleContextMenu = (e: TriggerEvent) => {
-        if (!selectedAssets?.data || selectedAssets.data.length == 0) {
-            selectedAssets?.setter([asset.id])
-        }
-        contextMenuProp?.setter({
-            target: "assets",
-            extra: undefined,
-        })
-        showCtxMenu({ event: e })
-    }
+    // const handleContextMenu = (e: TriggerEvent) => {
+    //     if (!selectedAssets?.data || selectedAssets.data.length == 0) {
+    //         selectedAssets?.setter([asset.id])
+    //     }
+
+    //     contextMenuProp?.setter({
+    //         target: "assets",
+    //         extra: undefined,
+    //     })
+    //     showCtxMenu({ event: e })
+    // }
 
     useEffect(() => {
         async function fetch() {
@@ -62,7 +63,8 @@ export default function AssetPreview({ asset }: { asset: Asset }) {
             id={asset.id}
             className="flex flex-col gap-2 selectable-asset"
             appearance="subtle"
-            onContextMenu={handleContextMenu}
+            {...props}
+            // onContextMenu={handleContextMenu}
         >
             <div className="flex h-full items-center">
                 <Image
