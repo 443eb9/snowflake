@@ -106,8 +106,6 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
             }
         }
 
-        console.log(finished, downloading, status)
-
         if (downloading > 0 && finished != urls.length) {
             lockOverlay(true)
         } else {
@@ -129,6 +127,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
                                     style={{ width: "100%" }}
                                     size="large"
                                     value={url}
+                                    autoFocus
                                     onChange={ev => {
                                         setUrls(urls.map((d, i) => i == index ? ev.target.value : d))
                                     }}

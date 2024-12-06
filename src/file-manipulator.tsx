@@ -37,6 +37,15 @@ export default function FileManipulator() {
         fileManipulation?.setter(undefined)
     }, [fileManipulation])
 
+    useEffect(() => {
+        document.querySelectorAll(".selected-asset")
+            .forEach(elem => {
+                if (!selectedAssets?.data?.includes(elem.id)) {
+                    elem.classList.remove("selected-asset")
+                }
+            })
+    }, [selectedAssets?.data])
+
     return <></>
 }
 
@@ -56,8 +65,6 @@ async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, 
         })
 
     selectedAssets.setter([])
-    document.querySelectorAll("selected-asset")
-        .forEach(elem => elem.classList.remove("selected-asset"))
 }
 
 async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>, newName: string) {
@@ -71,12 +78,7 @@ async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, se
             console.error(err)
         })
 
-    browsingFolder.setter(browsingFolder.data)
-
     selectedAssets.setter([])
-    document.querySelectorAll("selected-asset")
-        .forEach(elem => elem.classList.remove("selected-asset"))
-
     browsingFolder.setter({
         ...browsingFolder.data
     })
