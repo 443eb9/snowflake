@@ -43,7 +43,6 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
 
     function EventDisplay({ ev }: { ev: DownloadEvent }) {
         const parse = () => {
-            console.log(ev)
             switch (ev.status) {
                 case "SendingGet":
                     return ["Sending GET", "colorPaletteYellowBackground2", 1]
@@ -78,7 +77,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
         )
     }
 
-    const downloading = statusMapper.size == 0 ? -1 : status.filter(x => x?.status != "Finished" && typeof x == "string").length
+    const downloading = statusMapper.size == 0 ? -1 : status.filter(x => x?.status != "Finished" && typeof x?.status == "string").length
     const finished = statusMapper.size == 0 ? -1 : status?.filter(s => s?.status == "Finished").length
 
     useEffect(() => {
@@ -107,7 +106,9 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
             }
         }
 
-        if (downloading > 0) {
+        console.log(finished, downloading, status)
+
+        if (downloading > 0 && finished != urls.length) {
             lockOverlay(true)
         } else {
             lockOverlay(false)
