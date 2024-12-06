@@ -52,7 +52,7 @@ export default function ContextMenu() {
         }
 
         fetch()
-    }, [contextMenuProp])
+    }, [contextMenuProp?.data])
 
     const handleDelete = (ev: ItemParams) => {
         const folderId = (ev.triggerEvent.target as HTMLElement).id

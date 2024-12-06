@@ -55,7 +55,7 @@ export function BrowsingPath() {
         }
 
         fetch()
-    }, [browsingFolder])
+    }, [browsingFolder?.data?.id])
 
     if (!virtualPath) {
         return <></>

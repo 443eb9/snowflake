@@ -1,12 +1,18 @@
 use std::{path::PathBuf, sync::Mutex};
 
 use chrono::Local;
+use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
-use tauri::State;
+use reqwest::Client;
+use tauri::{ipc::Channel, State};
 
 use crate::{
-    app::{AppData, Asset, AssetId, Checksums, Folder, FolderId, RecentLib, Storage, Tag, TagId},
+    app::{
+        AppData, Asset, AssetId, Checksums, Folder, FolderId, RawAsset, RecentLib, Storage, Tag,
+        TagId,
+    },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
+    event::{DownloadEvent, DownloadStatus},
 };
 
 #[tauri::command]
@@ -111,10 +117,11 @@ pub fn import_assets(
 }
 
 #[tauri::command]
-pub fn import_web_assets(
+pub async fn import_web_assets(
     urls: Vec<String>,
     parent: FolderId,
     storage: State<'_, Mutex<Option<Storage>>>,
+    progress: Channel<DownloadEvent>,
 ) -> Result<(), String> {
     log::info!(
         "Importing assets from web {:?} into folder {:?}.",
@@ -122,10 +129,134 @@ pub fn import_web_assets(
         parent
     );
 
+    // let mut waiting = urls.len();
+
+    // dbg!();
+
+    // let (progress_tx, progress_rx) = std::sync::mpsc::channel();
+    // let (result_tx, result_rx) = std::sync::mpsc::channel();
+
+    // dbg!();
+
+    // download(urls, progress_tx, result_tx);
+
+    // while let Ok(ev) = progress_rx.recv() {
+    //     if matches!(ev.status, DownloadStatus::Error(_)) {
+    //         waiting -= 1;
+    //     }
+    //     let _ = progress.send(dbg!(ev));
+    // }
+
+    // dbg!();
+
+    // let mut assets = Vec::with_capacity(waiting);
+    // for _ in 0..waiting {
+    //     if let Ok((_, result)) = result_rx.recv() {
+    //         assets.push(result);
+    //     }
+    // }
+
+    // dbg!();
+
+    let client = Client::new();
+    let mut results = Vec::with_capacity(urls.len());
+
+    for (index, url) in urls.into_iter().enumerate() {
+        dbg!();
+
+        let id = index as u32;
+        let request = match client.get(url).build() {
+            Ok(req) => req,
+            Err(err) => {
+                let _ = progress.send(DownloadEvent {
+                    id,
+                    downloaded: 0.0,
+                    total: None,
+                    status: DownloadStatus::Error(err.to_string()),
+                });
+                continue;
+            }
+        };
+
+        let _ = progress.send(DownloadEvent {
+            id,
+            downloaded: 0.0,
+            total: None,
+            status: DownloadStatus::SendingGet,
+        });
+        let response = client.execute(request).await;
+
+        dbg!();
+
+        match response {
+            Ok(ok) => {
+                let total = ok.content_length();
+                let total_f = total.map(|t| t as f32);
+
+                let content_ty = ok
+                    .headers()
+                    .get("content-type")
+                    .and_then(|t| t.to_str().ok())
+                    .map(|e| e.to_string());
+
+                let mut content = Vec::new();
+                let mut stream = ok.bytes_stream();
+
+                let _ = progress.send(DownloadEvent {
+                    id,
+                    downloaded: 0.0,
+                    total: total_f,
+                    status: DownloadStatus::Started,
+                });
+
+                while let Some(Ok(bytes)) = stream.next().await {
+                    content.extend(bytes);
+
+                    let _ = progress.send(DownloadEvent {
+                        id,
+                        downloaded: content.len() as f32,
+                        total: total_f,
+                        status: DownloadStatus::Ongoing,
+                    });
+                }
+
+                let _ = progress.send(DownloadEvent {
+                    id,
+                    downloaded: f32::MAX,
+                    total: total_f,
+                    status: DownloadStatus::Finished,
+                });
+
+                results.push(RawAsset {
+                    bytes: content,
+                    ext: content_ty
+                        .map(|t| {
+                            let mut s = t.split('/');
+                            s.next();
+                            s.next().unwrap_or_default().to_string()
+                        })
+                        .unwrap_or_default()
+                        .into(),
+                });
+            }
+            Err(err) => {
+                let _ = progress.send(DownloadEvent {
+                    id,
+                    downloaded: 0.0,
+                    total: None,
+                    status: DownloadStatus::Error(err.to_string()),
+                });
+            }
+        }
+    }
+
+    dbg!();
+
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        futures_lite::future::block_on(storage.add_web_assets(urls, parent))
-            .map_err(|e| e.to_string())?;
-        storage.save().map_err(|e| e.to_string())
+        dbg!();
+        storage
+            .add_raw_assets(results, parent)
+            .map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }

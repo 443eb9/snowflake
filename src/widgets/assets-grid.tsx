@@ -1,9 +1,9 @@
 import { useContext, useEffect, useRef, useState } from "react"
-import AssetPreview from "./widgets/asset-preview"
-import { Asset, GetAssets } from "./backend"
-import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "./context-provider"
+import AssetPreview from "../widgets/asset-preview"
+import { Asset, GetAssets } from "../backend"
+import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
 import Selecto from "react-selecto";
-import { darkenContentStyleHook } from "./styling";
+import { darkenContentStyleHook } from "../styling";
 import { mergeClasses } from "@fluentui/react-components";
 
 export default function AssetsGrid() {

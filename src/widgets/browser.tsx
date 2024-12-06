@@ -1,6 +1,6 @@
 import { Text } from "@fluentui/react-components";
-import { FolderTree } from "./widgets/folder-tree";
-import TagsCollections from "./widgets/tags-collections";
+import { FolderTree } from "../widgets/folder-tree";
+import TagsCollections from "../widgets/tags-collections";
 import { List, ListItem } from "@fluentui/react-list-preview";
 
 export default function Browser() {

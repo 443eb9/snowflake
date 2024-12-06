@@ -1,4 +1,11 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
+
+export type DownloadEvent = {
+    id: number,
+    downloaded: number,
+    total: number | undefined,
+    status: string | { Error: string },
+}
 
 export type Folder = {
     parent: string | undefined,
@@ -68,7 +75,7 @@ export function ImportAssets(params: { path: string[], parent: string }): Promis
     return invoke("import_assets", params)
 }
 
-export function ImportWebAssets(params: { urls: string[], parent: string }): Promise<void> {
+export function ImportWebAssets(params: { urls: string[], parent: string, progress: Channel<DownloadEvent> }): Promise<void> {
     return invoke("import_web_assets", params)
 }
 

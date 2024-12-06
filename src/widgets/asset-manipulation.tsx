@@ -1,9 +1,8 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
 import { Add20Regular, ArrowDownload20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
-import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
+import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedAssetsContext } from "../context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
-import { ImportWebAssets } from "../backend"
 
 const renameInputStyleHook = makeStyles({
     root: {
@@ -11,24 +10,16 @@ const renameInputStyleHook = makeStyles({
     }
 })
 
-const downloadInputStyleHook = makeStyles({
-    root: {
-        "width": "100%",
-    }
-})
-
 export default function AssetManipulation() {
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
+    const overlays = useContext(overlaysContext)
 
     const inputStyle = renameInputStyleHook()
-    const downloadInput = downloadInputStyleHook()
 
     const [newName, setNewName] = useState("")
-    const [webUrl, setWebUrl] = useState("")
     const [renamePopoverOpen, setRenamePopoverOpen] = useState(false)
-    const [webUrlPopoverOpen, setWebUrlPopoverOpen] = useState(false)
 
     const handleDelete = () => {
         if (fileManipulation && selectedAssets?.data) {
@@ -121,37 +112,7 @@ export default function AssetManipulation() {
                         <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
                         <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />
                         <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} />
-                        <Menu inline open={webUrlPopoverOpen} onOpenChange={(_, d) => setWebUrlPopoverOpen(d.open)}>
-                            <MenuTrigger>
-                                <Button icon={<ArrowDownload20Regular />} />
-                            </MenuTrigger>
-                            <MenuPopover
-                                className="z-10 flex flex-col gap-2"
-                                style={{
-                                    width: "200px"
-                                }}
-                            >
-                                <Text>Download from web URL</Text>
-                                <Input
-                                    className={downloadInput.root}
-                                    autoFocus
-                                    onChange={ev => setWebUrl(ev.target.value)}
-                                    onKeyDown={async ev => {
-                                        if (ev.key == "Enter") {
-                                            const parent = browsingFolder?.data?.id
-                                            if (parent) {
-                                                await ImportWebAssets({ urls: [webUrl], parent })
-                                                    .catch(err => {
-                                                        // TODO error handling
-                                                        console.error(err)
-                                                    })
-                                            }
-                                            setWebUrlPopoverOpen(false)
-                                        }
-                                    }}
-                                />
-                            </MenuPopover>
-                        </Menu>
+                        <Button icon={<ArrowDownload20Regular />} onClick={() => overlays?.setter({ ty: "assetDownload" })} />
                     </>
                 }
             </div>

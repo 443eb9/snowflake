@@ -233,54 +233,16 @@ impl Storage {
         Ok(())
     }
 
-    pub async fn add_web_assets(
+    pub fn add_raw_assets(
         &mut self,
-        urls: Vec<String>,
+        data: Vec<RawAsset>,
         parent: FolderId,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let Some(parent) = self.folders.get_mut(&parent) else {
             return Err(StorageModificationError::FolderNotFount(parent).into());
         };
 
-        let (tx, rx) =
-            std::sync::mpsc::channel::<Result<(Vec<u8>, Option<String>), reqwest::Error>>();
-
-        let url_len = urls.len();
-        for url in urls {
-            let tx = tx.clone();
-            tauri::async_runtime::spawn_blocking(move || {
-                let response = futures_lite::future::block_on(reqwest::get(url));
-                match response {
-                    Ok(ok) => {
-                        let ctnt_ty = ok
-                            .headers()
-                            .get("content-type")
-                            .and_then(|t| t.to_str().ok())
-                            .map(|e| e.to_string());
-                        let body = futures_lite::future::block_on(ok.bytes()).map(|b| b.to_vec());
-                        log::info!("Response get.");
-                        tx.send(body.map(|b| (b, ctnt_ty)))
-                    }
-                    Err(err) => tx.send(Err(err)),
-                }
-            });
-        }
-
-        for i in 0..url_len {
-            let result = match rx.recv() {
-                Ok(ok) => ok,
-                Err(e) => return Err(e.into()),
-            };
-
-            let (data, ctnt_ty) = match result {
-                Ok(r) => r,
-                Err(e) => return Err(e.into()),
-            };
-
-            let ctnt_ty = ctnt_ty.unwrap_or_default();
-            let mut ctnt_ty_iter = ctnt_ty.split('/');
-            let ext = ctnt_ty_iter.nth(1).unwrap_or_default();
-
+        for RawAsset { bytes, ext } in data {
             let id = Uuid::new_v4();
             let path = self.root.join(IMAGE_ASSETS).join(if ext.is_empty() {
                 id.to_string()
@@ -288,20 +250,18 @@ impl Storage {
                 format!("{}.{}", id, ext)
             });
 
-            dbg!(&path);
             let mut file = File::create(&path)?;
-            file.write(&data)?;
+            file.write(&bytes)?;
             file.flush()?;
 
-            let ty = AssetType::from_ext_str(ext);
+            let ty = AssetType::from_ext_str(&ext);
             let meta = Metadata::from_std_meta(&file.metadata()?);
-            let mut asset = Asset::new(parent.id, id.to_string(), ext.into(), meta, ty);
-            asset.id = AssetId(id);
-
-            dbg!(&parent.name);
+            let asset = Asset {
+                id: AssetId(id),
+                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty)
+            };
 
             parent.content.insert(asset.id);
-            log::info!("Downloaded No.{} asset {}", i, asset.name);
             self.assets.insert(asset.id, asset);
         }
 
@@ -448,6 +408,11 @@ impl Storage {
 
         Ok(res)
     }
+}
+
+pub struct RawAsset {
+    pub bytes: Vec<u8>,
+    pub ext: Arc<str>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
