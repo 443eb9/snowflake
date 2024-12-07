@@ -1,4 +1,6 @@
-<image src="./src-tauri/icons/snowflake.svg" width="200px" height="200px" style="float: right" />
+<div style="display: flex; justify-content: center; width: 100%">
+    <image src="./src-tauri/icons/snowflake.svg" width="200px" height="200px"/>
+</div>
 
 # Snowflake
 
