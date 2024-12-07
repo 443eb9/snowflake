@@ -169,7 +169,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
             renderHeaderCell: () => "Color",
             renderCell: item =>
                 <TableCellLayout style={{ color: `#${item.color}` }}>
-                    {item.color}
+                    <Text font="monospace">{item.color.substring(0, 6)}</Text>
                 </TableCellLayout>
         }),
         createTableColumn<EditableTag>({
