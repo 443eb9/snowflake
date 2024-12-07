@@ -4,7 +4,7 @@ import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
 import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import { GetAssetAbsPath } from "../backend"
-import { TriggerEvent, useContextMenu } from "react-contexify"
+import { useContextMenu } from "react-contexify"
 import QuickRefContextMenu, { QuickRefCtxMenuId } from "../widgets/quick-ref-context-menu"
 
 const appWindow = getCurrentWindow()
@@ -18,6 +18,7 @@ export default function QuickRef() {
     useEffect(() => {
         async function fetch() {
             if (id) {
+                // TODO not working, wait for next release
                 const path = await GetAssetAbsPath({ asset: id })
                     .catch(err => {
                         // TODO error handling
@@ -31,10 +32,6 @@ export default function QuickRef() {
 
         fetch()
     }, [id])
-
-    const handleContextMenu = (ev: TriggerEvent) => {
-        showContextMenu({ event: ev })
-    }
 
     if (!absPath) {
         return <></>
@@ -67,7 +64,7 @@ export default function QuickRef() {
                             console.error(err)
                         })
                 }}
-                onContextMenu={handleContextMenu}
+                onContextMenu={ev => showContextMenu({ event: ev })}
             />
         </>
     )

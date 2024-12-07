@@ -9,6 +9,7 @@ use chrono::{DateTime, FixedOffset, Local};
 use filetime::FileTime;
 use hashbrown::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Manager};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -23,6 +24,8 @@ pub enum AppDataError {
     Io(#[from] std::io::Error),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
+    #[error("Tauri error: {0}")]
+    Tauri(#[from] tauri::Error),
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -32,11 +35,12 @@ pub struct AppData {
 }
 
 impl AppData {
-    pub fn read() -> Result<Self, AppDataError> {
-        let dir = std::env::current_dir()?.join(DATA);
+    pub fn read(app: AppHandle) -> Result<Self, AppDataError> {
+        let cache_dir = app.path().app_cache_dir()?;
+        let dir = cache_dir.join(DATA);
         if !dir.exists() {
             let data = Self::default();
-            data.save()?;
+            data.save(app)?;
             Ok(data)
         } else {
             let mut data = serde_json::from_reader::<_, AppData>(std::fs::File::open(dir)?)?;
@@ -49,8 +53,9 @@ impl AppData {
         }
     }
 
-    pub fn save(&self) -> Result<(), AppDataError> {
-        let dir = std::env::current_dir()?.join(DATA);
+    pub fn save(&self, app: AppHandle) -> Result<(), AppDataError> {
+        let cache_dir = app.path().app_cache_dir()?;
+        let dir = cache_dir.join(DATA);
         Ok(std::fs::write(dir, serde_json::to_string(self)?)?)
     }
 }

@@ -23,5 +23,4 @@ dist-ssr
 *.sln
 *.sw?
 
-generated
-app_meta.json
+gen

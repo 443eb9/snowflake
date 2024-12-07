@@ -24,7 +24,7 @@ pub fn run() {
         )
         .setup(|app| {
             app.manage(Mutex::new(Option::<Storage>::None));
-            app.manage(Mutex::new(AppData::read().unwrap()));
+            app.manage(Mutex::new(AppData::read(app.handle().clone()).unwrap()));
             Ok(())
         })
         .plugin(tauri_plugin_shell::init())

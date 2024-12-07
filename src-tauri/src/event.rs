@@ -13,7 +13,6 @@ pub struct DownloadEvent {
 pub enum DownloadStatus {
     SendingGet,
     Started,
-    Aborted,
     Ongoing,
     Finished,
     Error(String),

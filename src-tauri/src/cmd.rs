@@ -5,7 +5,7 @@ use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
 use reqwest::Client;
 use serde::Deserialize;
-use tauri::{ipc::Channel, AppHandle, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 use crate::{
     app::{
@@ -27,6 +27,7 @@ pub fn load_library(
     root_folder: PathBuf,
     storage: State<'_, Mutex<Option<Storage>>>,
     data: State<'_, Mutex<AppData>>,
+    app: AppHandle,
 ) -> Result<(), String> {
     log::info!("Start loading library at {:?}", root_folder);
 
@@ -47,7 +48,7 @@ pub fn load_library(
             last_open: Local::now().into(),
         },
     );
-    data.save().map_err(|e| e.to_string())?;
+    data.save(app).map_err(|e| e.to_string())?;
 
     log::info!("Successfully loaded library!");
 
@@ -60,6 +61,7 @@ pub fn initialize_library(
     root_folder: PathBuf,
     storage: State<'_, Mutex<Option<Storage>>>,
     data: State<'_, Mutex<AppData>>,
+    app: AppHandle,
 ) -> Result<(), String> {
     log::info!("Start initializing library at {:?}", root_folder);
 
@@ -81,7 +83,7 @@ pub fn initialize_library(
             last_open: Local::now().into(),
         },
     );
-    data.save().map_err(|e| e.to_string())?;
+    data.save(app).map_err(|e| e.to_string())?;
 
     log::info!("Successfully initialized library!");
 
@@ -683,6 +685,10 @@ pub async fn quick_ref(
 ) -> Result<(), String> {
     log::info!("Creating quick refs {:?}", ty);
 
+    let Some(main_window) = app.get_webview_window("main") else {
+        return Err("Main window not found.".into());
+    };
+
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         let ids: Vec<_> = match &ty {
             QuickRefTy::Asset(ids) => ids.iter().collect(),
@@ -715,12 +721,19 @@ pub async fn quick_ref(
                 WebviewUrl::App(format!("quickref/{}", asset.id.0).into()),
             )
             .inner_size(properties.width as f64, properties.height as f64)
+            .skip_taskbar(true)
             .always_on_top(true)
             .decorations(false)
             .resizable(false)
+            .parent(&main_window)
+            .map_err(|e| e.to_string())?
             .build()
             .map_err(|e| e.to_string())?;
         }
+
+        main_window
+            .set_size(tauri::PhysicalSize::new(200, 200))
+            .unwrap();
 
         storage.save().map_err(|e| e.to_string())
     } else {

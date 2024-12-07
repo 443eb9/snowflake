@@ -1,25 +1,26 @@
 {
-    "$schema": "../gen/schemas/desktop-schema.json",
-    "identifier": "main",
-    "description": "Main window capabilities.",
-    "windows": [
-      "main"
-    ],
-    "permissions": [
-      "core:default",
-      "shell:allow-open",
-      "dialog:default",
-      "core:window:default",
-      "core:window:allow-start-dragging",
-      "core:window:allow-toggle-maximize",
-      "core:window:allow-minimize",
-      "core:window:allow-close",
-      "dialog:allow-open",
-      "log:default",
-      "fs:default",
-      "fs:allow-open",
-      "fs:allow-create",
-      "fs:allow-read",
-      "fs:allow-write"
-    ]
-  }
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Main window capabilities.",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "dialog:default",
+    "core:window:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-minimize",
+    "core:window:allow-close",
+    "dialog:allow-open",
+    "log:default",
+    "fs:default",
+    "fs:allow-open",
+    "fs:allow-create",
+    "fs:allow-read",
+    "fs:allow-write",
+    "core:window:allow-set-size"
+  ]
+}

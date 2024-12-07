@@ -39,10 +39,11 @@ export default function MainApp() {
     useEffect(() => {
         async function setWindowSizeAsync() {
             const size = await getCurrentWindow().innerSize()
+            // console.log(await getCurrentWindow().innerSize())
             setWindowSize(size)
         }
         setWindowSizeAsync()
-    }, [windowSize])
+    })
 
     if (!windowSize) {
         return <></>
@@ -56,7 +57,7 @@ export default function MainApp() {
                 handlers={Handlers}
             >
                 <OverlayPanel />
-                <div className="absolute top-2 right-2 z-20" style={{ width: `${windowSize.width * 0.15}px` }}>
+                <div className="absolute top-2 right-2 z-20 w-[20vw]">
                     <WindowControls />
                 </div>
                 <div className="flex justify-between w-full h-full gap-2 p-4">
@@ -80,10 +81,7 @@ export default function MainApp() {
                             <div className="h-[30px]"></div>
                             <Text as="h2" weight="bold" align="end" size={400}>Asset Info</Text>
                         </div>
-                        <div
-                            className="flex flex-col gap-2 h-full overflow-y-auto p-1"
-                            style={{ width: `${windowSize.width * 0.15}px` }}
-                        >
+                        <div className="flex flex-col gap-2 w-[20vw] h-full overflow-y-auto p-1">
                             <DetailInfo />
                         </div>
                     </div>
