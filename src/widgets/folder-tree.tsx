@@ -129,7 +129,7 @@ export function FolderTree() {
                                     editing
                                         ? <Input
                                             className={inputStyle.root}
-                                            defaultValue={newName}
+                                            defaultValue={name}
                                             onChange={ev => setNewName(ev.target.value)}
                                             autoFocus
                                             onKeyDown={ev => {

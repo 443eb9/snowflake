@@ -1,4 +1,4 @@
-import { Button, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Input, makeStyles, Popover, PopoverSurface, PopoverTrigger, TableCellLayout, TableColumnDefinition, Text } from "@fluentui/react-components";
+import { Button, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Input, makeStyles, Menu, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, TableCellLayout, TableColumnDefinition, Text } from "@fluentui/react-components";
 import { Checkmark20Regular, Color20Regular, Edit20Regular, Tag20Regular } from "@fluentui/react-icons";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
@@ -6,6 +6,8 @@ import randomColor from "randomcolor";
 import { GetAllTags, ModifyTag, Tag } from "../backend";
 import { allTagsContext } from "../context-provider";
 import TagName from "./tag-name";
+import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
+import { TinyColor } from "@ctrl/tinycolor";
 
 type TagEditingStatus = {
     isEditingName: boolean,
@@ -76,7 +78,7 @@ export default function TagsManager() {
                     <Button icon={<Tag20Regular />}></Button>
                 </PopoverTrigger>
 
-                <PopoverSurface className="flex flex-col gap-2 max-w-[500] min-w-96">
+                <PopoverSurface className="flex flex-col gap-2 max-w-[500] min-w-[400px]">
                     <Text>Tags Management</Text>
                     {
                         allTagsEditable.length == 0
@@ -113,7 +115,7 @@ export default function TagsManager() {
                                 {
                                     id: v4(),
                                     name: "",
-                                    color: randomColor().substring(1),
+                                    color: randomColor().substring(1) + "ff",
                                     meta: {
                                         byteSize: 0,
                                         createdAt: new Date().toISOString(),
@@ -148,6 +150,14 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
                                 }}
                                 className={inputStyle.root}
                                 autoFocus
+                                onKeyDown={ev => {
+                                    if (ev.key == "Enter") {
+                                        item.isEditingName = false
+                                        item.isEditingColor = false
+                                        updateTag(item)
+                                        refresh()
+                                    }
+                                }}
                             />
                             : <TagName name={item.name} />
                     }
@@ -177,15 +187,30 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
                                 refresh()
                             }}
                         />
-                        <Button
-                            icon={<Color20Regular />}
-                        // TODO color picking
-                        // onClick={() => {
-                        //     item.isEditingName = false
-                        //     item.isEditingColor = true
-                        //     refresh()
-                        // }}
-                        />
+                        <Menu>
+                            <MenuTrigger>
+                                <Button
+                                    icon={<Color20Regular />}
+                                    onClick={() => {
+                                        item.isEditingName = false
+                                        item.isEditingColor = true
+                                        refresh()
+                                    }}
+                                />
+                            </MenuTrigger>
+
+                            <MenuPopover>
+                                <ColorPicker
+                                    color={(new TinyColor(item.color)).toHsv()}
+                                    onColorChange={(_, data) => {
+                                        item.color = (new TinyColor(data.color)).toHex8String().substring(1)
+                                    }}
+                                >
+                                    <ColorArea />
+                                    <ColorSlider />
+                                </ColorPicker>
+                            </MenuPopover>
+                        </Menu>
                         {
                             (item.isEditingName || item.isEditingColor) &&
                             <Button

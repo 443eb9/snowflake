@@ -10,6 +10,8 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@ctrl/tinycolor": "^4.1.0",
+    "@fluentui/react-color-picker-preview": "^0.1.0",
     "@fluentui/react-components": "^9.56.3",
     "@fluentui/react-icons": "^2.0.266",
     "@fluentui/react-list-preview": "^0.4.1",
