@@ -22,7 +22,8 @@ export default function AssetsGrid() {
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const handleContextMenu = (ev: TriggerEvent) => {
-        if (selectoRef.current && ev.target) {
+        const currentSelected = selectedAssets?.data?.length ?? 0
+        if (selectoRef.current && ev.target && currentSelected < 2) {
             let target = ev.target as HTMLElement
             while (target.id.length == 0) {
                 target = target.parentNode as HTMLElement

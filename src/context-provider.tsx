@@ -21,7 +21,7 @@ export type FileManipulation = {
 }
 
 export type ContextMenuProp = {
-    target: "folder" | "assets",
+    target: "folder" | "assets" | "collection",
     extra: string | undefined,
 }
 

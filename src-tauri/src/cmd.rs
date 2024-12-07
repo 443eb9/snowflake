@@ -4,12 +4,13 @@ use chrono::Local;
 use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
 use reqwest::Client;
-use tauri::{ipc::Channel, State};
+use serde::Deserialize;
+use tauri::{ipc::Channel, AppHandle, State, WebviewUrl, WebviewWindowBuilder};
 
 use crate::{
     app::{
-        AppData, Asset, AssetId, Checksums, Folder, FolderId, RawAsset, RecentLib, Storage, Tag,
-        TagId,
+        AppData, Asset, AssetId, AssetProperty, Checksums, Folder, FolderId, RawAsset, RecentLib,
+        Storage, Tag, TagId,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -129,41 +130,10 @@ pub async fn import_web_assets(
         parent
     );
 
-    // let mut waiting = urls.len();
-
-    // dbg!();
-
-    // let (progress_tx, progress_rx) = std::sync::mpsc::channel();
-    // let (result_tx, result_rx) = std::sync::mpsc::channel();
-
-    // dbg!();
-
-    // download(urls, progress_tx, result_tx);
-
-    // while let Ok(ev) = progress_rx.recv() {
-    //     if matches!(ev.status, DownloadStatus::Error(_)) {
-    //         waiting -= 1;
-    //     }
-    //     let _ = progress.send(dbg!(ev));
-    // }
-
-    // dbg!();
-
-    // let mut assets = Vec::with_capacity(waiting);
-    // for _ in 0..waiting {
-    //     if let Ok((_, result)) = result_rx.recv() {
-    //         assets.push(result);
-    //     }
-    // }
-
-    // dbg!();
-
     let client = Client::new();
     let mut results = Vec::with_capacity(urls.len());
 
     for (index, url) in urls.into_iter().enumerate() {
-        dbg!();
-
         let id = index as u32;
         let request = match client.get(url).build() {
             Ok(req) => req,
@@ -185,8 +155,6 @@ pub async fn import_web_assets(
             status: DownloadStatus::SendingGet,
         });
         let response = client.execute(request).await;
-
-        dbg!();
 
         match response {
             Ok(ok) => {
@@ -250,10 +218,7 @@ pub async fn import_web_assets(
         }
     }
 
-    dbg!();
-
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        dbg!();
         storage
             .add_raw_assets(results, parent)
             .map_err(|e| e.to_string())
@@ -694,6 +659,67 @@ pub fn move_folders_to(
             if let Err(e) = storage.move_folder_to(folder, dst_folder) {
                 return Err(e.to_string());
             }
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum QuickRefTy {
+    Asset(Vec<AssetId>),
+    Folder(FolderId),
+    Tag(TagId),
+}
+
+#[tauri::command]
+pub async fn quick_ref(
+    ty: QuickRefTy,
+    storage: State<'_, Mutex<Option<Storage>>>,
+    app: AppHandle,
+) -> Result<(), String> {
+    log::info!("Creating quick refs {:?}", ty);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        let ids: Vec<_> = match &ty {
+            QuickRefTy::Asset(ids) => ids.iter().collect(),
+            QuickRefTy::Folder(id) => storage
+                .folders
+                .get(id)
+                .ok_or_else(|| folder_doesnt_exist(*id))?
+                .content
+                .iter()
+                .collect(),
+            QuickRefTy::Tag(id) => storage
+                .assets
+                .values()
+                .filter_map(|a| a.tags.contains(&id).then_some(&a.id))
+                .collect(),
+        };
+
+        for asset in ids {
+            let Some(asset) = storage.assets.get(asset) else {
+                return Err(asset_doesnt_exist(*asset));
+            };
+
+            let Some(AssetProperty::Image(properties)) = &asset.props else {
+                continue;
+            };
+
+            WebviewWindowBuilder::new(
+                &app,
+                format!("quickref-{}", asset.id.0.to_string()),
+                WebviewUrl::App(format!("quickref/{}", asset.id.0).into()),
+            )
+            .inner_size(properties.width as f64, properties.height as f64)
+            .always_on_top(true)
+            .decorations(false)
+            .resizable(false)
+            .build()
+            .map_err(|e| e.to_string())?;
         }
 
         storage.save().map_err(|e| e.to_string())

@@ -1,5 +1,5 @@
 import { Input, makeStyles } from "@fluentui/react-components";
-import { ReactNode, RefObject, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Item, ItemProps } from "react-contexify";
 
 const inputStyleHook = makeStyles({

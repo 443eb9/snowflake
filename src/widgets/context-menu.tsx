@@ -1,10 +1,9 @@
 import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-contexify";
-import "../context.css"
 import { Button, CompoundButton, makeStyles, Text } from "@fluentui/react-components";
-import { ArrowForward20Regular, Delete20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
+import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
-import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, Tag } from "../backend";
+import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 
 export const CtxMenuId = "context-menu"
@@ -130,6 +129,41 @@ export default function ContextMenu() {
         }
     }
 
+    const handleQuickRef = async () => {
+        const target = contextMenuProp?.data?.target
+        if (!target) { return }
+
+        switch (target) {
+            case "folder":
+                if (contextMenuProp.data?.extra) {
+                    await QuickRef({ ty: { folder: contextMenuProp.data?.extra } })
+                        .catch(err => {
+                            // TODO error handling
+                            console.error(err)
+                        })
+                }
+                break
+            case "assets":
+                if (selectedAssets?.data) {
+                    await QuickRef({ ty: { asset: selectedAssets.data } })
+                        .catch(err => {
+                            // TODO error handling
+                            console.error(err);
+                        })
+                }
+                break
+            case "collection":
+                if (contextMenuProp.data?.extra) {
+                    await QuickRef({ ty: { tag: contextMenuProp.data.extra } })
+                        .catch(err => {
+                            // TODO error handling
+                            console.error(err);
+                        })
+                }
+                break
+        }
+    }
+
     const multipleSelected = contextMenuProp?.data?.target == "assets" &&
         selectedAssets?.data?.length != undefined && selectedAssets.data.length > 1
 
@@ -144,6 +178,7 @@ export default function ContextMenu() {
                     className={buttonStyle.root}
                     icon={<Delete20Regular />}
                     appearance="subtle"
+                    disabled={contextMenuProp?.data?.target == "collection"}
                 >
                     <Text>Delete</Text>
                 </Button>
@@ -153,6 +188,7 @@ export default function ContextMenu() {
                     className={buttonStyle.root}
                     icon={<Edit20Regular />}
                     appearance="subtle"
+                    disabled={contextMenuProp?.data?.target == "collection"}
                 >
                     <Text>Rename</Text>
                 </Button>
@@ -164,6 +200,7 @@ export default function ContextMenu() {
                         icon={<ArrowForward20Regular />}
                         appearance="subtle"
                         onClick={() => setFocused(0)}
+                        disabled={contextMenuProp?.data?.target == "collection"}
                     >
                         <Text>Move To</Text>
                     </Button>
@@ -205,7 +242,7 @@ export default function ContextMenu() {
                         <Text>Add tag</Text>
                     </Button>
                 }
-                disabled={contextMenuProp?.data?.target == "folder"}
+                disabled={contextMenuProp?.data?.target != "assets"}
             >
                 {
                     contextMenuProp?.data?.target != "folder" &&
@@ -246,7 +283,7 @@ export default function ContextMenu() {
                         <Text>Remove tag</Text>
                     </Button>
                 }
-                disabled={contextMenuProp?.data?.target == "folder"}
+                disabled={contextMenuProp?.data?.target != "assets"}
             >
                 {
                     contextMenuProp?.data?.target != "folder" &&
@@ -276,6 +313,15 @@ export default function ContextMenu() {
                     />
                 }
             </Submenu>
+            <CtxItem onClick={handleQuickRef}>
+                <Button
+                    className={buttonStyle.root}
+                    icon={<DrawImage20Regular />}
+                    appearance="subtle"
+                >
+                    <Text>Quick Ref</Text>
+                </Button>
+            </CtxItem>
         </CtxMenu>
     )
 }

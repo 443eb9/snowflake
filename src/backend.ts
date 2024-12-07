@@ -55,6 +55,14 @@ export type RecentLib = {
     lastOpen: string,
 }
 
+export type QuickRefTy = {
+    asset: string[],
+} | {
+    folder: string,
+} | {
+    tag: string,
+}
+
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
 }
@@ -171,4 +179,8 @@ export function MoveAssetsTo(params: { assets: string[], folder: string }): Prom
 
 export function MoveFoldersTo(params: { srcFolders: string[], dstFolder: string }): Promise<void> {
     return invoke("move_folders_to", params)
+}
+
+export function QuickRef(params: { ty: QuickRefTy }): Promise<void> {
+    return invoke("quick_ref", params)
 }

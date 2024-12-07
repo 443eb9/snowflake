@@ -14,9 +14,9 @@ import FileManipulator from "./file-manipulator";
 import OverlayPanel from "./widgets/overlay-panel";
 import { useEffect, useState } from "react";
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
-import { DragDropHandler } from "./drag-drop-handler";
 import { ArrowExit20Regular } from "@fluentui/react-icons";
 import { useNavigate } from "react-router-dom";
+import "./context.css"
 
 const KeyMap = {
     save: "ctrl+s"
@@ -55,7 +55,6 @@ export default function MainApp() {
                 keyMap={KeyMap}
                 handlers={Handlers}
             >
-                <DragDropHandler />
                 <OverlayPanel />
                 <div className="absolute top-2 right-2 z-20" style={{ width: `${windowSize.width * 0.15}px` }}>
                     <WindowControls />
@@ -78,7 +77,7 @@ export default function MainApp() {
                     </div>
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-col gap-2">
-                            <div className="h-4"></div>
+                            <div className="h-[30px]"></div>
                             <Text as="h2" weight="bold" align="end" size={400}>Asset Info</Text>
                         </div>
                         <div

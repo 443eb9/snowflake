@@ -57,7 +57,8 @@ pub fn run() {
             cmd::rename_folder,
             cmd::rename_asset,
             cmd::move_folders_to,
-            cmd::move_assets_to
+            cmd::move_assets_to,
+            cmd::quick_ref,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "quick-ref",
+  "description": "Quick ref window capabilities.",
+  "windows": [
+    "quickref-*"
+  ],
+  "permissions": [
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:window:allow-inner-size",
+    "core:window:allow-set-size"
+  ]
+}

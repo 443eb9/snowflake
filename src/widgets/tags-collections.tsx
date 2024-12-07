@@ -3,8 +3,10 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import { Button, makeStyles } from "@fluentui/react-components"
 import { Collections20Regular } from "@fluentui/react-icons"
 import { GetAssetsContainingTag, Tag } from "../backend"
-import { allTagsContext, browsingFolderContext, selectedAssetsContext } from "../context-provider"
+import { allTagsContext, browsingFolderContext, contextMenuPropContext, selectedAssetsContext } from "../context-provider"
 import TagName from "./tag-name"
+import { TriggerEvent, useContextMenu } from "react-contexify"
+import { CtxMenuId } from "./context-menu"
 
 const buttonStyleHook = makeStyles({
     root: {
@@ -17,6 +19,9 @@ export default function TagsCollections() {
     const buttonStyle = buttonStyleHook()
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
+    const contextMenuProp = useContext(contextMenuPropContext)
+
+    const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
 
     const updateBrowsingFolder = async (tag: Tag) => {
         const assets = await GetAssetsContainingTag({ tag: tag.id })
@@ -54,6 +59,13 @@ export default function TagsCollections() {
                             icon={<Collections20Regular />}
                             style={{ color: `#${tag.color}` }}
                             onClick={() => updateBrowsingFolder(tag)}
+                            onContextMenu={(ev: TriggerEvent) => {
+                                contextMenuProp?.setter({
+                                    target: "collection",
+                                    extra: tag.id,
+                                })
+                                showCtxMenu({ event: ev })
+                            }}
                         >
                             <TagName name={tag.name} />
                         </Button>

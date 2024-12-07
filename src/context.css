@@ -3,7 +3,7 @@
     --contexify-menu-minWidth: 200px;
     --contexify-menu-padding: 4px;
     --contexify-menu-radius: 4px;
-    --contexify-menu-bgColor: #fff;
+    --contexify-menu-bgColor: #292929;
     --contexify-menu-shadow: 1px 2px 2px rgba(0, 0, 0, .1), 2px 4px 4px rgba(0, 0, 0, .1), 3px 6px 6px rgba(0, 0, 0, .1);
     --contexify-menu-negatePadding: var(--contexify-menu-padding);
     --contexify-separator-color: rgba(0, 0, 0, .2);

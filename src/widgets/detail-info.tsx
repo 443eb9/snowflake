@@ -83,23 +83,23 @@ export default function DetailInfo() {
                     <ListItem>
                         <Text as="h5" size={500} weight="bold" font="monospace">File Properties</Text>
                     </ListItem>
-                    <ListItem className="flex flex-col gap-1">
+                    <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">Size</Text>
                         <Text font="monospace">{formatFileSize(asset.meta.byteSize)}</Text>
                     </ListItem>
-                    <ListItem className="flex flex-col gap-1">
+                    <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">Created At</Text>
                         <Text font="monospace">{new Date(asset.meta.createdAt).toLocaleString()}</Text>
                     </ListItem>
-                    <ListItem className="flex flex-col gap-1">
+                    <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">Last Modified</Text>
                         <Text font="monospace">{new Date(asset.meta.lastModified).toLocaleString()}</Text>
                     </ListItem>
-                    <ListItem className="flex flex-col gap-1">
+                    <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">Id</Text>
                         <Text font="monospace">{asset.id}</Text>
                     </ListItem>
-                    <ListItem className="flex flex-col gap-1">
+                    <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">Checksums</Text>
                         {
                             asset.checksums

@@ -63,13 +63,21 @@ pub struct RecentLib {
     pub last_open: DateTime<FixedOffset>,
 }
 
+#[derive(Error, Debug)]
+pub enum FileError {
+    #[error("Io error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Image error: {0}")]
+    Image(#[from] imagesize::ImageError),
+}
+
 fn collect_path(
     root: &Path,
     path: PathBuf,
     parent: Option<FolderId>,
     folders: &mut HashMap<FolderId, Folder>,
     assets: &mut HashMap<AssetId, Asset>,
-) -> Result<Option<FolderId>, std::io::Error> {
+) -> Result<Option<FolderId>, FileError> {
     let std_meta = metadata(&path)?;
     let meta = Metadata::from_std_meta(&std_meta);
     let name = path
@@ -100,14 +108,19 @@ fn collect_path(
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
+        let ty = AssetType::from_extension(path.extension());
+        let props = match ty {
+            AssetType::Image => {
+                let size = imagesize::size(&path)?;
+                Some(AssetProperty::Image(ImageProperty {
+                    width: size.width as u32,
+                    height: size.height as u32,
+                }))
+            }
+            AssetType::Unknown => None,
+        };
 
-        let asset = Asset::new(
-            parent.id,
-            name,
-            ext.into(),
-            meta,
-            AssetType::from_extension(path.extension()),
-        );
+        let asset = Asset::new(parent.id, name, ext.into(), meta, ty, props);
 
         copy(&path, root.join(IMAGE_ASSETS).join(asset.get_file_name()))?;
         parent.content.insert(asset.id);
@@ -125,16 +138,16 @@ pub enum StorageModificationError {
     AssetNotFount(AssetId),
     #[error("Folder {0:?} not found.")]
     FolderNotFount(FolderId),
-    #[error("Io error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("File error: {0}")]
+    File(#[from] FileError),
 }
 
 #[derive(Debug, Error)]
 pub enum StorageCreationError {
     #[error("Folder at {0} is not empty.")]
     FolderNotEmpty(PathBuf),
-    #[error("Io error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("File error: {0}")]
+    File(#[from] FileError),
 }
 
 pub type StorageModificationResult<T> = Result<T, StorageModificationError>;
@@ -167,7 +180,7 @@ impl Storage {
         let src_root_folder = src_root_folder.as_ref();
         let root_path = root_folder.as_ref();
 
-        if root_path.exists() && read_dir(root_path)?.count() != 0 {
+        if root_path.exists() && read_dir(root_path).map_err(|e| FileError::Io(e))?.count() != 0 {
             return Err(StorageCreationError::FolderNotEmpty(
                 root_path.to_path_buf(),
             ));
@@ -256,9 +269,20 @@ impl Storage {
 
             let ty = AssetType::from_ext_str(&ext);
             let meta = Metadata::from_std_meta(&file.metadata()?);
+            let props = match ty {
+                AssetType::Image => {
+                    let size = imagesize::blob_size(&bytes)?;
+                    Some(AssetProperty::Image(ImageProperty {
+                        width: size.width as u32,
+                        height: size.height as u32,
+                    }))
+                }
+                AssetType::Unknown => None,
+            };
+
             let asset = Asset {
                 id: AssetId(id),
-                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty)
+                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty, props)
             };
 
             parent.content.insert(asset.id);
@@ -531,6 +555,7 @@ pub struct Asset {
     pub name: String,
     pub ty: AssetType,
     pub ext: Arc<str>,
+    pub props: Option<AssetProperty>,
     pub meta: Metadata,
     pub checksums: Option<Checksums>,
     pub tags: Vec<TagId>,
@@ -543,6 +568,7 @@ impl Asset {
         ext: Arc<str>,
         meta: Metadata,
         ty: AssetType,
+        props: Option<AssetProperty>,
     ) -> Self {
         Self {
             parent,
@@ -550,6 +576,7 @@ impl Asset {
             ty,
             name,
             ext,
+            props,
             meta,
             checksums: None,
             tags: Default::default(),
@@ -563,6 +590,19 @@ impl Asset {
             format!("{}.{}", self.id.0, self.ext)
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum AssetProperty {
+    Image(ImageProperty),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ImageProperty {
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
