@@ -3,6 +3,7 @@ import { Add20Regular, ArrowDownload20Regular, Delete20Regular, Edit20Regular, F
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedAssetsContext } from "../context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
+import { t } from "../i18n"
 
 const renameInputStyleHook = makeStyles({
     root: {
@@ -95,7 +96,7 @@ export default function AssetManipulation() {
                     </MenuTrigger>
                     <MenuPopover>
                         <div className="flex flex-grow gap-2 items-center p-1">
-                            <Text>New name</Text>
+                            <Text>{t("asset-mani.rename")}</Text>
                             <Input
                                 className={inputStyle.root}
                                 onChange={ev => setNewName(ev.target.value)}

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../backend";
 import { useEffect, useState } from "react";
+import { t } from "../i18n";
 
 export default function Startup() {
     const toasterId = useId("toaster");
@@ -53,13 +54,13 @@ export default function Startup() {
     async function initializeLibrary() {
         const srcPath = await open({
             directory: true,
-            title: "Choose the source root path.",
+            title: t("startup.initLibSrcRootDialogTitle"),
         })
 
         if (srcPath) {
             const path = await open({
                 directory: true,
-                title: "Choose the library root path.",
+                title: t("startup.initLibDstRootDialogTitle"),
             })
 
             if (path) {
@@ -90,14 +91,14 @@ export default function Startup() {
                             onClick={openLibrary}
                             className="h-12"
                         >
-                            Open Library
+                            {t("startup.btnOpenLib")}
                         </Button>
                         <Button
                             icon={<New20Regular />}
                             onClick={initializeLibrary}
                             className="h-12"
                         >
-                            Initialize Library
+                            {t("startup.btnInitLib")}
                         </Button>
                         <Menu>
                             <MenuTrigger>
@@ -105,7 +106,7 @@ export default function Startup() {
                                     icon={<Clock20Regular />}
                                     className="h-12"
                                 >
-                                    Open Recent
+                                    {t("startup.btnRecent")}
                                 </Button>
                             </MenuTrigger>
 

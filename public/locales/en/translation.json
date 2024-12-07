@@ -1,0 +1,56 @@
+{
+    "asset-download.sendingGet": "Sending GET",
+    "asset-download.start": "Start",
+    "asset-download.done": "Done",
+    "asset-download.error": "Error",
+    "asset-download.add": "Add",
+
+    "startup.initLibSrcRootDialogTitle": "Choose the source root path.",
+    "startup.initLibDstRootDialogTitle": "Choose the library root path.",
+    "startup.btnOpenLib": "Open Library",
+    "startup.btnInitLib": "Initialize Library",
+    "startup.btnRecent": "Open Recent",
+
+    "asset-mani.rename": "New name",
+
+    "browser.folderTreeSectionTitle": "Folder Tree",
+    "browser.tagCollSectionTitle": "Tag Collections",
+
+    "ctxMenu.del": "Delete",
+    "ctxMenu.rename": "Rename",
+    "ctxMenu.moveTo": "Move To",
+    "ctxMenu.noFolderFallback": "No folder matches query.",
+    "ctxMenu.addTag": "Add Tag",
+    "ctxMenu.remTag": "Remove Tag",
+    "ctxMenu.noTagFallback": "No tag matches query.",
+    "ctxMenu.quickRef": "Quick Ref",
+
+    "detail.noAssetSelect": "No asset selected",
+    "detail.multiAssetsSelect": "Multiple assets selected",
+    "detail.filePropsSectionTitle": "File Properties",
+    "detail.fileName": "File Name",
+    "detail.tags": "Tags",
+    "detail.size": "Size",
+    "detail.created": "Created At",
+    "detail.modify": "Last Modified",
+    "detail.id": "Id",
+    "detail.checksums": "Checksums",
+    "detail.checksumsCompute": "Compute",
+    
+    "quickRefCtxMenu.close": "Close",
+
+    "tagName.fallback": "Unnamed",
+
+    "tagsContainer.noAvailable": "No tags available.",
+    "tagsContainer.add": "Add Tag",
+    "tagsContainer.none": "None",
+
+    "tagsMgr.title": "Tags Management",
+    "tagsMgr.add": "Add Tag",
+    "tagsMgr.colName": "Name",
+    "tagsMgr.colColor": "Color",
+    "tagsMgr.colActions": "Actions",
+
+    "app.libTitle": "Library",
+    "app.assetInfoTitle": "Asset Info"
+}

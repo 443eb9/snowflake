@@ -1,4 +1,5 @@
 import { Text } from "@fluentui/react-components"
+import { t } from "../i18n"
 
 export default function TagName({ name }: { name: string }) {
     if (!name) {
@@ -6,6 +7,6 @@ export default function TagName({ name }: { name: string }) {
     }
 
     return name.length == 0
-        ? <Text italic className="opacity-50">Unnamed</Text>
+        ? <Text italic className="opacity-50">{t("tagName.fallback")}</Text>
         : <Text>{name}</Text>
 }

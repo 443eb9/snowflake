@@ -6,6 +6,7 @@ import { DownloadEvent, GetFolder, ImportWebAssets } from "../backend";
 import { browsingFolderContext, fileManipulationContext } from "../context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import formatFileSize from "../util";
+import { t } from "i18next";
 
 const eventTextStyleHook = makeStyles({
     root: {
@@ -45,17 +46,17 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
         const parse = () => {
             switch (ev.status) {
                 case "SendingGet":
-                    return ["Sending GET", "colorPaletteYellowBackground2", 1]
+                    return [t("asset-download.sendingGet"), "colorPaletteYellowBackground2", 1]
                 case "Started":
-                    return ["Start!", "colorPaletteLightGreenBackground2", 0]
+                    return [t("asset-download.start"), "colorPaletteLightGreenBackground2", 0]
                 case "Ongoing":
                     const total = ev.total == undefined ? "unknown" : formatFileSize(ev.total)
                     const progress = ev.total == undefined ? 0 : ev.downloaded / ev.total
                     return [`${formatFileSize(ev.downloaded)}/${total}`, "colorPaletteLightGreenBackground2", progress]
                 case "Finished":
-                    return ["Done!", "colorPaletteGreenBackground2", 1]
+                    return [t("asset-download.done"), "colorPaletteGreenBackground2", 1]
                 default:
-                    return [`Error: ${(ev.status as any).Error}`, "colorPaletteRedBackground2", 1]
+                    return [`${t("asset-download.error")}: ${(ev.status as any).Error}`, "colorPaletteRedBackground2", 1]
             }
         }
 
@@ -152,7 +153,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
                         className="w-[30%]"
                         onClick={() => { setUrls([...urls, ""]) }}
                     >
-                        Add
+                        {t("asset-download.add")}
                     </Button>
                     <Button
                         icon={<ArrowDownload20Regular />}
@@ -160,7 +161,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
                         className="w-[30%]"
                         onClick={startDownload}
                     >
-                        Start
+                        {t("asset-download.start")}
                     </Button>
                 </div>
             }

@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
 import { browsingFolderContext } from "../context-provider";
 import TagName from "./tag-name";
+import { t } from "../i18n";
 
 export default function TagsContainer({
     associatedItem, tags, readonly
@@ -88,7 +89,7 @@ export default function TagsContainer({
             >
                 {
                     selected.length == 0
-                        ? <Text italic className="opacity-50">None</Text>
+                        ? <Text italic className="opacity-50">{t("tagsContainer.none")}</Text>
                         : selected.map((tag, index) =>
                             <FluentTag
                                 key={index}
@@ -106,14 +107,14 @@ export default function TagsContainer({
                 !readonly &&
                 <Menu>
                     <MenuTrigger>
-                        <MenuButton onClick={() => fetchAllTags()}>Add Tag</MenuButton>
+                        <MenuButton onClick={() => fetchAllTags()}>{t("tagsContainer.add")}</MenuButton>
                     </MenuTrigger>
 
                     <MenuPopover>
                         <MenuList>
                             {
                                 available?.length == 0
-                                    ? <MenuItem>No tags available.</MenuItem>
+                                    ? <MenuItem>{t("tagsContainer.noAvailable")}</MenuItem>
                                     : available?.map((tag, index) =>
                                         <MenuItem
                                             key={index}

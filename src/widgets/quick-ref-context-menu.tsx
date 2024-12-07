@@ -2,6 +2,7 @@ import { Button, makeStyles, Text } from "@fluentui/react-components";
 import { Dismiss20Regular } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Item, Menu } from "react-contexify";
+import { t } from "../i18n";
 
 export const QuickRefCtxMenuId = "quickrefctxmenu"
 
@@ -25,7 +26,7 @@ export default function QuickRefContextMenu() {
                     icon={<Dismiss20Regular />}
                     appearance="subtle"
                 >
-                    <Text>Close</Text>
+                    <Text>{t("quickRefCtxMenu.close")}</Text>
                 </Button>
             </Item>
         </Menu>

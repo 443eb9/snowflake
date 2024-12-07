@@ -8,6 +8,7 @@ import { allTagsContext } from "../context-provider";
 import TagName from "./tag-name";
 import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
 import { TinyColor } from "@ctrl/tinycolor";
+import { t } from "../i18n";
 
 type TagEditingStatus = {
     isEditingName: boolean,
@@ -79,7 +80,7 @@ export default function TagsManager() {
                 </PopoverTrigger>
 
                 <PopoverSurface className="flex flex-col gap-2 max-w-[500] min-w-[400px]">
-                    <Text>Tags Management</Text>
+                    <Text>{t("tagsMgr.title")}</Text>
                     {
                         allTagsEditable.length == 0
                             ? <Text italic className="opacity-50">Void</Text>
@@ -126,7 +127,9 @@ export default function TagsManager() {
                                 }
                             ])
                         }}
-                    >Add Tag</Button>
+                    >
+                        {t("tagsMgr.add")}
+                    </Button>
                 </PopoverSurface>
             </Popover>
         </div>
@@ -138,7 +141,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
         createTableColumn<EditableTag>({
             columnId: "name",
             compare: (a, b) => a.name.localeCompare(b.name),
-            renderHeaderCell: () => "Name",
+            renderHeaderCell: () => t("tagsMgr.colName"),
             renderCell: item =>
                 <div className="w-full">
                     {
@@ -166,7 +169,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
         createTableColumn<EditableTag>({
             columnId: "color",
             compare: (a, b) => a.color.localeCompare(b.color),
-            renderHeaderCell: () => "Color",
+            renderHeaderCell: () => t("tagsMgr.colColor"),
             renderCell: item =>
                 <TableCellLayout style={{ color: `#${item.color}` }}>
                     <Text font="monospace">{item.color.substring(0, 6)}</Text>
@@ -175,7 +178,7 @@ function generateColumns(refresh: () => void, inputStyle: any, updateTag: any): 
         createTableColumn<EditableTag>({
             columnId: "actions",
             compare: _ => 0,
-            renderHeaderCell: () => "Actions",
+            renderHeaderCell: () => t("tagsMgr.colActions"),
             renderCell: item =>
                 <TableCellLayout>
                     <div className="flex gap-2">

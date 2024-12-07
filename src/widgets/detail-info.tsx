@@ -7,6 +7,7 @@ import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "../context-provider"
 import formatFileSize from "../util"
 import { darkenContentStyleHook } from "../styling"
+import { t } from "../i18n"
 
 export default function DetailInfo() {
     const [asset, setAsset] = useState<Asset | undefined>()
@@ -54,7 +55,7 @@ export default function DetailInfo() {
     if (selectedCount != 1) {
         return (
             <Text className="opacity-50" size={600} italic>
-                {selectedCount == 0 ? "No asset selected" : "Multiple assets selected"}
+                {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
             </Text>
         )
     } else if (asset && assetAbsPath) {
@@ -68,11 +69,11 @@ export default function DetailInfo() {
                 />
                 <List className="flex flex-col gap-2">
                     <ListItem className="flex flex-col gap-1">
-                        <Text weight="bold">File Name</Text>
+                        <Text weight="bold">{t("detail.fileName")}</Text>
                         <Text>{asset.name}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col gap-1">
-                        <Text weight="bold">Tags</Text>
+                        <Text weight="bold">{t("detail.tags")}</Text>
                         <TagsContainer
                             tags={asset.tags}
                             associatedItem={asset.id}
@@ -81,26 +82,26 @@ export default function DetailInfo() {
                 </List>
                 <List className={darkenContentStyle.root}>
                     <ListItem>
-                        <Text as="h5" size={500} weight="bold" font="monospace">File Properties</Text>
+                        <Text as="h5" size={500} weight="bold" font="monospace">{t("detail.filePropsSectionTitle")}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col">
-                        <Text weight="semibold" font="monospace">Size</Text>
+                        <Text weight="semibold" font="monospace">{t("detail.size")}</Text>
                         <Text font="monospace">{formatFileSize(asset.meta.byteSize)}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col">
-                        <Text weight="semibold" font="monospace">Created At</Text>
+                        <Text weight="semibold" font="monospace">{t("detail.created")}</Text>
                         <Text font="monospace">{new Date(asset.meta.createdAt).toLocaleString()}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col">
-                        <Text weight="semibold" font="monospace">Last Modified</Text>
+                        <Text weight="semibold" font="monospace">{t("detail.modify")}</Text>
                         <Text font="monospace">{new Date(asset.meta.lastModified).toLocaleString()}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col">
-                        <Text weight="semibold" font="monospace">Id</Text>
+                        <Text weight="semibold" font="monospace">{t("detail.id")}</Text>
                         <Text font="monospace">{asset.id}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col">
-                        <Text weight="semibold" font="monospace">Checksums</Text>
+                        <Text weight="semibold" font="monospace">{t("detail.checksums")}</Text>
                         {
                             asset.checksums
                                 ? <div className={mergeClasses("w-full flex flex-col overflow-x-auto", darkenContentStyle.root)}>
@@ -120,7 +121,7 @@ export default function DetailInfo() {
                                         setAsset(computed)
                                     }
                                 }}>
-                                    <Text>Compute</Text>
+                                    <Text>{t("detail.checksumsCompute")}</Text>
                                 </Button>
                         }
                     </ListItem>

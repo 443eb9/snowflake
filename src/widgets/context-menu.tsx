@@ -5,6 +5,7 @@ import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
+import { t } from "../i18n";
 
 export const CtxMenuId = "context-menu"
 
@@ -180,7 +181,7 @@ export default function ContextMenu() {
                     appearance="subtle"
                     disabled={contextMenuProp?.data?.target == "collection"}
                 >
-                    <Text>Delete</Text>
+                    <Text>{t("ctxMenu.del")}</Text>
                 </Button>
             </CtxItem>
             <CtxItem onClick={handleRename} disabled={multipleSelected}>
@@ -190,7 +191,7 @@ export default function ContextMenu() {
                     appearance="subtle"
                     disabled={contextMenuProp?.data?.target == "collection"}
                 >
-                    <Text>Rename</Text>
+                    <Text>{t("ctxMenu.rename")}</Text>
                 </Button>
             </CtxItem>
             <Submenu
@@ -202,7 +203,7 @@ export default function ContextMenu() {
                         onClick={() => setFocused(0)}
                         disabled={contextMenuProp?.data?.target == "collection"}
                     >
-                        <Text>Move To</Text>
+                        <Text>{t("ctxMenu.moveTo")}</Text>
                     </Button>
                 }
             >
@@ -222,7 +223,7 @@ export default function ContextMenu() {
                     }
                     noMatch={
                         <CompoundButton appearance="transparent" size="small">
-                            <Text>No tag matches query.</Text>
+                            <Text>{t("ctxMenu.noFolderFallback")}</Text>
                         </CompoundButton>
                     }
                     itemProps={folder => {
@@ -239,7 +240,7 @@ export default function ContextMenu() {
                         appearance="subtle"
                         onClick={() => setFocused(1)}
                     >
-                        <Text>Add tag</Text>
+                        <Text>{t("ctxMenu.addTag")}</Text>
                     </Button>
                 }
                 disabled={contextMenuProp?.data?.target != "assets"}
@@ -262,7 +263,7 @@ export default function ContextMenu() {
                         }
                         noMatch={
                             <CompoundButton appearance="transparent" size="small">
-                                <Text>No tag matches query.</Text>
+                                <Text>{t("ctxMenu.noTagFallback")}</Text>
                             </CompoundButton>
                         }
                         itemProps={tag => {
@@ -280,7 +281,7 @@ export default function ContextMenu() {
                         appearance="subtle"
                         onClick={() => setFocused(2)}
                     >
-                        <Text>Remove tag</Text>
+                        <Text>{t("ctxMenu.remTag")}</Text>
                     </Button>
                 }
                 disabled={contextMenuProp?.data?.target != "assets"}
@@ -303,7 +304,7 @@ export default function ContextMenu() {
                         }
                         noMatch={
                             <CompoundButton appearance="transparent" size="small">
-                                <Text>No tag matches query.</Text>
+                                <Text>{t("ctxMenu.noTagFallback")}</Text>
                             </CompoundButton>
                         }
                         itemProps={tag => {
@@ -319,7 +320,7 @@ export default function ContextMenu() {
                     icon={<DrawImage20Regular />}
                     appearance="subtle"
                 >
-                    <Text>Quick Ref</Text>
+                    <Text>{t("ctxMenu.quickRef")}</Text>
                 </Button>
             </CtxItem>
         </CtxMenu>
