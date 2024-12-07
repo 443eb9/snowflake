@@ -1,4 +1,4 @@
-import { Button, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
+import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
 import { Book20Regular, Clock20Regular, Library20Regular, New20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
 import MsgToast from "../widgets/toast";
@@ -80,58 +80,61 @@ export default function Startup() {
             <div className="absolute right-4 w-full">
                 <WindowControls className="pt-4" />
             </div>
-            <div className="flex h-full justify-center items-center">
-                <div className="flex flex-col gap-2">
-                    <Title1 className="italic">Snowflake ❄</Title1>
-                    <Button
-                        icon={<Library20Regular />}
-                        onClick={openLibrary}
-                        className="h-12"
-                    >
-                        Open Library
-                    </Button>
-                    <Button
-                        icon={<New20Regular />}
-                        onClick={initializeLibrary}
-                        className="h-12"
-                    >
-                        Initialize Library
-                    </Button>
-                    <Menu>
-                        <MenuTrigger>
-                            <Button
-                                icon={<Clock20Regular />}
-                                className="h-12"
-                            >
-                                Open Recent
-                            </Button>
-                        </MenuTrigger>
+            <div className="flex h-full justify-center">
+                <div className="flex flex-col flex-wrap gap-2 h-full justify-center">
+                    <Image src="snowflake.svg" width={200} />
+                    <div className="flex flex-col gap-2">
+                        <Title1 className="italic" align="center">Snowflake</Title1>
+                        <Button
+                            icon={<Library20Regular />}
+                            onClick={openLibrary}
+                            className="h-12"
+                        >
+                            Open Library
+                        </Button>
+                        <Button
+                            icon={<New20Regular />}
+                            onClick={initializeLibrary}
+                            className="h-12"
+                        >
+                            Initialize Library
+                        </Button>
+                        <Menu>
+                            <MenuTrigger>
+                                <Button
+                                    icon={<Clock20Regular />}
+                                    className="h-12"
+                                >
+                                    Open Recent
+                                </Button>
+                            </MenuTrigger>
 
-                        <MenuPopover>
-                            {
-                                recentLibs?.length == 0
-                                    ? <MenuItem><Text>No recent libraries.</Text></MenuItem>
-                                    : recentLibs?.map((lib, index) =>
-                                        <MenuItem
-                                            key={index}
-                                            secondaryContent={(new Date(lib.lastOpen).toLocaleString())}
-                                            icon={<Book20Regular />}
-                                            onClick={async () => {
-                                                await LoadLibrary({ rootFolder: lib.path })
-                                                    .then(() => {
-                                                        nav("/app")
-                                                    })
-                                                    .catch(err => {
-                                                        dispatch(err)
-                                                    })
-                                            }}
-                                        >
-                                            <Text>{lib.name}</Text>
-                                        </MenuItem>
-                                    )
-                            }
-                        </MenuPopover>
-                    </Menu>
+                            <MenuPopover>
+                                {
+                                    recentLibs?.length == 0
+                                        ? <MenuItem><Text>No recent libraries.</Text></MenuItem>
+                                        : recentLibs?.map((lib, index) =>
+                                            <MenuItem
+                                                key={index}
+                                                secondaryContent={(new Date(lib.lastOpen).toLocaleString())}
+                                                icon={<Book20Regular />}
+                                                onClick={async () => {
+                                                    await LoadLibrary({ rootFolder: lib.path })
+                                                        .then(() => {
+                                                            nav("/app")
+                                                        })
+                                                        .catch(err => {
+                                                            dispatch(err)
+                                                        })
+                                                }}
+                                            >
+                                                <Text>{lib.name}</Text>
+                                            </MenuItem>
+                                        )
+                                }
+                            </MenuPopover>
+                        </Menu>
+                    </div>
                 </div>
             </div>
         </div>
