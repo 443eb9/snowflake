@@ -76,7 +76,7 @@ export default function Startup() {
 
     return (
         <div className="h-full">
-            <Toaster id={toasterId} inline />
+            <Toaster id={toasterId} />
             <div className="absolute right-4 w-full">
                 <WindowControls className="pt-4" />
             </div>
@@ -98,7 +98,7 @@ export default function Startup() {
                         >
                             Initialize Library
                         </Button>
-                        <Menu inline>
+                        <Menu>
                             <MenuTrigger>
                                 <Button
                                     icon={<Clock20Regular />}

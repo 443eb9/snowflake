@@ -78,11 +78,15 @@ export default function AssetManipulation() {
 
     const selectedCount = selectedAssets?.data?.length ?? 0
 
+    if (!browsingFolder?.data) {
+        return <></>
+    }
+
     return (
         <div className="flex gap-1 justify-between">
             <div className="flex gap-1">
                 <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
-                <Menu inline open={renamePopoverOpen} onOpenChange={(_, d) => setRenamePopoverOpen(d.open)}>
+                <Menu open={renamePopoverOpen} onOpenChange={(_, d) => setRenamePopoverOpen(d.open)}>
                     <MenuTrigger>
                         <MenuButton
                             icon={<Edit20Regular />}

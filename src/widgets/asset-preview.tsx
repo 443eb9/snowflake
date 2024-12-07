@@ -2,9 +2,7 @@ import { Button, Image, Input, makeStyles, Text } from "@fluentui/react-componen
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
-import { TriggerEvent, useContextMenu } from "react-contexify";
-import { CtxMenuId } from "./context-menu";
-import { contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
+import { fileManipulationContext } from "../context-provider";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -18,24 +16,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
     const [newName, setNewName] = useState<string>()
     const inputStyle = inputStyleHook()
 
-    // const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
-
-
-    // const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
-    // const contextMenuProp = useContext(contextMenuPropContext)
-
-    // const handleContextMenu = (e: TriggerEvent) => {
-    //     if (!selectedAssets?.data || selectedAssets.data.length == 0) {
-    //         selectedAssets?.setter([asset.id])
-    //     }
-
-    //     contextMenuProp?.setter({
-    //         target: "assets",
-    //         extra: undefined,
-    //     })
-    //     showCtxMenu({ event: e })
-    // }
 
     useEffect(() => {
         async function fetch() {
@@ -64,7 +45,6 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
             className="flex flex-col gap-2 selectable-asset"
             appearance="subtle"
             {...props}
-            // onContextMenu={handleContextMenu}
         >
             <div className="flex h-full items-center">
                 <Image

@@ -42,6 +42,12 @@ export function FolderTree() {
             if (map && rootFolderId) {
                 setFolderMap(map)
                 setFolderTree(convertFolderTreeToFlatTree(rootFolderId, map))
+
+                const rootFolder = map.get(rootFolderId) as Folder
+                browsingFolder?.setter({
+                    ...rootFolder,
+                    collection: false,
+                })
             } else {
                 nav("/startup")
             }

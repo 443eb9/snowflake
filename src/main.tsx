@@ -15,7 +15,7 @@ const root = createRoot(container!)
 root.render(
     <React.StrictMode>
         <FluentProvider theme={webDarkTheme} className='test'>
-            <div className="w-full h-full overflow-hidden">
+            <div className="w-[100vw] h-[100vh] overflow-hidden">
                 <HashRouter basename="/">
                     <Routes>
                         <Route path="/app" element={<MainApp />} />

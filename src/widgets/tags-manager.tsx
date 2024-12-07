@@ -71,7 +71,7 @@ export default function TagsManager() {
 
     return (
         <div>
-            <Popover inline>
+            <Popover>
                 <PopoverTrigger>
                     <Button icon={<Tag20Regular />}></Button>
                 </PopoverTrigger>

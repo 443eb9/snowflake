@@ -104,7 +104,7 @@ export default function TagsContainer({
 
             {
                 !readonly &&
-                <Menu inline>
+                <Menu>
                     <MenuTrigger>
                         <MenuButton onClick={() => fetchAllTags()}>Add Tag</MenuButton>
                     </MenuTrigger>

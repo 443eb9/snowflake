@@ -1,37 +1,22 @@
 import { Text } from "@fluentui/react-components"
-import { TauriEvent } from "@tauri-apps/api/event"
+import { listen, TauriEvent } from "@tauri-apps/api/event"
 import { getCurrentWindow } from "@tauri-apps/api/window"
 import { useEffect, useState } from "react"
-
-const appWindow = getCurrentWindow()
 
 export function DragDropHandler() {
     const [hovering, setHovering] = useState(false)
 
     useEffect(() => {
-        // const unlistener = appWindow.onDragDropEvent(ev => {
-        //     if (ev.payload.type == "enter") {
-        //         console.log(ev)
-        //     }
-        // })
-
-        const enter_unlisten = appWindow.listen(TauriEvent.DRAG_ENTER, () => {
-            setHovering(true)
-        })
-
-        const leave_unlisten = appWindow.listen(TauriEvent.DRAG_LEAVE, () => {
-            setHovering(false)
-        })
-
-        const drop_unlisten = appWindow.listen(TauriEvent.DRAG_DROP, () => {
-            setHovering(false)
+        const unlisten = listen(TauriEvent.DRAG_DROP, ev => {
+            console.log(ev.payload)
         })
 
         return () => {
             async function resolve() {
-                (await enter_unlisten)();
-                (await drop_unlisten)();
-                (await leave_unlisten)();
+                // (await enter_unlisten)();
+                // (await drop_unlisten)();
+                // (await leave_unlisten)();
+                (await unlisten)()
             }
             resolve()
         }

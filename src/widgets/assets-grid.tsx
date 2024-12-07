@@ -10,9 +10,9 @@ import { CtxMenuId } from "./context-menu";
 
 export default function AssetsGrid() {
     const [assets, setAssets] = useState<Asset[] | undefined>()
+    const selectoRef = useRef<Selecto & HTMLElement>(null)
     const gridRef = useRef<HTMLDivElement>(null)
     const darkenContentStyle = darkenContentStyleHook()
-    const selectoRef = useRef<Selecto>(null)
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
 
@@ -62,7 +62,7 @@ export default function AssetsGrid() {
     }, [browsingFolder?.data])
 
     return (
-        <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}>
+        <>
             <Selecto
                 ref={selectoRef}
                 container={gridRef.current}
@@ -83,26 +83,28 @@ export default function AssetsGrid() {
                     selectedAssets?.setter(selected)
                 }}
             />
-            {
-                assets &&
-                <div className="flex w-full flex-wrap gap-2 overflow-x-hidden" ref={gridRef}>
-                    {
-                        assets.map((asset, index) => {
-                            if (asset.ty != "Image") {
-                                return undefined
-                            }
+            <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}>
+                {
+                    assets &&
+                    <div className="flex w-full flex-wrap gap-2 overflow-x-hidden" ref={gridRef}>
+                        {
+                            assets.map((asset, index) => {
+                                if (asset.ty != "Image") {
+                                    return undefined
+                                }
 
-                            return (
-                                <AssetPreview
-                                    key={index}
-                                    asset={asset}
-                                    onContextMenu={handleContextMenu}
-                                />
-                            )
-                        })
-                    }
-                </div>
-            }
-        </div>
+                                return (
+                                    <AssetPreview
+                                        key={index}
+                                        asset={asset}
+                                        onContextMenu={handleContextMenu}
+                                    />
+                                )
+                            })
+                        }
+                    </div>
+                }
+            </div>
+        </>
     )
 }

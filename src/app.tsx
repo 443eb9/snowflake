@@ -5,7 +5,7 @@ import WindowControls from "./widgets/window-controls";
 import TagsManager from "./widgets/tags-manager";
 import { HotKeys } from "react-hotkeys";
 import { SaveLibrary } from "./backend";
-import { Text } from "@fluentui/react-components";
+import { Button, Text } from "@fluentui/react-components";
 import ContextProvider from "./context-provider";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
@@ -15,6 +15,8 @@ import OverlayPanel from "./widgets/overlay-panel";
 import { useEffect, useState } from "react";
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
 import { DragDropHandler } from "./drag-drop-handler";
+import { ArrowExit20Regular } from "@fluentui/react-icons";
+import { useNavigate } from "react-router-dom";
 
 const KeyMap = {
     save: "ctrl+s"
@@ -32,6 +34,7 @@ const Handlers = {
 
 export default function MainApp() {
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
+    const nav = useNavigate()
 
     useEffect(() => {
         async function setWindowSizeAsync() {
@@ -59,7 +62,10 @@ export default function MainApp() {
                 </div>
                 <div className="flex justify-between w-full h-full gap-2 p-4">
                     <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
-                        <Text as="h2" weight="bold" size={600}>Library</Text>
+                        <div className="flex items-center gap-2">
+                            <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")}></Button>
+                            <Text as="h2" weight="bold" size={600}>Library</Text>
+                        </div>
                         <div className="h-full overflow-y-auto">
                             <Browser />
                         </div>
