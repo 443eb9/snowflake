@@ -1,11 +1,136 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
 import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "./backend"
+import { useToastController } from "@fluentui/react-components"
+import { globalToasterId } from "./main"
+import MsgToast from "./widgets/toast"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
+
+    const { dispatchToast } = useToastController(globalToasterId)
+
+    async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>) {
+        if (!browsingFolder?.data || !selectedAssets?.data) {
+            return
+        }
+
+        browsingFolder.setter({
+            ...browsingFolder.data,
+            content: [...browsingFolder.data.content.filter((id: any) => !selectedAssets.data?.includes(id))]
+        })
+        await DeleteAssets({ assets: [...selectedAssets?.data?.values() ?? []] })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+
+        selectedAssets.setter([])
+    }
+
+    async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>, newName: string) {
+        if (!browsingFolder?.data || !selectedAssets?.data || selectedAssets.data.length != 1) {
+            return
+        }
+        const target = selectedAssets.data.values().next().value as string
+        await RenameAsset({ asset: target, name: newName })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+
+        selectedAssets.setter([])
+        browsingFolder.setter({
+            ...browsingFolder.data,
+        })
+    }
+
+    async function handleFolderDeletion(
+        browsingFolder: StateContext<VirtualFolder>,
+        selectedAssets: StateContext<string[]>,
+        targetIds: string[],
+    ) {
+        await DeleteFolders({ folders: targetIds })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+
+        if (browsingFolder.data?.id && targetIds.includes(browsingFolder.data?.id)) {
+            browsingFolder.setter(undefined)
+            selectedAssets.setter([])
+        }
+    }
+
+    async function handleFolderCreation(
+        newNames: string[],
+        parent: string
+    ) {
+        await CreateFolders({ folderNames: newNames, parent })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+    }
+
+    async function handleFolderRename(
+        browsingFolder: StateContext<VirtualFolder>,
+        selectedAssets: StateContext<string[]>,
+        targetId: string,
+        newName: string,
+    ) {
+        await RenameFolder({ folder: targetId, name: newName })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+
+        if (targetId == browsingFolder.data?.id) {
+            browsingFolder.setter(undefined)
+            selectedAssets.setter([])
+        }
+    }
+
+    async function handleFoldersImport(
+        items: string[],
+        parent: string,
+    ) {
+        await ImportAssets({ parent, path: items })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+    }
+
+    async function handleAssetsImport(
+        browsingFolder: StateContext<VirtualFolder>,
+        items: string[],
+        parent: string,
+    ) {
+        await ImportAssets({ parent, path: items })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+        const folder = await GetFolder({ folder: parent })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+        if (folder) {
+            browsingFolder.setter({
+                ...folder,
+                collection: false,
+            })
+        }
+    }
+
+    async function handleAssetsMove(
+        browsingFolder: StateContext<VirtualFolder>,
+        selectedAssets: StateContext<string[]>,
+        moved: string[],
+        target: string,
+    ) {
+        await MoveAssetsTo({ assets: moved, folder: target })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+
+        selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
+        if (browsingFolder.data) {
+            browsingFolder.setter({
+                ...browsingFolder.data,
+                content: browsingFolder.data.content.filter(c => !moved.includes(c))
+            })
+        }
+    }
+
+    async function handleFoldersMove(
+        selectedAssets: StateContext<string[]>,
+        moved: string[],
+        target: string,
+    ) {
+        await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+
+        selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
+    }
 
     useEffect(() => {
         const data = fileManipulation?.data
@@ -47,154 +172,4 @@ export default function FileManipulator() {
     }, [selectedAssets?.data])
 
     return <></>
-}
-
-async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>) {
-    if (!browsingFolder?.data || !selectedAssets?.data) {
-        return
-    }
-
-    browsingFolder.setter({
-        ...browsingFolder.data,
-        content: [...browsingFolder.data.content.filter((id: any) => !selectedAssets.data?.includes(id))]
-    })
-    await DeleteAssets({ assets: [...selectedAssets?.data?.values() ?? []] })
-        .catch(err => {
-            //TODO error handling
-            console.error(err)
-        })
-
-    selectedAssets.setter([])
-}
-
-async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>, newName: string) {
-    if (!browsingFolder?.data || !selectedAssets?.data || selectedAssets.data.length != 1) {
-        return
-    }
-    const target = selectedAssets.data.values().next().value as string
-    await RenameAsset({ asset: target, name: newName })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-
-    selectedAssets.setter([])
-    browsingFolder.setter({
-        ...browsingFolder.data,
-    })
-}
-
-async function handleFolderDeletion(
-    browsingFolder: StateContext<VirtualFolder>,
-    selectedAssets: StateContext<string[]>,
-    targetIds: string[],
-) {
-    await DeleteFolders({ folders: targetIds })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-
-    if (browsingFolder.data?.id && targetIds.includes(browsingFolder.data?.id)) {
-        browsingFolder.setter(undefined)
-        selectedAssets.setter([])
-    }
-}
-
-async function handleFolderCreation(
-    newNames: string[],
-    parent: string
-) {
-    await CreateFolders({ folderNames: newNames, parent })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-}
-
-async function handleFolderRename(
-    browsingFolder: StateContext<VirtualFolder>,
-    selectedAssets: StateContext<string[]>,
-    targetId: string,
-    newName: string,
-) {
-    await RenameFolder({ folder: targetId, name: newName })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-
-    if (targetId == browsingFolder.data?.id) {
-        browsingFolder.setter(undefined)
-        selectedAssets.setter([])
-    }
-}
-
-async function handleFoldersImport(
-    items: string[],
-    parent: string,
-) {
-    await ImportAssets({ parent, path: items })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-}
-
-async function handleAssetsImport(
-    browsingFolder: StateContext<VirtualFolder>,
-    items: string[],
-    parent: string,
-) {
-    await ImportAssets({ parent, path: items })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-    const folder = await GetFolder({ folder: parent })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-    if (folder) {
-        browsingFolder.setter({
-            ...folder,
-            collection: false,
-        })
-    }
-}
-
-async function handleAssetsMove(
-    browsingFolder: StateContext<VirtualFolder>,
-    selectedAssets: StateContext<string[]>,
-    moved: string[],
-    target: string,
-) {
-    await MoveAssetsTo({ assets: moved, folder: target })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-
-    selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
-    if (browsingFolder.data) {
-        browsingFolder.setter({
-            ...browsingFolder.data,
-            content: browsingFolder.data.content.filter(c => !moved.includes(c))
-        })
-    }
-}
-
-async function handleFoldersMove(
-    selectedAssets: StateContext<string[]>,
-    moved: string[],
-    target: string,
-) {
-    await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
-        .catch(err => {
-            // TODO error handling
-            console.error(err)
-        })
-
-    selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
 }

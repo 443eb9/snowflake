@@ -1,4 +1,4 @@
-import { Button, Input, makeStyles, Text, Title2 } from "@fluentui/react-components";
+import { Button, Input, makeStyles, Text, Title2, useToastController } from "@fluentui/react-components";
 import { Add20Regular, ArrowDownload20Regular } from "@fluentui/react-icons";
 import { List, ListItem } from "@fluentui/react-list-preview";
 import { useContext, useEffect, useState } from "react";
@@ -7,6 +7,8 @@ import { browsingFolderContext } from "../context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import formatFileSize from "../util";
 import { t } from "i18next";
+import MsgToast from "../widgets/toast";
+import { globalToasterId } from "../main";
 
 const eventTextStyleHook = makeStyles({
     root: {
@@ -24,6 +26,8 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
     const eventTextStyle = eventTextStyleHook()
     const [statusMapper, _] = useState(new Map<number, DownloadEvent>())
 
+    const { dispatchToast } = useToastController(globalToasterId)
+
     const progress = new Channel<DownloadEvent>()
     progress.onmessage = (resp: DownloadEvent) => {
         statusMapper.set(resp.id, resp)
@@ -34,10 +38,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
         if (browsingFolder?.data?.id) {
             statusMapper.clear()
             await ImportWebAssets({ urls, parent: browsingFolder.data.id, progress })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
         }
     }
 
@@ -84,10 +85,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
         async function update() {
             if (browsingFolder?.data?.id) {
                 const folder = await GetFolder({ folder: browsingFolder?.data?.id })
-                    .catch(err => {
-                        // TODO error handling
-                        console.error(err)
-                    })
+                    .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
                 if (folder) {
                     browsingFolder.setter({
                         ...folder,

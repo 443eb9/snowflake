@@ -1,11 +1,13 @@
 import { useContext, useEffect, useState } from "react"
-import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components";
+import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, Text, TreeItemLayout, useHeadlessFlatTree_unstable, useToastController } from "@fluentui/react-components";
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
+import MsgToast from "./toast";
+import { globalToasterId } from "../main";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -29,15 +31,13 @@ export function FolderTree() {
 
     const [newName, setNewName] = useState("")
     const { show: showContextMenu } = useContextMenu({ id: CtxMenuId })
+    const { dispatchToast } = useToastController(globalToasterId)
 
     useEffect(() => {
         async function fetch() {
             const map = await GetFolderTree()
             const rootFolderId = await GetRootFolderId()
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (map && rootFolderId) {
                 setFolderMap(map)

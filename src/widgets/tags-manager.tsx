@@ -1,4 +1,4 @@
-import { Button, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Input, makeStyles, Menu, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, TableCellLayout, TableColumnDefinition, Text } from "@fluentui/react-components";
+import { Button, createTableColumn, DataGrid, DataGridBody, DataGridCell, DataGridHeader, DataGridHeaderCell, DataGridRow, Input, makeStyles, Menu, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, TableCellLayout, TableColumnDefinition, Text, useToastController } from "@fluentui/react-components";
 import { Checkmark20Regular, Color20Regular, Edit20Regular, Tag20Regular } from "@fluentui/react-icons";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
@@ -9,6 +9,8 @@ import TagName from "./tag-name";
 import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
 import { TinyColor } from "@ctrl/tinycolor";
 import { t } from "../i18n";
+import MsgToast from "./toast";
+import { globalToasterId } from "../main";
 
 type TagEditingStatus = {
     isEditingName: boolean,
@@ -30,21 +32,17 @@ export default function TagsManager() {
     const [refresh, setRefresh] = useState(true)
     const inputStyle = inputStyleHook()
 
+    const { dispatchToast } = useToastController(globalToasterId)
+
     const updateTag = useCallback(async (tag: Tag) => {
         await ModifyTag({ newTag: tag })
-            .catch(err => {
-                // TODO error handling
-                console.error(err)
-            })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
         fetchTags()
     }, [])
 
     async function fetchTags() {
         const fetchedTags = await GetAllTags()
-            .catch(err => {
-                // TODO error handling
-                console.error(err)
-            })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
         if (fetchedTags) {
             setAllTagsEditable(fetchedTags.map(tag => {

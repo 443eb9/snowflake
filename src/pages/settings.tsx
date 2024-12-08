@@ -1,10 +1,11 @@
-import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Switch, Tab, TabList, Text, Title2 } from "@fluentui/react-components";
+import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Switch, Tab, TabList, Text, Title2, useToastController } from "@fluentui/react-components";
 import { t } from "../i18n";
 import { Beaker20Regular, Box20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { GetUserSettings, SettingsValue, SetUserSetting, UserSettings } from "../backend";
-import LanguageSwitch from "../language-switch";
 import { refreshEntireUiContext } from "../context-provider";
+import MsgToast from "../widgets/toast";
+import { globalToasterId } from "../main";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState("general")
@@ -12,13 +13,12 @@ export default function Settings() {
 
     const refreshEntireUi = useContext(refreshEntireUiContext)
 
+    const { dispatchToast } = useToastController(globalToasterId)
+
     useEffect(() => {
         async function fetch() {
             const sets = await GetUserSettings()
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
             if (sets) {
                 setUserSettings(sets)
             }
@@ -72,7 +72,6 @@ export default function Settings() {
 
     return (
         <div className="flex gap-4 h-full rounded-md">
-            <LanguageSwitch />
             <div className="flex flex-col h-full gap-2 p-2 w-[22%]">
                 <Title2>{t("settings.title")}</Title2>
                 <div className="overflow-y-scroll h-full">

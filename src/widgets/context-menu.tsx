@@ -1,11 +1,13 @@
 import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-contexify";
-import { Button, CompoundButton, makeStyles, Text } from "@fluentui/react-components";
+import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components";
 import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";
+import MsgToast from "./toast";
+import { globalToasterId } from "../main";
 
 export const CtxMenuId = "context-menu"
 
@@ -26,25 +28,21 @@ export default function ContextMenu() {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [focused, setFocused] = useState(-1)
 
+    const { dispatchToast } = useToastController(globalToasterId)
+
     const buttonStyle = buttonStyleHook()
 
     useEffect(() => {
         async function fetch() {
             const folders = await GetFolderTree()
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (folders) {
                 setAllFolders(Array.from(folders.values()))
             }
 
             const tags = await GetAllTags()
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (tags) {
                 setAllTags(tags)
@@ -123,10 +121,7 @@ export default function ContextMenu() {
         const assets = selectedAssets?.data
         if (assets) {
             await DeltaTagsOf({ assets, tags: [tag.id], mode: add ? "Add" : "Remove" })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
         }
     }
 
@@ -138,28 +133,19 @@ export default function ContextMenu() {
             case "folder":
                 if (contextMenuProp.data?.extra) {
                     await QuickRef({ ty: { folder: contextMenuProp.data?.extra } })
-                        .catch(err => {
-                            // TODO error handling
-                            console.error(err)
-                        })
+                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
                 }
                 break
             case "assets":
                 if (selectedAssets?.data) {
                     await QuickRef({ ty: { asset: selectedAssets.data } })
-                        .catch(err => {
-                            // TODO error handling
-                            console.error(err);
-                        })
+                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
                 }
                 break
             case "collection":
                 if (contextMenuProp.data?.extra) {
                     await QuickRef({ ty: { tag: contextMenuProp.data.extra } })
-                        .catch(err => {
-                            // TODO error handling
-                            console.error(err);
-                        })
+                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
                 }
                 break
         }

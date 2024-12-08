@@ -1,4 +1,4 @@
-import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
+import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, useToastController } from "@fluentui/react-components";
 import { Book20Regular, Clock20Regular, Library20Regular, New20Regular, Settings20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
 import MsgToast from "../widgets/toast";
@@ -9,21 +9,19 @@ import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "../widgets/overlay-panel";
 import { overlaysContext } from "../context-provider";
+import { globalToasterId } from "../main";
 
 export default function Startup() {
-    const toasterId = useId("toaster");
-    const { dispatchToast } = useToastController(toasterId)
+    const { dispatchToast } = useToastController(globalToasterId)
     const [recentLibs, setRecentLibs] = useState<RecentLib[] | undefined>()
 
     const overlays = useContext(overlaysContext)
+    const nav = useNavigate()
 
     useEffect(() => {
         async function fetch() {
             const recentLibs = await GetRecentLibs()
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatch(err))
 
             if (recentLibs) {
                 setRecentLibs(recentLibs)
@@ -34,10 +32,8 @@ export default function Startup() {
     }, [])
 
     const dispatch = (ctn: string) => {
-        console.error(ctn)
         dispatchToast(<MsgToast title="Error" body={ctn}></MsgToast>, { intent: "error" })
     }
-    const nav = useNavigate()
 
     async function openLibrary() {
         const path = await open({
@@ -81,7 +77,6 @@ export default function Startup() {
 
     return (
         <div className="h-full">
-            <Toaster id={toasterId} />
             <OverlayPanel />
             <div className="absolute right-4 w-full">
                 <WindowControls className="pt-4 z-20" />

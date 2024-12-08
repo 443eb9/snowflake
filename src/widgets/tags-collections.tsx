@@ -1,12 +1,14 @@
 import { useContext } from "react"
 import { List, ListItem } from "@fluentui/react-list-preview"
-import { Button, makeStyles } from "@fluentui/react-components"
+import { Button, makeStyles, useToastController } from "@fluentui/react-components"
 import { Collections20Regular } from "@fluentui/react-icons"
 import { GetAssetsContainingTag, Tag } from "../backend"
 import { allTagsContext, browsingFolderContext, contextMenuPropContext, selectedAssetsContext } from "../context-provider"
 import TagName from "./tag-name"
 import { TriggerEvent, useContextMenu } from "react-contexify"
 import { CtxMenuId } from "./context-menu"
+import MsgToast from "./toast"
+import { globalToasterId } from "../main"
 
 const buttonStyleHook = makeStyles({
     root: {
@@ -22,13 +24,11 @@ export default function TagsCollections() {
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
+    const { dispatchToast } = useToastController(globalToasterId)
 
     const updateBrowsingFolder = async (tag: Tag) => {
         const assets = await GetAssetsContainingTag({ tag: tag.id })
-            .catch(err => {
-                // TODO error handling
-                console.error(err)
-            })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data && assets) {
             selectedAssets?.setter([])

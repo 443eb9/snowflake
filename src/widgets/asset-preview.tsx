@@ -1,8 +1,10 @@
-import { Button, Image, Input, makeStyles, Text } from "@fluentui/react-components";
+import { Button, Image, Input, makeStyles, Text, useToastController } from "@fluentui/react-components";
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext } from "../context-provider";
+import MsgToast from "./toast";
+import { globalToasterId } from "../main";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -18,13 +20,12 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
 
     const fileManipulation = useContext(fileManipulationContext)
 
+    const { dispatchToast } = useToastController(globalToasterId)
+
     useEffect(() => {
         async function fetch() {
             const path = await GetAssetAbsPath({ asset: asset.id })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
             if (path) {
                 setAbsPath(path)
             }

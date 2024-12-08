@@ -4,9 +4,11 @@ import { Asset, GetAssets } from "../backend"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
 import Selecto from "react-selecto";
 import { darkenContentStyleHook } from "../styling";
-import { mergeClasses } from "@fluentui/react-components";
+import { mergeClasses, useToastController } from "@fluentui/react-components";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
+import MsgToast from "./toast";
+import { globalToasterId } from "../main";
 
 export default function AssetsGrid() {
     const [assets, setAssets] = useState<Asset[] | undefined>()
@@ -15,6 +17,7 @@ export default function AssetsGrid() {
     const darkenContentStyle = darkenContentStyleHook()
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
+    const { dispatchToast } = useToastController(globalToasterId)
 
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)
@@ -49,10 +52,7 @@ export default function AssetsGrid() {
             }
 
             const assets = await GetAssets({ assets: browsingFolder.data.content })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (assets) {
                 setAssets(assets)

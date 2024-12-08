@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { Button, Image, mergeClasses, Text } from "@fluentui/react-components"
+import { Button, Image, mergeClasses, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
 import { Asset, ComputeChecksum, GetAsset, GetAssetAbsPath } from "../backend"
@@ -8,6 +8,8 @@ import { selectedAssetsContext } from "../context-provider"
 import formatFileSize from "../util"
 import { darkenContentStyleHook } from "../styling"
 import { t } from "../i18n"
+import MsgToast from "./toast"
+import { globalToasterId } from "../main"
 
 export default function DetailInfo() {
     const [asset, setAsset] = useState<Asset | undefined>()
@@ -16,6 +18,8 @@ export default function DetailInfo() {
     const darkenContentStyle = darkenContentStyleHook()
 
     const selectedAssets = useContext(selectedAssetsContext)
+
+    const { dispatchToast } = useToastController(globalToasterId)
 
     useEffect(() => {
         if (!selectedAssets?.data) {
@@ -34,14 +38,9 @@ export default function DetailInfo() {
 
         async function fetch() {
             const asset = await GetAsset({ asset: selected })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
             const absPath = await GetAssetAbsPath({ asset: selected })
-                .catch(err => {
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (asset && absPath) {
                 setAsset(asset)
@@ -112,10 +111,7 @@ export default function DetailInfo() {
                                 </div>
                                 : <Button onClick={async () => {
                                     const computed = await ComputeChecksum({ asset: asset.id })
-                                        .catch(err => {
-                                            // TODO error handling
-                                            console.error(err)
-                                        })
+                                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
                                     if (computed) {
                                         setAsset(computed)

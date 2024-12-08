@@ -1,12 +1,16 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext } from "../context-provider"
 import { Folder, GetFolderTree, GetFolderVirtualPath } from "../backend"
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem } from "@fluentui/react-components"
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, useToastController } from "@fluentui/react-components"
+import MsgToast from "./toast"
+import { globalToasterId } from "../main"
 
 export function BrowsingPath() {
     const [virtualPath, setVirtualPath] = useState<string[] | undefined>()
 
     const browsingFolder = useContext(browsingFolderContext)
+
+    const { dispatchToast } = useToastController(globalToasterId)
 
     const pathChangeHandler = async (pop: number) => {
         if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.collection) {
@@ -14,10 +18,7 @@ export function BrowsingPath() {
         }
 
         const folderTree = await GetFolderTree()
-            .catch(err => {
-                // TODO error handling
-                console.error(err)
-            })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
         if (folderTree) {
             let currentFolder = folderTree.get(browsingFolder.data.id) as Folder
@@ -44,10 +45,7 @@ export function BrowsingPath() {
                 setVirtualPath([`Tag collection ${browsingFolder.data.name}`])
             } else {
                 const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
-                    .catch(err => {
-                        // TODO error handling
-                        console.error(err)
-                    })
+                    .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
                 if (path) {
                     setVirtualPath(path)
                 }

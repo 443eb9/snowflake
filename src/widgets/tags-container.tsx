@@ -1,9 +1,11 @@
-import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text } from "@fluentui/react-components";
+import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
 import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
 import { browsingFolderContext } from "../context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
+import MsgToast from "./toast";
+import { globalToasterId } from "../main";
 
 export default function TagsContainer({
     associatedItem, tags, readonly
@@ -15,13 +17,12 @@ export default function TagsContainer({
     const [selected, setSelected] = useState<Tag[]>([])
     const browsingFolder = useContext(browsingFolderContext)
 
+    const { dispatchToast } = useToastController(globalToasterId)
+
     const update = (newTags: Tag[], isDismiss: boolean) => {
         if (associatedItem) {
             ModifyTagsOf({ assets: [associatedItem], newTags: newTags.map(t => t.id) })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (!browsingFolder) {
                 return
@@ -49,10 +50,7 @@ export default function TagsContainer({
 
     async function fetchAllTags() {
         const allTags = await GetAllTags()
-            .catch(err => {
-                // TODO error handling
-                console.error(err)
-            })
+            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
         if (allTags) {
             setAllTags(allTags)
@@ -63,10 +61,7 @@ export default function TagsContainer({
 
         async function fetchTags() {
             const selected = await GetTags({ tags: tags })
-                .catch(err => {
-                    // TODO error handling
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
 
             if (selected) {
                 setSelected(selected)
