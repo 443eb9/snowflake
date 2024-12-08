@@ -71,7 +71,6 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
                         autoFocus
                         onKeyDown={ev => {
                             if (ev.key == "Enter") {
-                                console.log(fileManipulation.data, newName)
                                 if (fileManipulation.data && newName) {
                                     fileManipulation.setter({
                                         ...fileManipulation.data,

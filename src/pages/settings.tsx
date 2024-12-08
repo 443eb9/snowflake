@@ -3,7 +3,7 @@ import { t } from "../i18n";
 import { Beaker20Regular, Box20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { GetUserSettings, SettingsValue, SetUserSetting, UserSettings } from "../backend";
-import { refreshEntireUiContext } from "../helpers/context-provider";
+import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/msg-toast";
@@ -15,12 +15,17 @@ export default function Settings() {
     const [editingKeyMapping, setEditingKeyMapping] = useState<string | undefined>(undefined)
     const [listenedKeyMap, setListenedKeyMap] = useState<string[]>([])
 
-    const refreshEntireUi = useContext(refreshEntireUiContext)
+    const settingsChangeFlag = useContext(settingsChangeFlagContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         if (editingKeyMapping) {
+            // Some code are different from browser event
+            const codeMapping = new Map([
+                ["delete", "del"]
+            ])
+
             const recorder = (ev: KeyboardEvent) => {
                 let keys = []
                 if (ev.ctrlKey) {
@@ -33,7 +38,13 @@ export default function Settings() {
                     keys.push("shift")
                 }
                 if (!["Control", "Alt", "Shift"].includes(ev.key)) {
-                    keys.push(ev.key.toLowerCase())
+                    const key = ev.key.toLowerCase()
+                    const mapped = codeMapping.get(key)
+                    if (mapped) {
+                        keys.push(mapped)
+                    } else {
+                        keys.push(key)
+                    }
                 }
 
                 setListenedKeyMap(keys)
@@ -56,7 +67,7 @@ export default function Settings() {
         }
 
         fetch()
-    }, [refreshEntireUi?.data])
+    }, [settingsChangeFlag?.data])
 
     if (!userSettings) {
         return <></>
@@ -69,7 +80,7 @@ export default function Settings() {
             .catch(err => {
                 dispatchToast(<ErrToast body={err} />)
             })
-        refreshEntireUi?.setter(!refreshEntireUi.data)
+        settingsChangeFlag?.setter(!settingsChangeFlag.data)
     }
 
     const resolveSelector = (title: string, value: SettingsValue) => {
@@ -118,10 +129,6 @@ export default function Settings() {
                                 onClick={() => {
                                     if (editingKeyMapping == title) {
                                         setEditingKeyMapping(undefined)
-
-                                        if (listenedKeyMap.length != 0) {
-                                            SetUserSetting({ tab: currentTab, item: title, value: listenedKeyMap })
-                                        }
                                     } else {
                                         setEditingKeyMapping(title)
                                     }

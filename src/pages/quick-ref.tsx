@@ -58,7 +58,6 @@ export default function QuickRef() {
                         width: Math.round(size.width * newScale),
                         height: Math.round(size.height * newScale),
                     }
-                    console.log(scaled)
                     await appWindow.setSize(new PhysicalSize(scaled))
                         .catch(err => {
                             console.error(err)

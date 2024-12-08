@@ -1,13 +1,13 @@
 import { useContext, useEffect } from "react"
 import { GetUserSettings } from "../backend"
 import i18n from "../i18n"
-import { refreshEntireUiContext } from "./context-provider"
+import { settingsChangeFlagContext } from "./context-provider"
 import ErrToast from "../widgets/err-toast"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 
 export default function LanguageSwitch() {
-    const refreshEntireUi = useContext(refreshEntireUiContext)
+    const settingsChangeFlag = useContext(settingsChangeFlagContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
@@ -24,7 +24,7 @@ export default function LanguageSwitch() {
         }
 
         fetch()
-    }, [refreshEntireUi?.data])
+    }, [settingsChangeFlag?.data])
 
     return <></>
 }

@@ -185,7 +185,6 @@ export function RenameFolder(params: { folder: string, name: string }): Promise<
 }
 
 export function MoveAssetsTo(params: { assets: string[], folder: string }): Promise<void> {
-    console.log(params)
     return invoke("move_assets_to", params)
 }
 

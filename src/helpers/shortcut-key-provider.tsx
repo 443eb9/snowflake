@@ -4,7 +4,7 @@ import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/err-toast";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "./context-provider";
+import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedAssetsContext } from "./context-provider";
 import SuccessToast from "../widgets/success-toast";
 import { t } from "../i18n";
 
@@ -13,6 +13,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
     const selectedAssets = useContext(selectedAssetsContext)
     const browsingFolder = useContext(browsingFolderContext)
     const fileManipulation = useContext(fileManipulationContext)
+    const settingsChangeFlag = useContext(settingsChangeFlagContext)
     const [keyMap, setKeyMap] = useState<{ [key: string]: string } | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -38,7 +39,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
         }
 
         fetch()
-    }, [])
+    }, [settingsChangeFlag?.data])
 
     const Handlers = {
         save: async () => {
@@ -83,6 +84,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
             {...props}
             keyMap={keyMap}
             handlers={Handlers}
+            allowChanges
         >
             {props.children}
         </HotKeys>
