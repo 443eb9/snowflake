@@ -9,7 +9,6 @@ import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "../widgets/overlay-panel";
 import { overlaysContext } from "../context-provider";
-import Settings from "./settings";
 
 export default function Startup() {
     const toasterId = useId("toaster");
@@ -85,7 +84,7 @@ export default function Startup() {
             <Toaster id={toasterId} />
             <OverlayPanel />
             <div className="absolute right-4 w-full">
-                <WindowControls className="pt-4" />
+                <WindowControls className="pt-4 z-20" />
             </div>
             <Button
                 size="large"

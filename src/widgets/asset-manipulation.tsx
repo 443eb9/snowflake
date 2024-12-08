@@ -50,7 +50,7 @@ export default function AssetManipulation() {
         if (!parent) { return }
 
         const items = await open({
-            title: "Select assets you want to import",
+            title: t("asset-mani.importDialogTitle"),
             multiple: true,
             directory: folder,
         })

@@ -35,6 +35,7 @@ export const selectedAssetsContext = createContext<StateContext<string[]> | unde
 export const fileManipulationContext = createContext<StateContext<FileManipulation> | undefined>(undefined)
 export const contextMenuPropContext = createContext<StateContext<ContextMenuProp> | undefined>(undefined)
 export const overlaysContext = createContext<StateContext<Overlays> | undefined>(undefined)
+export const refreshEntireUiContext = createContext<StateContext<boolean> | undefined>(undefined)
 
 export default function ContextProvider({ children }: { children?: ReactNode }) {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
@@ -43,6 +44,7 @@ export default function ContextProvider({ children }: { children?: ReactNode }) 
     const [fileManipulation, setFileManipulation] = useState<FileManipulation | undefined>()
     const [contextMenuProp, setContextMenuProp] = useState<ContextMenuProp | undefined>()
     const [overlays, setOverlays] = useState<Overlays | undefined>(undefined)
+    const [refreshEntireUi, setRefreshEntireUi] = useState<boolean | undefined>(false)
 
     return (
         <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
@@ -51,7 +53,9 @@ export default function ContextProvider({ children }: { children?: ReactNode }) 
                     <fileManipulationContext.Provider value={{ data: fileManipulation, setter: setFileManipulation }}>
                         <contextMenuPropContext.Provider value={{ data: contextMenuProp, setter: setContextMenuProp }}>
                             <overlaysContext.Provider value={{ data: overlays, setter: setOverlays }}>
-                                {children}
+                                <refreshEntireUiContext.Provider value={{ data: refreshEntireUi, setter: setRefreshEntireUi }}>
+                                    {children}
+                                </refreshEntireUiContext.Provider>
                             </overlaysContext.Provider>
                         </contextMenuPropContext.Provider>
                     </fileManipulationContext.Provider>

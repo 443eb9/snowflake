@@ -5,18 +5,19 @@ import WindowControls from "./widgets/window-controls";
 import TagsManager from "./widgets/tags-manager";
 import { HotKeys } from "react-hotkeys";
 import { SaveLibrary } from "./backend";
-import { Button, Text } from "@fluentui/react-components";
+import { Button, Subtitle1, Text, Title3 } from "@fluentui/react-components";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
 import ContextMenu from "./widgets/context-menu";
 import FileManipulator from "./file-manipulator";
 import OverlayPanel from "./widgets/overlay-panel";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
-import { ArrowExit20Regular } from "@fluentui/react-icons";
+import { ArrowExit20Regular, Settings20Regular } from "@fluentui/react-icons";
 import { useNavigate } from "react-router-dom";
 import "./context.css"
 import { t } from "./i18n";
+import { overlaysContext } from "./context-provider";
 
 const KeyMap = {
     save: "ctrl+s"
@@ -35,6 +36,8 @@ const Handlers = {
 export default function MainApp() {
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
     const nav = useNavigate()
+
+    const overlay = useContext(overlaysContext)
 
     useEffect(() => {
         async function setWindowSizeAsync() {
@@ -63,12 +66,15 @@ export default function MainApp() {
                 <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
                     <div className="flex items-center gap-2">
                         <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")}></Button>
-                        <Text as="h2" weight="bold" size={600}>{t("app.libTitle")}</Text>
+                        <Title3>{t("app.libTitle")}</Title3>
                     </div>
                     <div className="h-full overflow-y-auto">
                         <Browser />
                     </div>
-                    <TagsManager />
+                    <div className="flex gap-2">
+                        <TagsManager />
+                        <Button icon={<Settings20Regular />} onClick={() => overlay?.setter({ ty: "settings" })} />
+                    </div>
                 </div>
                 <div className="w-full flex h-full flex-col gap-1">
                     <BrowsingPath />
@@ -77,8 +83,8 @@ export default function MainApp() {
                 </div>
                 <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2">
-                        <div className="h-[30px]"></div>
-                        <Text as="h2" weight="bold" align="end" size={400}>{t("app.assetInfoTitle")}</Text>
+                        <div className="h-6"></div>
+                        <Subtitle1 align="end">{t("app.assetInfoTitle")}</Subtitle1>
                     </div>
                     <div className="flex flex-col gap-2 w-[20vw] h-full overflow-y-auto p-1">
                         <DetailInfo />

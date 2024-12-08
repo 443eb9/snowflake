@@ -1,4 +1,4 @@
-import { Button, Input, makeStyles, Text } from "@fluentui/react-components";
+import { Button, Input, makeStyles, Text, Title2 } from "@fluentui/react-components";
 import { Add20Regular, ArrowDownload20Regular } from "@fluentui/react-icons";
 import { List, ListItem } from "@fluentui/react-list-preview";
 import { useContext, useEffect, useState } from "react";
@@ -117,7 +117,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
 
     return (
         <div className="flex flex-col gap-2 h-full">
-            <Text size={600} weight="bold">Download asset from URLs</Text>
+            <Title2>{t("asset-download.title")}</Title2>
             <div className="flex flex-grow flex-col h-full overflow-y-auto">
                 <List className="flex flex-col gap-2">
                     {

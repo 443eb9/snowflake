@@ -1,4 +1,5 @@
 {
+    "asset-download.title": "Download asset from URLs",
     "asset-download.sendingGet": "Sending GET",
     "asset-download.start": "Start",
     "asset-download.done": "Done",
@@ -10,6 +11,7 @@
     "startup.btnInitLib": "Initialize Library",
     "startup.btnRecent": "Open Recent",
     "asset-mani.rename": "New name",
+    "asset-mani.importDialogTitle": "Select assets you want to import.",
     "browser.folderTreeSectionTitle": "Folder Tree",
     "browser.tagCollSectionTitle": "Tag Collections",
     "ctxMenu.del": "Delete",
@@ -43,6 +45,7 @@
     "tagsMgr.colActions": "Actions",
     "app.libTitle": "Library",
     "app.assetInfoTitle": "Asset Info",
+    "settings.title": "Settings",
     "settings.general": "General",
     "settings.general.theme": "Theme",
     "settings.general.theme.light": "Light",
