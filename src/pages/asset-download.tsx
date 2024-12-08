@@ -3,7 +3,7 @@ import { Add20Regular, ArrowDownload20Regular } from "@fluentui/react-icons";
 import { List, ListItem } from "@fluentui/react-list-preview";
 import { useContext, useEffect, useState } from "react";
 import { DownloadEvent, GetFolder, ImportWebAssets } from "../backend";
-import { browsingFolderContext, fileManipulationContext } from "../context-provider";
+import { browsingFolderContext } from "../context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import formatFileSize from "../util";
 import { t } from "i18next";
@@ -18,7 +18,6 @@ const eventTextStyleHook = makeStyles({
 
 export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boolean) => void }) {
     const browsingFolder = useContext(browsingFolderContext)
-    const fileManipulation = useContext(fileManipulationContext)
 
     const [urls, setUrls] = useState<string[]>([""])
     const [status, setStatus] = useState<(DownloadEvent | undefined)[]>([])
@@ -90,26 +89,19 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
                         console.error(err)
                     })
                 if (folder) {
+                    console.log(folder)
                     browsingFolder.setter({
                         ...folder,
                         collection: false,
-                    })
-
-                    // Trick to make folder tree update
-                    // This makes no sense for real manipulation
-                    fileManipulation?.setter({
-                        id: [],
-                        ty: "create",
-                        id_ty: "assets",
-                        submit: undefined,
                     })
                 }
             }
         }
 
+        console.log(downloading, finished)
         if (downloading > 0 && finished != urls.length) {
             lockOverlay(true)
-        } else {
+        } else if (downloading != -1) {
             lockOverlay(false)
             update()
         }

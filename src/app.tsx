@@ -5,7 +5,7 @@ import WindowControls from "./widgets/window-controls";
 import TagsManager from "./widgets/tags-manager";
 import { HotKeys } from "react-hotkeys";
 import { SaveLibrary } from "./backend";
-import { Button, Subtitle1, Text, Title3 } from "@fluentui/react-components";
+import { Button, Subtitle1, Title3 } from "@fluentui/react-components";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
 import ContextMenu from "./widgets/context-menu";
@@ -83,7 +83,7 @@ export default function MainApp() {
                 </div>
                 <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2">
-                        <div className="h-6"></div>
+                        <div className="h-6" />
                         <Subtitle1 align="end">{t("app.assetInfoTitle")}</Subtitle1>
                     </div>
                     <div className="flex flex-col gap-2 w-[20vw] h-full overflow-y-auto p-1">
