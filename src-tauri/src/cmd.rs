@@ -33,6 +33,7 @@ pub fn get_user_settings(data: State<'_, Mutex<AppData>>) -> Result<UserSettings
 pub enum SettingsUpdate {
     Toggle(bool),
     Value(String),
+    Sequence(Vec<String>),
 }
 
 #[tauri::command]
@@ -53,10 +54,13 @@ pub fn set_user_setting(
     match item {
         SettingsValue::Toggle(b) => match value {
             SettingsUpdate::Toggle(nb) => *b = nb,
-            SettingsUpdate::Value(_) => return Err("Incompatible value".into()),
+            _ => return Err("Incompatible value".into()),
+        },
+        SettingsValue::Sequence(seq) => match value {
+            SettingsUpdate::Sequence(s) => *seq = s,
+            _ => return Err("Incompatible value".into()),
         },
         SettingsValue::Selection { selected, possible } => match value {
-            SettingsUpdate::Toggle(_) => return Err("Incompatible value".into()),
             SettingsUpdate::Value(v) => {
                 if possible.contains(&v) {
                     *selected = v
@@ -64,10 +68,11 @@ pub fn set_user_setting(
                     return Err("Incompatible value".into());
                 }
             }
+            _ => return Err("Incompatible value".into()),
         },
         SettingsValue::Custom(s) => match value {
-            SettingsUpdate::Toggle(_) => return Err("Incompatible value".into()),
             SettingsUpdate::Value(v) => *s = v,
+            _ => return Err("Incompatible value".into()),
         },
     }
 
@@ -100,9 +105,7 @@ pub fn load_library(
             last_open: Local::now().into(),
         },
     );
-    data.save(app).map_err(|e| e.to_string())?;
-
-    log::info!("Successfully loaded library!");
+    data.save(&app).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -119,6 +122,8 @@ pub fn initialize_library(
 
     let new_storage =
         Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
+    new_storage.save().map_err(|e| e.to_string())?;
+
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
     storage.replace(new_storage);
 
@@ -135,9 +140,7 @@ pub fn initialize_library(
             last_open: Local::now().into(),
         },
     );
-    data.save(app).map_err(|e| e.to_string())?;
-
-    log::info!("Successfully initialized library!");
+    data.save(&app).map_err(|e| e.to_string())?;
 
     Ok(())
 }

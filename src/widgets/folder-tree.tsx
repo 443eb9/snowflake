@@ -6,7 +6,7 @@ import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
-import MsgToast from "./toast";
+import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
 const inputStyleHook = makeStyles({
@@ -37,7 +37,7 @@ export function FolderTree() {
         async function fetch() {
             const map = await GetFolderTree()
             const rootFolderId = await GetRootFolderId()
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (map && rootFolderId) {
                 setFolderMap(map)

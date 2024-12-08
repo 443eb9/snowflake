@@ -8,7 +8,7 @@ import { selectedAssetsContext } from "../context-provider"
 import formatFileSize from "../util"
 import { darkenContentStyleHook } from "../styling"
 import { t } from "../i18n"
-import MsgToast from "./toast"
+import ErrToast from "./err-toast"
 import { GlobalToasterId } from "../main"
 
 export default function DetailInfo() {
@@ -38,9 +38,9 @@ export default function DetailInfo() {
 
         async function fetch() {
             const asset = await GetAsset({ asset: selected })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             const absPath = await GetAssetAbsPath({ asset: selected })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (asset && absPath) {
                 setAsset(asset)
@@ -111,7 +111,7 @@ export default function DetailInfo() {
                                 </div>
                                 : <Button onClick={async () => {
                                     const computed = await ComputeChecksum({ asset: asset.id })
-                                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
                                     if (computed) {
                                         setAsset(computed)

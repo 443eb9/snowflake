@@ -6,7 +6,7 @@ import { browsingFolderContext, contextMenuPropContext, fileManipulationContext,
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";
-import MsgToast from "./toast";
+import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
 export const CtxMenuId = "context-menu"
@@ -35,14 +35,14 @@ export default function ContextMenu() {
     useEffect(() => {
         async function fetch() {
             const folders = await GetFolderTree()
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (folders) {
                 setAllFolders(Array.from(folders.values()))
             }
 
             const tags = await GetAllTags()
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (tags) {
                 setAllTags(tags)
@@ -121,7 +121,7 @@ export default function ContextMenu() {
         const assets = selectedAssets?.data
         if (assets) {
             await DeltaTagsOf({ assets, tags: [tag.id], mode: add ? "Add" : "Remove" })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
     }
 
@@ -133,19 +133,19 @@ export default function ContextMenu() {
             case "folder":
                 if (contextMenuProp.data?.extra) {
                     await QuickRef({ ty: { folder: contextMenuProp.data?.extra } })
-                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
             case "assets":
                 if (selectedAssets?.data) {
                     await QuickRef({ ty: { asset: selectedAssets.data } })
-                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
             case "collection":
                 if (contextMenuProp.data?.extra) {
                     await QuickRef({ ty: { tag: contextMenuProp.data.extra } })
-                        .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
         }

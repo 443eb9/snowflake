@@ -21,14 +21,24 @@ pub const DATA: &str = "app_meta.json";
 pub const DEFAULT_SETTINGS: &str = "resources/default_settings.json";
 
 #[derive(Debug, Error)]
-pub enum AppDataError {
+pub enum AppError {
     #[error("Io error: {0}")]
     Io(#[from] std::io::Error),
     #[error("Json error: {0}")]
     Json(#[from] serde_json::Error),
     #[error("Tauri error: {0}")]
     Tauri(#[from] tauri::Error),
+    #[error("Image error: {0}")]
+    Image(#[from] imagesize::ImageError),
+    #[error("Asset {0:?} not found.")]
+    AssetNotFount(AssetId),
+    #[error("Folder {0:?} not found.")]
+    FolderNotFount(FolderId),
+    #[error("Folder at {0} is not empty.")]
+    FolderNotEmpty(PathBuf),
 }
+
+pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]
@@ -37,6 +47,7 @@ pub enum SettingsValue {
         selected: String,
         possible: Vec<String>,
     },
+    Sequence(Vec<String>),
     Custom(String),
     Toggle(bool),
 }
@@ -58,6 +69,14 @@ impl DerefMut for UserSettings {
     }
 }
 
+impl UserSettings {
+    pub fn new(app: &AppHandle) -> Result<Self, AppError> {
+        Ok(serde_json::from_reader(File::open(
+            app.path().resource_dir()?.join(DEFAULT_SETTINGS),
+        )?)?)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AppData {
@@ -66,21 +85,37 @@ pub struct AppData {
 }
 
 impl AppData {
-    pub fn read(app: AppHandle) -> Result<Self, AppDataError> {
+    pub fn new(app: &AppHandle) -> AppResult<Self> {
+        Ok(AppData {
+            recent_libs: Default::default(),
+            settings: UserSettings::new(&app)?,
+        })
+    }
+
+    pub fn read(app: &AppHandle) -> AppResult<Self> {
         let cache_dir = app.path().app_cache_dir()?;
         let dir = cache_dir.join(DATA);
-        if !dir.exists() {
-            let data = AppData {
-                recent_libs: Default::default(),
-                settings: serde_json::from_reader(File::open(
-                    app.path().resource_dir()?.join(DEFAULT_SETTINGS),
-                )?)?,
-            };
 
+        #[cfg(debug_assertions)]
+        let debug = true;
+        #[cfg(not(debug_assertions))]
+        let debug = false;
+
+        if !dir.exists() || debug {
+            let data = Self::new(&app)?;
             data.save(app)?;
             Ok(data)
         } else {
-            let mut data = serde_json::from_reader::<_, AppData>(std::fs::File::open(dir)?)?;
+            let mut data = match serde_json::from_reader(std::fs::File::open(dir)?) {
+                Ok(ok) => ok,
+                Err(_) => {
+                    log::info!("Failed to parse app data, recreating one.");
+                    let data = Self::new(&app)?;
+                    data.save(app)?;
+                    data
+                }
+            };
+
             data.recent_libs = data
                 .recent_libs
                 .into_iter()
@@ -90,7 +125,7 @@ impl AppData {
         }
     }
 
-    pub fn save(&self, app: AppHandle) -> Result<(), AppDataError> {
+    pub fn save(&self, app: &AppHandle) -> Result<(), AppError> {
         let cache_dir = app.path().app_cache_dir()?;
         let dir = cache_dir.join(DATA);
         Ok(std::fs::write(dir, serde_json::to_string(self)?)?)
@@ -105,21 +140,13 @@ pub struct RecentLib {
     pub last_open: DateTime<FixedOffset>,
 }
 
-#[derive(Error, Debug)]
-pub enum FileError {
-    #[error("Io error: {0}")]
-    Io(#[from] std::io::Error),
-    #[error("Image error: {0}")]
-    Image(#[from] imagesize::ImageError),
-}
-
 fn collect_path(
     root: &Path,
     path: PathBuf,
     parent: Option<FolderId>,
     folders: &mut HashMap<FolderId, Folder>,
     assets: &mut HashMap<AssetId, Asset>,
-) -> Result<Option<FolderId>, FileError> {
+) -> AppResult<Option<FolderId>> {
     let std_meta = metadata(&path)?;
     let meta = Metadata::from_std_meta(&std_meta);
     let name = path
@@ -174,26 +201,6 @@ fn collect_path(
     }
 }
 
-#[derive(Debug, Error)]
-pub enum StorageModificationError {
-    #[error("Asset {0:?} not found.")]
-    AssetNotFount(AssetId),
-    #[error("Folder {0:?} not found.")]
-    FolderNotFount(FolderId),
-    #[error("File error: {0}")]
-    File(#[from] FileError),
-}
-
-#[derive(Debug, Error)]
-pub enum StorageCreationError {
-    #[error("Folder at {0} is not empty.")]
-    FolderNotEmpty(PathBuf),
-    #[error("File error: {0}")]
-    File(#[from] FileError),
-}
-
-pub type StorageModificationResult<T> = Result<T, StorageModificationError>;
-
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FolderId(pub Uuid);
 
@@ -218,14 +225,12 @@ impl Storage {
     pub fn from_constructed(
         src_root_folder: impl AsRef<Path>,
         root_folder: impl AsRef<Path>,
-    ) -> Result<Self, StorageCreationError> {
+    ) -> AppResult<Self> {
         let src_root_folder = src_root_folder.as_ref();
         let root_path = root_folder.as_ref();
 
-        if root_path.exists() && read_dir(root_path).map_err(|e| FileError::Io(e))?.count() != 0 {
-            return Err(StorageCreationError::FolderNotEmpty(
-                root_path.to_path_buf(),
-            ));
+        if root_path.exists() && read_dir(root_path)?.count() != 0 {
+            return Err(AppError::FolderNotEmpty(root_path.to_path_buf()));
         }
 
         let _ = create_dir_all(root_path.join(IMAGE_ASSETS));
@@ -266,13 +271,9 @@ impl Storage {
             .write_all(serde_json::to_string(self)?.as_bytes())?)
     }
 
-    pub fn add_assets(
-        &mut self,
-        path: Vec<PathBuf>,
-        parent: FolderId,
-    ) -> StorageModificationResult<()> {
+    pub fn add_assets(&mut self, path: Vec<PathBuf>, parent: FolderId) -> AppResult<()> {
         if !self.folders.contains_key(&parent) {
-            return Err(StorageModificationError::FolderNotFount(parent));
+            return Err(AppError::FolderNotFount(parent));
         }
 
         for path in path {
@@ -288,13 +289,9 @@ impl Storage {
         Ok(())
     }
 
-    pub fn add_raw_assets(
-        &mut self,
-        data: Vec<RawAsset>,
-        parent: FolderId,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn add_raw_assets(&mut self, data: Vec<RawAsset>, parent: FolderId) -> AppResult<()> {
         let Some(parent) = self.folders.get_mut(&parent) else {
-            return Err(StorageModificationError::FolderNotFount(parent).into());
+            return Err(AppError::FolderNotFount(parent).into());
         };
 
         for RawAsset { bytes, ext } in data {
@@ -334,7 +331,7 @@ impl Storage {
         Ok(())
     }
 
-    pub fn delete_asset(&mut self, id: AssetId) -> StorageModificationResult<()> {
+    pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
                 parent.content.remove(&id);
@@ -348,63 +345,51 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(StorageModificationError::AssetNotFount(id))
+            Err(AppError::AssetNotFount(id))
         }
     }
 
-    pub fn delete_folder(&mut self, id: FolderId) -> StorageModificationResult<()> {
+    pub fn delete_folder(&mut self, id: FolderId) -> AppResult<()> {
         if let Some(folder) = self.folders.remove(&id) {
             if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
                 parent.children.remove(&id);
             }
             Ok(())
         } else {
-            Err(StorageModificationError::FolderNotFount(id))
+            Err(AppError::FolderNotFount(id))
         }
     }
 
-    pub fn create_folder(
-        &mut self,
-        name: String,
-        parent: FolderId,
-    ) -> StorageModificationResult<()> {
+    pub fn create_folder(&mut self, name: String, parent: FolderId) -> AppResult<()> {
         let folder = Folder::new(Some(parent), name, Metadata::now(0));
         let Some(parent) = self.folders.get_mut(&parent) else {
-            return Err(StorageModificationError::FolderNotFount(parent));
+            return Err(AppError::FolderNotFount(parent));
         };
         parent.children.insert(folder.id);
         self.folders.insert(folder.id, folder);
         Ok(())
     }
 
-    pub fn rename_asset(&mut self, id: AssetId, new_name: String) -> StorageModificationResult<()> {
+    pub fn rename_asset(&mut self, id: AssetId, new_name: String) -> AppResult<()> {
         if let Some(asset) = self.assets.get_mut(&id) {
             asset.name = new_name;
 
             Ok(())
         } else {
-            Err(StorageModificationError::AssetNotFount(id))
+            Err(AppError::AssetNotFount(id))
         }
     }
 
-    pub fn rename_folder(
-        &mut self,
-        id: FolderId,
-        new_name: String,
-    ) -> StorageModificationResult<()> {
+    pub fn rename_folder(&mut self, id: FolderId, new_name: String) -> AppResult<()> {
         if let Some(folder) = self.folders.get_mut(&id) {
             folder.name = new_name;
             Ok(())
         } else {
-            Err(StorageModificationError::FolderNotFount(id))
+            Err(AppError::FolderNotFount(id))
         }
     }
 
-    pub fn move_asset_to(
-        &mut self,
-        asset_id: AssetId,
-        folder_id: FolderId,
-    ) -> StorageModificationResult<()> {
+    pub fn move_asset_to(&mut self, asset_id: AssetId, folder_id: FolderId) -> AppResult<()> {
         if let Some(asset) = self.assets.get(&asset_id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
                 parent.content.remove(&asset_id);
@@ -413,18 +398,14 @@ impl Storage {
                 new_parent.content.insert(asset_id);
                 Ok(())
             } else {
-                Err(StorageModificationError::FolderNotFount(folder_id))
+                Err(AppError::FolderNotFount(folder_id))
             }
         } else {
-            Err(StorageModificationError::AssetNotFount(asset_id))
+            Err(AppError::AssetNotFount(asset_id))
         }
     }
 
-    pub fn move_folder_to(
-        &mut self,
-        src_id: FolderId,
-        dst_id: FolderId,
-    ) -> StorageModificationResult<()> {
+    pub fn move_folder_to(&mut self, src_id: FolderId, dst_id: FolderId) -> AppResult<()> {
         if let Some(src_folder) = self.folders.get(&src_id).cloned() {
             if let Some(parent) = src_folder.parent.and_then(|p| self.folders.get_mut(&p)) {
                 parent.children.remove(&src_id);
@@ -433,32 +414,32 @@ impl Storage {
                 new_parent.children.insert(src_id);
                 Ok(())
             } else {
-                Err(StorageModificationError::FolderNotFount(dst_id))
+                Err(AppError::FolderNotFount(dst_id))
             }
         } else {
-            Err(StorageModificationError::FolderNotFount(src_id))
+            Err(AppError::FolderNotFount(src_id))
         }
     }
 
-    pub fn get_asset_abs_path(&self, id: AssetId) -> StorageModificationResult<PathBuf> {
+    pub fn get_asset_abs_path(&self, id: AssetId) -> AppResult<PathBuf> {
         self.assets
             .get(&id)
             .map(|a| self.root.join(IMAGE_ASSETS).join(a.get_file_name()))
-            .ok_or_else(|| StorageModificationError::AssetNotFount(id))
+            .ok_or_else(|| AppError::AssetNotFount(id))
     }
 
-    pub fn get_asset_virtual_path(&self, id: AssetId) -> StorageModificationResult<Vec<String>> {
+    pub fn get_asset_virtual_path(&self, id: AssetId) -> AppResult<Vec<String>> {
         if let Some(asset) = self.assets.get(&id) {
             self.get_folder_virtual_path(asset.parent).map(|mut p| {
                 p.push(asset.get_file_name());
                 p
             })
         } else {
-            Err(StorageModificationError::AssetNotFount(id))
+            Err(AppError::AssetNotFount(id))
         }
     }
 
-    pub fn get_folder_virtual_path(&self, id: FolderId) -> StorageModificationResult<Vec<String>> {
+    pub fn get_folder_virtual_path(&self, id: FolderId) -> AppResult<Vec<String>> {
         let mut res = Vec::new();
         let mut cur_id = Some(id);
         while let Some(id) = cur_id {
@@ -466,7 +447,7 @@ impl Storage {
                 res.push(folder.name.clone());
                 cur_id = folder.parent;
             } else {
-                return Err(StorageModificationError::FolderNotFount(id));
+                return Err(AppError::FolderNotFount(id));
             }
         }
 

@@ -1,24 +1,55 @@
-import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Switch, Tab, TabList, Text, Title2, useToastController } from "@fluentui/react-components";
+import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Switch, Tab, TabList, Tag, Text, Title2, useToastController } from "@fluentui/react-components";
 import { t } from "../i18n";
-import { Beaker20Regular, Box20Regular } from "@fluentui/react-icons";
+import { Beaker20Regular, Box20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { GetUserSettings, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { refreshEntireUiContext } from "../context-provider";
-import MsgToast from "../widgets/toast";
+import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
+import MsgToast from "../widgets/msg-toast";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState("general")
     const [userSettings, setUserSettings] = useState<UserSettings | undefined>()
+
+    const [editingKeyMapping, setEditingKeyMapping] = useState<string | undefined>(undefined)
+    const [listenedKeyMap, setListenedKeyMap] = useState<string[]>([])
 
     const refreshEntireUi = useContext(refreshEntireUiContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
+        if (editingKeyMapping) {
+            const recorder = (ev: KeyboardEvent) => {
+                let keys = []
+                if (ev.ctrlKey) {
+                    keys.push("ctrl")
+                }
+                if (ev.altKey) {
+                    keys.push("alt")
+                }
+                if (ev.shiftKey) {
+                    keys.push("shift")
+                }
+                if (!["Control", "Alt", "Shift"].includes(ev.key)) {
+                    keys.push(ev.key.toLowerCase())
+                }
+
+                setListenedKeyMap(keys)
+            }
+            document.addEventListener("keydown", recorder)
+
+            return () => {
+                document.removeEventListener("keydown", recorder)
+            }
+        }
+    }, [editingKeyMapping])
+
+    useEffect(() => {
         async function fetch() {
             const sets = await GetUserSettings()
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (sets) {
                 setUserSettings(sets)
             }
@@ -33,20 +64,86 @@ export default function Settings() {
 
     const items = Object.entries(userSettings[currentTab])
 
-    const update = (title: string, value: string | boolean) => {
+    const update = (title: string, value: SettingsValue) => {
         SetUserSetting({ tab: currentTab, item: title, value })
+            .catch(err => {
+                dispatchToast(<ErrToast body={err} />)
+            })
         refreshEntireUi?.setter(!refreshEntireUi.data)
     }
 
     const resolveSelector = (title: string, value: SettingsValue) => {
         if (!userSettings) { return }
 
+        if (currentTab == "keyMapping") {
+            const keys = value as string[]
+            return (
+                <div className="flex gap-2 items-center">
+                    {
+                        keys.map(key =>
+                            <Tag appearance="outline">{key}</Tag>
+                        )
+                    }
+                    {
+                        editingKeyMapping == title &&
+                        <Text>Listening</Text>
+                    }
+                    {
+                        editingKeyMapping == title
+                            ? <>
+                                <Button
+                                    icon={<Dismiss20Regular />}
+                                    onClick={() => setEditingKeyMapping(undefined)}
+                                />
+                                <Button
+                                    icon={<Checkmark20Regular />}
+                                    onClick={async () => {
+                                        if (listenedKeyMap.filter(k => !["ctrl", "alt", "shift"].includes(k)).length > 0) {
+                                            update(title, listenedKeyMap)
+                                            setEditingKeyMapping(undefined)
+                                        } else {
+                                            dispatchToast(
+                                                <MsgToast
+                                                    title={t("toast.invalidKeyComb.title")}
+                                                    body={t("toast.invalidKeyComb.body")}
+                                                />,
+                                                { intent: "error" }
+                                            )
+                                        }
+                                    }}
+                                />
+                            </>
+                            : <Button
+                                icon={<Edit20Regular />}
+                                onClick={() => {
+                                    if (editingKeyMapping == title) {
+                                        setEditingKeyMapping(undefined)
+
+                                        if (listenedKeyMap.length != 0) {
+                                            SetUserSetting({ tab: currentTab, item: title, value: listenedKeyMap })
+                                        }
+                                    } else {
+                                        setEditingKeyMapping(title)
+                                    }
+                                }}
+                            />
+                    }
+                </div>
+            )
+        }
+
         if (typeof value == "boolean") {
+            // Toggle
             return (
                 <Switch defaultChecked={value} onChange={(_, data) => update(title, data.checked)} />
             )
         } else if (typeof value == "string") {
+            // Custom
+        } else if (Array.isArray(value)) {
+            // Sequence
+            console.error("Missing implementation for sequence items.")
         } else {
+            // Selection
             return (
                 <Menu>
                     <MenuTrigger>
@@ -83,6 +180,7 @@ export default function Settings() {
                         style={{ backgroundColor: "var(--colorNeutralBackground2)" }}
                     >
                         <Tab icon={<Box20Regular />} value="general">{t("settings.general")}</Tab>
+                        <Tab icon={<Diamond20Regular />} value="keyMapping">{t("settings.keyMapping")}</Tab>
                         <Tab icon={<Beaker20Regular />} value="experimental">{t("settings.experimental")}</Tab>
                     </TabList>
                 </div>

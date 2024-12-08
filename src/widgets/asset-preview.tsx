@@ -3,7 +3,7 @@ import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext } from "../context-provider";
-import MsgToast from "./toast";
+import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
 const inputStyleHook = makeStyles({
@@ -25,7 +25,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
     useEffect(() => {
         async function fetch() {
             const path = await GetAssetAbsPath({ asset: asset.id })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (path) {
                 setAbsPath(path)
             }

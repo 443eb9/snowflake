@@ -3,7 +3,7 @@ import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, 
 import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "./backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "./main"
-import MsgToast from "./widgets/toast"
+import ErrToast from "./widgets/err-toast"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -22,7 +22,7 @@ export default function FileManipulator() {
             content: [...browsingFolder.data.content.filter((id: any) => !selectedAssets.data?.includes(id))]
         })
         await DeleteAssets({ assets: [...selectedAssets?.data?.values() ?? []] })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         selectedAssets.setter([])
     }
@@ -33,7 +33,7 @@ export default function FileManipulator() {
         }
         const target = selectedAssets.data.values().next().value as string
         await RenameAsset({ asset: target, name: newName })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         selectedAssets.setter([])
         browsingFolder.setter({
@@ -47,7 +47,7 @@ export default function FileManipulator() {
         targetIds: string[],
     ) {
         await DeleteFolders({ folders: targetIds })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder.data?.id && targetIds.includes(browsingFolder.data?.id)) {
             browsingFolder.setter(undefined)
@@ -60,7 +60,7 @@ export default function FileManipulator() {
         parent: string
     ) {
         await CreateFolders({ folderNames: newNames, parent })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
     }
 
     async function handleFolderRename(
@@ -70,7 +70,7 @@ export default function FileManipulator() {
         newName: string,
     ) {
         await RenameFolder({ folder: targetId, name: newName })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (targetId == browsingFolder.data?.id) {
             browsingFolder.setter(undefined)
@@ -83,7 +83,7 @@ export default function FileManipulator() {
         parent: string,
     ) {
         await ImportAssets({ parent, path: items })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
     }
 
     async function handleAssetsImport(
@@ -92,9 +92,9 @@ export default function FileManipulator() {
         parent: string,
     ) {
         await ImportAssets({ parent, path: items })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         const folder = await GetFolder({ folder: parent })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         if (folder) {
             browsingFolder.setter({
                 ...folder,
@@ -110,7 +110,7 @@ export default function FileManipulator() {
         target: string,
     ) {
         await MoveAssetsTo({ assets: moved, folder: target })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
         if (browsingFolder.data) {
@@ -127,7 +127,7 @@ export default function FileManipulator() {
         target: string,
     ) {
         await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
     }

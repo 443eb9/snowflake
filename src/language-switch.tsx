@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { GetUserSettings, UserSettings } from "./backend"
 import i18n from "./i18n"
 import { refreshEntireUiContext } from "./context-provider"
-import MsgToast from "./widgets/toast"
+import ErrToast from "./widgets/err-toast"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "./main"
 
@@ -15,7 +15,7 @@ export default function LanguageSwitch() {
     useEffect(() => {
         async function fetch() {
             const sets = await GetUserSettings()
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (sets) {
                 setUserSettings(sets)
             }
@@ -28,7 +28,7 @@ export default function LanguageSwitch() {
 
     i18n.changeLanguage((userSettings["general"]["lng"] as any)["selected"])
         .catch(err => {
-            dispatchToast(<MsgToast title="Error" body={err} />)
+            dispatchToast(<ErrToast body={err} />)
         })
 
     return <></>

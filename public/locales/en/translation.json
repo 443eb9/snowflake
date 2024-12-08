@@ -10,6 +10,7 @@
     "startup.btnOpenLib": "Open Library",
     "startup.btnInitLib": "Initialize Library",
     "startup.btnRecent": "Open Recent",
+    "startup.noRecent": "No recent libraries.",
     "asset-mani.rename": "New name",
     "asset-mani.importDialogTitle": "Select assets you want to import.",
     "browser.folderTreeSectionTitle": "Folder Tree",
@@ -53,6 +54,16 @@
     "settings.general.lng": "Language",
     "settings.general.lng.en": "English",
     "settings.general.lng.zh": "简体中文",
+    "settings.keyMapping": "Key Mapping",
+    "settings.keyMapping.save": "Save",
+    "settings.keyMapping.rename": "Rename",
+    "settings.keyMapping.delete": "Delete",
+    "settings.keyMapping.newFolder": "New Folder",
     "settings.experimental": "Experimental",
-    "settings.experimental.aigcDetect": "AIGC Detection[WIP]"
+    "settings.experimental.aigcDetect": "AIGC Detection[WIP]",
+    "toast.err.title": "Error",
+    "toast.success.title": "Success",
+    "toast.invalidKeyComb.title": "Invalid key combination.",
+    "toast.invalidKeyComb.body": "The combination should contain at least one key other than control, alt or shift.",
+    "toast.save.success": "Saved library."
 }

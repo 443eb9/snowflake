@@ -22,7 +22,7 @@ pub fn run() {
         )
         .setup(|app| {
             app.manage(Mutex::new(Option::<Storage>::None));
-            app.manage(Mutex::new(AppData::read(app.handle().clone()).unwrap()));
+            app.manage(Mutex::new(AppData::read(app.handle()).unwrap()));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

@@ -1,30 +1,50 @@
 import { HotKeys, HotKeysProps } from "react-hotkeys";
-import { SaveLibrary } from "./backend";
+import { GetUserSettings, SaveLibrary } from "./backend";
 import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "./main";
-import MsgToast from "./widgets/toast";
-import { useContext } from "react";
+import ErrToast from "./widgets/err-toast";
+import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "./context-provider";
+import SuccessToast from "./widgets/success-toast";
+import { t } from "./i18n";
 
 
 export default function ShortcutKeyProvider(props: HotKeysProps) {
     const selectedAssets = useContext(selectedAssetsContext)
     const browsingFolder = useContext(browsingFolderContext)
     const fileManipulation = useContext(fileManipulationContext)
+    const [keyMap, setKeyMap] = useState<{ [key: string]: string } | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
-    const KeyMap = {
-        save: "ctrl+s",
-        delete: "del",
-        rename: "f2",
-        newFolder: "ctrl+shift+n",
-    }
+    useEffect(() => {
+        async function fetch() {
+            const sets = await GetUserSettings()
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+            if (sets) {
+                const keyMap = Object.entries(sets["keyMapping"])
+                    .map(([action, keys], _) => {
+                        const trigger = keys as string[]
+                        let combined = ""
+                        trigger.forEach((key, index) => {
+                            combined += index == trigger.length - 1 ? key : (key + "+")
+                        })
+                        return [action, combined]
+                    })
+
+                setKeyMap(Object.fromEntries(keyMap))
+            }
+        }
+
+        fetch()
+    }, [])
 
     const Handlers = {
         save: async () => {
             await SaveLibrary()
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />))
+                .then(() => dispatchToast(<SuccessToast body={t("toast.save.success")} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />))
         },
         delete: () => {
             if (selectedAssets?.data) {
@@ -61,7 +81,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
     return (
         <HotKeys
             {...props}
-            keyMap={KeyMap}
+            keyMap={keyMap}
             handlers={Handlers}
         >
             {props.children}

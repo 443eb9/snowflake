@@ -4,7 +4,7 @@ import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
 import { browsingFolderContext } from "../context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
-import MsgToast from "./toast";
+import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
 export default function TagsContainer({
@@ -22,7 +22,7 @@ export default function TagsContainer({
     const update = (newTags: Tag[], isDismiss: boolean) => {
         if (associatedItem) {
             ModifyTagsOf({ assets: [associatedItem], newTags: newTags.map(t => t.id) })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (!browsingFolder) {
                 return
@@ -50,7 +50,7 @@ export default function TagsContainer({
 
     async function fetchAllTags() {
         const allTags = await GetAllTags()
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (allTags) {
             setAllTags(allTags)
@@ -61,7 +61,7 @@ export default function TagsContainer({
 
         async function fetchTags() {
             const selected = await GetTags({ tags: tags })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (selected) {
                 setSelected(selected)

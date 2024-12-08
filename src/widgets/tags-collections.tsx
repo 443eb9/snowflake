@@ -7,7 +7,7 @@ import { allTagsContext, browsingFolderContext, contextMenuPropContext, selected
 import TagName from "./tag-name"
 import { TriggerEvent, useContextMenu } from "react-contexify"
 import { CtxMenuId } from "./context-menu"
-import MsgToast from "./toast"
+import ErrToast from "./err-toast"
 import { GlobalToasterId } from "../main"
 
 const buttonStyleHook = makeStyles({
@@ -28,7 +28,7 @@ export default function TagsCollections() {
 
     const updateBrowsingFolder = async (tag: Tag) => {
         const assets = await GetAssetsContainingTag({ tag: tag.id })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data && assets) {
             selectedAssets?.setter([])

@@ -1,7 +1,7 @@
 import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, useToastController } from "@fluentui/react-components";
 import { Book20Regular, Clock20Regular, Library20Regular, New20Regular, Settings20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
-import MsgToast from "../widgets/toast";
+import ErrToast from "../widgets/err-toast";
 import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../backend";
@@ -32,7 +32,7 @@ export default function Startup() {
     }, [])
 
     const dispatch = (ctn: string) => {
-        dispatchToast(<MsgToast title="Error" body={ctn}></MsgToast>, { intent: "error" })
+        dispatchToast(<ErrToast body={ctn}></ErrToast>, { intent: "error" })
     }
 
     async function openLibrary() {
@@ -119,7 +119,7 @@ export default function Startup() {
                             <MenuPopover>
                                 {
                                     recentLibs?.length == 0
-                                        ? <MenuItem><Text>No recent libraries.</Text></MenuItem>
+                                        ? <MenuItem><Text>{t("startup.noRecent")}</Text></MenuItem>
                                         : recentLibs?.map((lib, index) =>
                                             <MenuItem
                                                 key={index}

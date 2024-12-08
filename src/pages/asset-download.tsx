@@ -7,7 +7,7 @@ import { browsingFolderContext } from "../context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import formatFileSize from "../util";
 import { t } from "i18next";
-import MsgToast from "../widgets/toast";
+import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
 
 const eventTextStyleHook = makeStyles({
@@ -38,7 +38,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
         if (browsingFolder?.data?.id) {
             statusMapper.clear()
             await ImportWebAssets({ urls, parent: browsingFolder.data.id, progress })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
     }
 
@@ -85,7 +85,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
         async function update() {
             if (browsingFolder?.data?.id) {
                 const folder = await GetFolder({ folder: browsingFolder?.data?.id })
-                    .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 if (folder) {
                     browsingFolder.setter({
                         ...folder,

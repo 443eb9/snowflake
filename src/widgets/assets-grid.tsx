@@ -7,7 +7,7 @@ import { darkenContentStyleHook } from "../styling";
 import { mergeClasses, useToastController } from "@fluentui/react-components";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
-import MsgToast from "./toast";
+import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
 export default function AssetsGrid() {
@@ -52,7 +52,7 @@ export default function AssetsGrid() {
             }
 
             const assets = await GetAssets({ assets: browsingFolder.data.content })
-                .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (assets) {
                 setAssets(assets)

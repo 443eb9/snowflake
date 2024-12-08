@@ -10,6 +10,7 @@
     "startup.btnOpenLib": "打开库",
     "startup.btnInitLib": "初始化库",
     "startup.btnRecent": "最近打开",
+    "startup.noRecent": "没有最近打开的库",
     "asset-mani.rename": "新名字",
     "asset-mani.importDialogTitle": "选择你需要导入的资产",
     "browser.folderTreeSectionTitle": "目录树",
@@ -53,6 +54,16 @@
     "settings.general.lng": "语言",
     "settings.general.lng.en": "English",
     "settings.general.lng.zh": "简体中文",
+    "settings.keyMapping": "键位",
+    "settings.keyMapping.save": "保存",
+    "settings.keyMapping.rename": "重命名",
+    "settings.keyMapping.delete": "删除",
+    "settings.keyMapping.newFolder": "新建文件夹",
     "settings.experimental": "实验性",
-    "settings.experimental.aigcDetect": "AI生成内容检测[WIP]"
+    "settings.experimental.aigcDetect": "AI生成内容检测[WIP]",
+    "toast.err.title": "错误",
+    "toast.success.title": "成功",
+    "toast.invalidKeyComb.title": "无效的按键组合",
+    "toast.invalidKeyComb.body": "组合中至少应该存在一个不是 Ctrl, Shift 或者 Alt 的按键",
+    "toast.save.success": "已保存"
 }

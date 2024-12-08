@@ -9,7 +9,7 @@ import TagName from "./tag-name";
 import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
 import { TinyColor } from "@ctrl/tinycolor";
 import { t } from "../i18n";
-import MsgToast from "./toast";
+import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
 type TagEditingStatus = {
@@ -36,13 +36,13 @@ export default function TagsManager() {
 
     const updateTag = useCallback(async (tag: Tag) => {
         await ModifyTag({ newTag: tag })
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         fetchTags()
     }, [])
 
     async function fetchTags() {
         const fetchedTags = await GetAllTags()
-            .catch(err => dispatchToast(<MsgToast title="Error" body={err} />, { intent: "error" }))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (fetchedTags) {
             setAllTagsEditable(fetchedTags.map(tag => {
