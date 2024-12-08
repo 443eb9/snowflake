@@ -2,7 +2,7 @@ import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
 import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "./backend"
 import { useToastController } from "@fluentui/react-components"
-import { globalToasterId } from "./main"
+import { GlobalToasterId } from "./main"
 import MsgToast from "./widgets/toast"
 
 export default function FileManipulator() {
@@ -10,7 +10,7 @@ export default function FileManipulator() {
     const selectedAssets = useContext(selectedAssetsContext)
     const fileManipulation = useContext(fileManipulationContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>) {
         if (!browsingFolder?.data || !selectedAssets?.data) {

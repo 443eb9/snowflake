@@ -11,7 +11,7 @@ import QuickRef from './pages/quick-ref'
 import ContextProvider from './context-provider'
 import LanguageSwitch from './language-switch'
 
-export const globalToasterId = "globalToasterId"
+export const GlobalToasterId = "globalToasterId"
 
 const container = document.getElementById('root')
 
@@ -22,7 +22,7 @@ root.render(
         <FluentProvider theme={webDarkTheme} className='test'>
             <ContextProvider>
                 <div className="w-[100vw] h-[100vh] overflow-hidden" style={{ backgroundColor: "var(--colorNeutralBackground1)" }}>
-                    <Toaster toasterId={globalToasterId} />
+                    <Toaster toasterId={GlobalToasterId} />
                     <LanguageSwitch />
                     <Suspense>
                         <BrowserRouter>

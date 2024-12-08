@@ -5,7 +5,7 @@ import { browsingFolderContext } from "../context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
 import MsgToast from "./toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 export default function TagsContainer({
     associatedItem, tags, readonly
@@ -17,7 +17,7 @@ export default function TagsContainer({
     const [selected, setSelected] = useState<Tag[]>([])
     const browsingFolder = useContext(browsingFolderContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const update = (newTags: Tag[], isDismiss: boolean) => {
         if (associatedItem) {

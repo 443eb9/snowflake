@@ -3,14 +3,14 @@ import { browsingFolderContext } from "../context-provider"
 import { Folder, GetFolderTree, GetFolderVirtualPath } from "../backend"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, useToastController } from "@fluentui/react-components"
 import MsgToast from "./toast"
-import { globalToasterId } from "../main"
+import { GlobalToasterId } from "../main"
 
 export function BrowsingPath() {
     const [virtualPath, setVirtualPath] = useState<string[] | undefined>()
 
     const browsingFolder = useContext(browsingFolderContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const pathChangeHandler = async (pop: number) => {
         if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.collection) {

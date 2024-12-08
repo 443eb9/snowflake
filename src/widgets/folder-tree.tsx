@@ -7,7 +7,7 @@ import { browsingFolderContext, contextMenuPropContext, fileManipulationContext,
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import MsgToast from "./toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -31,7 +31,7 @@ export function FolderTree() {
 
     const [newName, setNewName] = useState("")
     const { show: showContextMenu } = useContextMenu({ id: CtxMenuId })
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         async function fetch() {

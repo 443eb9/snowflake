@@ -8,7 +8,7 @@ import { mergeClasses, useToastController } from "@fluentui/react-components";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import MsgToast from "./toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 export default function AssetsGrid() {
     const [assets, setAssets] = useState<Asset[] | undefined>()
@@ -17,7 +17,7 @@ export default function AssetsGrid() {
     const darkenContentStyle = darkenContentStyleHook()
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const browsingFolder = useContext(browsingFolderContext)
     const selectedAssets = useContext(selectedAssetsContext)

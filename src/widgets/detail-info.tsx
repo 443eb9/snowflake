@@ -9,7 +9,7 @@ import formatFileSize from "../util"
 import { darkenContentStyleHook } from "../styling"
 import { t } from "../i18n"
 import MsgToast from "./toast"
-import { globalToasterId } from "../main"
+import { GlobalToasterId } from "../main"
 
 export default function DetailInfo() {
     const [asset, setAsset] = useState<Asset | undefined>()
@@ -19,7 +19,7 @@ export default function DetailInfo() {
 
     const selectedAssets = useContext(selectedAssetsContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         if (!selectedAssets?.data) {

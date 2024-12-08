@@ -8,7 +8,7 @@ import { Channel } from "@tauri-apps/api/core";
 import formatFileSize from "../util";
 import { t } from "i18next";
 import MsgToast from "../widgets/toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 const eventTextStyleHook = makeStyles({
     root: {
@@ -26,7 +26,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
     const eventTextStyle = eventTextStyleHook()
     const [statusMapper, _] = useState(new Map<number, DownloadEvent>())
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const progress = new Channel<DownloadEvent>()
     progress.onmessage = (resp: DownloadEvent) => {

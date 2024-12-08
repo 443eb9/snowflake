@@ -7,7 +7,7 @@ import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from ".
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";
 import MsgToast from "./toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 export const CtxMenuId = "context-menu"
 
@@ -28,7 +28,7 @@ export default function ContextMenu() {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [focused, setFocused] = useState(-1)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const buttonStyle = buttonStyleHook()
 

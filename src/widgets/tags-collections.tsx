@@ -8,7 +8,7 @@ import TagName from "./tag-name"
 import { TriggerEvent, useContextMenu } from "react-contexify"
 import { CtxMenuId } from "./context-menu"
 import MsgToast from "./toast"
-import { globalToasterId } from "../main"
+import { GlobalToasterId } from "../main"
 
 const buttonStyleHook = makeStyles({
     root: {
@@ -24,7 +24,7 @@ export default function TagsCollections() {
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const updateBrowsingFolder = async (tag: Tag) => {
         const assets = await GetAssetsContainingTag({ tag: tag.id })

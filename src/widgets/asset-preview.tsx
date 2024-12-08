@@ -4,7 +4,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext } from "../context-provider";
 import MsgToast from "./toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -20,7 +20,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
 
     const fileManipulation = useContext(fileManipulationContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         async function fetch() {

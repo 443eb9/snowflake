@@ -5,7 +5,7 @@ import { useContext, useEffect, useState } from "react";
 import { GetUserSettings, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { refreshEntireUiContext } from "../context-provider";
 import MsgToast from "../widgets/toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState("general")
@@ -13,7 +13,7 @@ export default function Settings() {
 
     const refreshEntireUi = useContext(refreshEntireUiContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         async function fetch() {

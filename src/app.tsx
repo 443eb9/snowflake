@@ -3,8 +3,6 @@ import Browser from "./widgets/browser";
 import DetailInfo from "./widgets/detail-info";
 import WindowControls from "./widgets/window-controls";
 import TagsManager from "./widgets/tags-manager";
-import { HotKeys } from "react-hotkeys";
-import { SaveLibrary } from "./backend";
 import { Button, Subtitle1, Title3 } from "@fluentui/react-components";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
@@ -18,20 +16,7 @@ import { useNavigate } from "react-router-dom";
 import "./context.css"
 import { t } from "./i18n";
 import { overlaysContext } from "./context-provider";
-
-const KeyMap = {
-    save: "ctrl+s"
-}
-
-const Handlers = {
-    save: async () => {
-        await SaveLibrary()
-            .catch(err => {
-                // TODO error handling
-                console.error(err)
-            })
-    }
-}
+import ShortcutKeyProvider from "./shortcut-key-provider";
 
 export default function MainApp() {
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
@@ -40,12 +25,11 @@ export default function MainApp() {
     const overlay = useContext(overlaysContext)
 
     useEffect(() => {
-        async function setWindowSizeAsync() {
+        async function set() {
             const size = await getCurrentWindow().innerSize()
-            // console.log(await getCurrentWindow().innerSize())
             setWindowSize(size)
         }
-        setWindowSizeAsync()
+        set()
     })
 
     if (!windowSize) {
@@ -53,11 +37,7 @@ export default function MainApp() {
     }
 
     return (
-        <HotKeys
-            className="w-full h-full"
-            keyMap={KeyMap}
-            handlers={Handlers}
-        >
+        <ShortcutKeyProvider className="w-full h-full">
             <OverlayPanel />
             <div className="absolute top-2 right-2 z-20 w-[20vw]">
                 <WindowControls />
@@ -93,6 +73,6 @@ export default function MainApp() {
                 <ContextMenu />
                 <FileManipulator />
             </div>
-        </HotKeys>
+        </ShortcutKeyProvider>
     )
 }

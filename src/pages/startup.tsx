@@ -9,10 +9,10 @@ import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "../widgets/overlay-panel";
 import { overlaysContext } from "../context-provider";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 export default function Startup() {
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
     const [recentLibs, setRecentLibs] = useState<RecentLib[] | undefined>()
 
     const overlays = useContext(overlaysContext)

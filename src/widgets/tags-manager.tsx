@@ -10,7 +10,7 @@ import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picke
 import { TinyColor } from "@ctrl/tinycolor";
 import { t } from "../i18n";
 import MsgToast from "./toast";
-import { globalToasterId } from "../main";
+import { GlobalToasterId } from "../main";
 
 type TagEditingStatus = {
     isEditingName: boolean,
@@ -32,7 +32,7 @@ export default function TagsManager() {
     const [refresh, setRefresh] = useState(true)
     const inputStyle = inputStyleHook()
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const updateTag = useCallback(async (tag: Tag) => {
         await ModifyTag({ newTag: tag })

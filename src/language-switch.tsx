@@ -4,13 +4,13 @@ import i18n from "./i18n"
 import { refreshEntireUiContext } from "./context-provider"
 import MsgToast from "./widgets/toast"
 import { useToastController } from "@fluentui/react-components"
-import { globalToasterId } from "./main"
+import { GlobalToasterId } from "./main"
 
 export default function LanguageSwitch() {
     const [userSettings, setUserSettings] = useState<UserSettings | undefined>()
     const refreshEntireUi = useContext(refreshEntireUiContext)
 
-    const { dispatchToast } = useToastController(globalToasterId)
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         async function fetch() {
