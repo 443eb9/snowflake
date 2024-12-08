@@ -1,5 +1,5 @@
 import { useContext, useState } from "react"
-import { overlaysContext } from "../context-provider"
+import { overlaysContext } from "../helpers/context-provider"
 import AssetDownload from "../pages/asset-download"
 import { Button } from "@fluentui/react-components"
 import { Dismiss20Regular } from "@fluentui/react-icons"

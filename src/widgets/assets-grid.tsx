@@ -1,9 +1,9 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import AssetPreview from "../widgets/asset-preview"
 import { Asset, GetAssets } from "../backend"
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider"
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../helpers/context-provider"
 import Selecto from "react-selecto";
-import { darkenContentStyleHook } from "../styling";
+import { darkenContentStyleHook } from "../helpers/styling";
 import { mergeClasses, useToastController } from "@fluentui/react-components";
 import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";

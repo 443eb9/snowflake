@@ -1,22 +1,22 @@
-import AssetsGrid from "./widgets/assets-grid";
-import Browser from "./widgets/browser";
-import DetailInfo from "./widgets/detail-info";
-import WindowControls from "./widgets/window-controls";
-import TagsManager from "./widgets/tags-manager";
+import AssetsGrid from "../widgets/assets-grid";
+import Browser from "../widgets/browser";
+import DetailInfo from "../widgets/detail-info";
+import WindowControls from "../widgets/window-controls";
+import TagsManager from "../widgets/tags-manager";
 import { Button, Subtitle1, Title3 } from "@fluentui/react-components";
-import { BrowsingPath } from "./widgets/browsing-path";
-import AssetManipulation from "./widgets/asset-manipulation";
-import ContextMenu from "./widgets/context-menu";
-import FileManipulator from "./file-manipulator";
-import OverlayPanel from "./widgets/overlay-panel";
+import { BrowsingPath } from "../widgets/browsing-path";
+import AssetManipulation from "../widgets/asset-manipulation";
+import ContextMenu from "../widgets/context-menu";
+import FileManipulator from "../helpers/file-manipulator";
+import OverlayPanel from "../widgets/overlay-panel";
 import { useContext, useEffect, useState } from "react";
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
 import { ArrowExit20Regular, Settings20Regular } from "@fluentui/react-icons";
 import { useNavigate } from "react-router-dom";
-import "./context.css"
-import { t } from "./i18n";
-import { overlaysContext } from "./context-provider";
-import ShortcutKeyProvider from "./shortcut-key-provider";
+import "../context.css"
+import { t } from "../i18n";
+import { overlaysContext } from "../helpers/context-provider";
+import ShortcutKeyProvider from "../helpers/shortcut-key-provider";
 
 export default function MainApp() {
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()

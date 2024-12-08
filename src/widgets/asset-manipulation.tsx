@@ -1,7 +1,7 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
 import { Add20Regular, ArrowDownload20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
-import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedAssetsContext } from "../context-provider"
+import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedAssetsContext } from "../helpers/context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
 import { t } from "../i18n"
 

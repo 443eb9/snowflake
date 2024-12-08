@@ -1,7 +1,7 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
 import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
-import { browsingFolderContext } from "../context-provider";
+import { browsingFolderContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
 import ErrToast from "./err-toast";

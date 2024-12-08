@@ -3,7 +3,7 @@ import { t } from "../i18n";
 import { Beaker20Regular, Box20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { GetUserSettings, SettingsValue, SetUserSetting, UserSettings } from "../backend";
-import { refreshEntireUiContext } from "../context-provider";
+import { refreshEntireUiContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/msg-toast";

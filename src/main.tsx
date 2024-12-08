@@ -1,15 +1,15 @@
 import React, { Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FluentProvider, Toaster, webDarkTheme } from '@fluentui/react-components'
-import MainApp from './app'
+import MainApp from './pages/app'
 import Startup from './pages/startup'
 import './global.css'
 import { BrowserRouter } from 'react-router-dom'
 import { Routes } from 'react-router-dom'
 import { Route } from 'react-router-dom'
 import QuickRef from './pages/quick-ref'
-import ContextProvider from './context-provider'
-import LanguageSwitch from './language-switch'
+import ContextProvider from './helpers/context-provider'
+import LanguageSwitch from './helpers/language-switch'
 
 export const GlobalToasterId = "globalToasterId"
 

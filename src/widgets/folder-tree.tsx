@@ -3,7 +3,7 @@ import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, T
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../helpers/context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import ErrToast from "./err-toast";

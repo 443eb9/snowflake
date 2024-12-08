@@ -2,7 +2,7 @@ import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-con
 import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components";
 import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../helpers/context-provider";
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";

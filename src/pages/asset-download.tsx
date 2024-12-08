@@ -3,7 +3,7 @@ import { Add20Regular, ArrowDownload20Regular } from "@fluentui/react-icons";
 import { List, ListItem } from "@fluentui/react-list-preview";
 import { useContext, useEffect, useState } from "react";
 import { DownloadEvent, GetFolder, ImportWebAssets } from "../backend";
-import { browsingFolderContext } from "../context-provider";
+import { browsingFolderContext } from "../helpers/context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import formatFileSize from "../util";
 import { t } from "i18next";

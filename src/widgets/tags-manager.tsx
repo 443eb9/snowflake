@@ -4,7 +4,7 @@ import { useCallback, useContext, useEffect, useState } from "react";
 import { v4 } from "uuid";
 import randomColor from "randomcolor";
 import { GetAllTags, ModifyTag, Tag } from "../backend";
-import { allTagsContext } from "../context-provider";
+import { allTagsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
 import { TinyColor } from "@ctrl/tinycolor";

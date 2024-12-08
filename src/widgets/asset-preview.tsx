@@ -2,7 +2,7 @@ import { Button, Image, Input, makeStyles, Text, useToastController } from "@flu
 import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
-import { fileManipulationContext } from "../context-provider";
+import { fileManipulationContext } from "../helpers/context-provider";
 import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 

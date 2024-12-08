@@ -8,7 +8,7 @@ import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../bac
 import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "../widgets/overlay-panel";
-import { overlaysContext } from "../context-provider";
+import { overlaysContext } from "../helpers/context-provider";
 import { GlobalToasterId } from "../main";
 
 export default function Startup() {

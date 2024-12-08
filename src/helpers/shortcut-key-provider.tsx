@@ -1,12 +1,12 @@
 import { HotKeys, HotKeysProps } from "react-hotkeys";
-import { GetUserSettings, SaveLibrary } from "./backend";
+import { GetUserSettings, SaveLibrary } from "../backend";
 import { useToastController } from "@fluentui/react-components";
-import { GlobalToasterId } from "./main";
-import ErrToast from "./widgets/err-toast";
+import { GlobalToasterId } from "../main";
+import ErrToast from "../widgets/err-toast";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext } from "./context-provider";
-import SuccessToast from "./widgets/success-toast";
-import { t } from "./i18n";
+import SuccessToast from "../widgets/success-toast";
+import { t } from "../i18n";
 
 
 export default function ShortcutKeyProvider(props: HotKeysProps) {

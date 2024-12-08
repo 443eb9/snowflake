@@ -1,9 +1,9 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
-import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "./backend"
+import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "../backend"
 import { useToastController } from "@fluentui/react-components"
-import { GlobalToasterId } from "./main"
-import ErrToast from "./widgets/err-toast"
+import { GlobalToasterId } from "../main"
+import ErrToast from "../widgets/err-toast"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)

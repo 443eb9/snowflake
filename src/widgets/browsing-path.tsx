@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { browsingFolderContext } from "../context-provider"
+import { browsingFolderContext } from "../helpers/context-provider"
 import { Folder, GetFolderTree, GetFolderVirtualPath } from "../backend"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, useToastController } from "@fluentui/react-components"
 import ErrToast from "./err-toast"
