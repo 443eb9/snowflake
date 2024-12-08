@@ -1,5 +1,9 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 
+export type SettingsValue = string | boolean | { selected: string, possible: string[] }
+
+export type UserSettings = { [section: string]: { [item: string]: SettingsValue } }
+
 export type DownloadEvent = {
     id: number,
     downloaded: number,
@@ -65,6 +69,14 @@ export type QuickRefTy = {
 
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
+}
+
+export function GetUserSettings(): Promise<UserSettings> {
+    return invoke("get_user_settings")
+}
+
+export function SetUserSetting(params: { tab: string, item: string, value: string | boolean }): Promise<void> {
+    return invoke("set_user_setting", params)
 }
 
 export function LoadLibrary(params: { rootFolder: string }): Promise<void> {

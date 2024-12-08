@@ -3,6 +3,7 @@ import { overlaysContext } from "../context-provider"
 import AssetDownload from "../pages/asset-download"
 import { Button } from "@fluentui/react-components"
 import { Dismiss20Regular } from "@fluentui/react-icons"
+import Settings from "../pages/settings"
 
 export default function OverlayPanel() {
     const overlays = useContext(overlaysContext)
@@ -14,6 +15,8 @@ export default function OverlayPanel() {
         switch (overlays.data.ty) {
             case "assetDownload":
                 return <AssetDownload lockOverlay={setLocked} />
+            case "settings":
+                return <Settings />
         }
     }
 

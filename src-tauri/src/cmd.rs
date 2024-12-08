@@ -10,7 +10,7 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 use crate::{
     app::{
         AppData, Asset, AssetId, AssetProperty, Checksums, Folder, FolderId, RawAsset, RecentLib,
-        Storage, Tag, TagId,
+        SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -20,6 +20,58 @@ use crate::{
 pub fn get_recent_libraries(data: State<'_, Mutex<AppData>>) -> Result<Vec<RecentLib>, String> {
     let data = data.lock().map_err(|e| e.to_string())?;
     Ok(data.recent_libs.values().cloned().collect())
+}
+
+#[tauri::command]
+pub fn get_user_settings(data: State<'_, Mutex<AppData>>) -> Result<UserSettings, String> {
+    let data = data.lock().map_err(|e| e.to_string())?;
+    Ok(data.settings.clone())
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum SettingsUpdate {
+    Toggle(bool),
+    Value(String),
+}
+
+#[tauri::command]
+pub fn set_user_setting(
+    tab: String,
+    item: String,
+    value: SettingsUpdate,
+    data: State<'_, Mutex<AppData>>,
+) -> Result<(), String> {
+    let mut data = data.lock().map_err(|e| e.to_string())?;
+
+    let item = data
+        .settings
+        .get_mut(&tab)
+        .and_then(|t| t.get_mut(&item))
+        .ok_or_else(|| "No settings found.".to_string())?;
+
+    match item {
+        SettingsValue::Toggle(b) => match value {
+            SettingsUpdate::Toggle(nb) => *b = nb,
+            SettingsUpdate::Value(_) => return Err("Incompatible value".into()),
+        },
+        SettingsValue::Selection { selected, possible } => match value {
+            SettingsUpdate::Toggle(_) => return Err("Incompatible value".into()),
+            SettingsUpdate::Value(v) => {
+                if possible.contains(&v) {
+                    *selected = v
+                } else {
+                    return Err("Incompatible value".into());
+                }
+            }
+        },
+        SettingsValue::Custom(s) => match value {
+            SettingsUpdate::Toggle(_) => return Err("Incompatible value".into()),
+            SettingsUpdate::Value(v) => *s = v,
+        },
+    }
+
+    Ok(())
 }
 
 #[tauri::command]

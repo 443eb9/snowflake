@@ -30,6 +30,8 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
             cmd::get_recent_libraries,
+            cmd::get_user_settings,
+            cmd::set_user_setting,
             cmd::load_library,
             cmd::initialize_library,
             cmd::save_library,

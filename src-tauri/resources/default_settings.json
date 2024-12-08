@@ -1,0 +1,21 @@
+{
+    "general": {
+        "theme": {
+            "selected": "dark",
+            "possible": [
+                "light",
+                "dark"
+            ]
+        },
+        "lng": {
+            "selected": "en",
+            "possible": [
+                "zh",
+                "en"
+            ]
+        }
+    },
+    "experimental": {
+        "aigcDetect": false
+    }
+}

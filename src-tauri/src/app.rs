@@ -1,6 +1,7 @@
 use std::{
     fs::{copy, create_dir_all, metadata, read_dir, File},
     io::{Read, Write},
+    ops::{Deref, DerefMut},
     path::{Path, PathBuf},
     sync::Arc,
 };
@@ -17,6 +18,7 @@ pub const LIBRARY_STORAGE: &str = "snowflake.json";
 pub const TEMP_RECYCLE_BIN: &str = "recycle_bin";
 pub const IMAGE_ASSETS: &str = "images";
 pub const DATA: &str = "app_meta.json";
+pub const DEFAULT_SETTINGS: &str = "resources/default_settings.json";
 
 #[derive(Debug, Error)]
 pub enum AppDataError {
@@ -28,10 +30,39 @@ pub enum AppDataError {
     Tauri(#[from] tauri::Error),
 }
 
-#[derive(Serialize, Deserialize, Default, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum SettingsValue {
+    Selection {
+        selected: String,
+        possible: Vec<String>,
+    },
+    Custom(String),
+    Toggle(bool),
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct UserSettings(HashMap<String, HashMap<String, SettingsValue>>);
+
+impl Deref for UserSettings {
+    type Target = HashMap<String, HashMap<String, SettingsValue>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for UserSettings {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AppData {
     pub recent_libs: HashMap<PathBuf, RecentLib>,
+    pub settings: UserSettings,
 }
 
 impl AppData {
@@ -39,7 +70,13 @@ impl AppData {
         let cache_dir = app.path().app_cache_dir()?;
         let dir = cache_dir.join(DATA);
         if !dir.exists() {
-            let data = Self::default();
+            let data = AppData {
+                recent_libs: Default::default(),
+                settings: serde_json::from_reader(File::open(
+                    app.path().resource_dir()?.join(DEFAULT_SETTINGS),
+                )?)?,
+            };
+
             data.save(app)?;
             Ok(data)
         } else {

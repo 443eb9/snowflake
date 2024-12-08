@@ -31,11 +31,17 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "msi"],
+    "targets": [
+      "nsis",
+      "msi"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/default_settings.json"
     ]
   }
 }

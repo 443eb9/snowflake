@@ -4,18 +4,14 @@
     "asset-download.done": "完成",
     "asset-download.error": "错误",
     "asset-download.add": "添加",
-
     "startup.initLibSrcRootDialogTitle": "选择源目录",
     "startup.initLibDstRootDialogTitle": "选择存储库目录",
     "startup.btnOpenLib": "打开库",
     "startup.btnInitLib": "初始化库",
     "startup.btnRecent": "最近打开",
-
     "asset-mani.rename": "新名字",
-
     "browser.folderTreeSectionTitle": "目录树",
     "browser.tagCollSectionTitle": "标签合集",
-
     "ctxMenu.del": "删除",
     "ctxMenu.rename": "重命名",
     "ctxMenu.moveTo": "移动至",
@@ -24,7 +20,6 @@
     "ctxMenu.remTag": "移除标签",
     "ctxMenu.noTagFallback": "没有符合的标签",
     "ctxMenu.quickRef": "快速参考",
-
     "detail.noAssetSelect": "没有选中的资产",
     "detail.multiAssetsSelect": "多个被选中的资产",
     "detail.filePropsSectionTitle": "文件属性",
@@ -36,21 +31,25 @@
     "detail.id": "唯一标识符",
     "detail.checksums": "校验和",
     "detail.checksumsCompute": "计算",
-    
     "quickRefCtxMenu.close": "关闭",
-
     "tagName.fallback": "未命名",
-
     "tagsContainer.noAvailable": "没有可用的标签",
     "tagsContainer.add": "添加标签",
     "tagsContainer.none": "空",
-
     "tagsMgr.title": "标签管理",
     "tagsMgr.add": "添加标签",
     "tagsMgr.colName": "名字",
     "tagsMgr.colColor": "颜色",
     "tagsMgr.colActions": "操作",
-
     "app.libTitle": "库",
-    "app.assetInfoTitle": "资产信息"
+    "app.assetInfoTitle": "资产信息",
+    "settings.general": "通用",
+    "settings.general.theme": "主题",
+    "settings.general.theme.light": "亮色",
+    "settings.general.theme.dark": "暗色",
+    "settings.general.lng": "语言",
+    "settings.general.lng.en": "English",
+    "settings.general.lng.zh": "简体中文",
+    "settings.experimental": "实验性",
+    "settings.experimental.aigcDetect": "AI生成内容检测[WIP]"
 }

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
 import { FluentProvider, webDarkTheme } from '@fluentui/react-components'
 import MainApp from './app'
@@ -8,6 +8,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { Routes } from 'react-router-dom'
 import { Route } from 'react-router-dom'
 import QuickRef from './pages/quick-ref'
+import ContextProvider from './context-provider'
 
 const container = document.getElementById('root')
 
@@ -16,15 +17,19 @@ const root = createRoot(container!)
 root.render(
     <React.StrictMode>
         <FluentProvider theme={webDarkTheme} className='test'>
-            <div className="w-[100vw] h-[100vh] overflow-hidden">
-                <BrowserRouter>
-                    <Routes>
-                        <Route path="/app" element={<MainApp />} />
-                        <Route path="/" element={<Startup />} />
-                        <Route path="/quickref/:id" element={<QuickRef />} />
-                    </Routes>
-                </BrowserRouter>
-            </div>
+            <ContextProvider>
+                <div className="w-[100vw] h-[100vh] overflow-hidden" style={{ backgroundColor: "var(--colorNeutralBackground1)" }}>
+                    <Suspense>
+                        <BrowserRouter>
+                            <Routes>
+                                <Route path="/app" element={<MainApp />} />
+                                <Route path="/" element={<Startup />} />
+                                <Route path="/quickref/:id" element={<QuickRef />} />
+                            </Routes>
+                        </BrowserRouter>
+                    </Suspense>
+                </div>
+            </ContextProvider>
         </FluentProvider>
     </React.StrictMode>
 )

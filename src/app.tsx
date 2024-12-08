@@ -6,7 +6,6 @@ import TagsManager from "./widgets/tags-manager";
 import { HotKeys } from "react-hotkeys";
 import { SaveLibrary } from "./backend";
 import { Button, Text } from "@fluentui/react-components";
-import ContextProvider from "./context-provider";
 import { BrowsingPath } from "./widgets/browsing-path";
 import AssetManipulation from "./widgets/asset-manipulation";
 import ContextMenu from "./widgets/context-menu";
@@ -51,45 +50,43 @@ export default function MainApp() {
     }
 
     return (
-        <ContextProvider>
-            <HotKeys
-                className="w-full h-full"
-                keyMap={KeyMap}
-                handlers={Handlers}
-            >
-                <OverlayPanel />
-                <div className="absolute top-2 right-2 z-20 w-[20vw]">
-                    <WindowControls />
+        <HotKeys
+            className="w-full h-full"
+            keyMap={KeyMap}
+            handlers={Handlers}
+        >
+            <OverlayPanel />
+            <div className="absolute top-2 right-2 z-20 w-[20vw]">
+                <WindowControls />
+            </div>
+            <div className="flex justify-between w-full h-full gap-2 p-4">
+                <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
+                    <div className="flex items-center gap-2">
+                        <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")}></Button>
+                        <Text as="h2" weight="bold" size={600}>{t("app.libTitle")}</Text>
+                    </div>
+                    <div className="h-full overflow-y-auto">
+                        <Browser />
+                    </div>
+                    <TagsManager />
                 </div>
-                <div className="flex justify-between w-full h-full gap-2 p-4">
-                    <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
-                        <div className="flex items-center gap-2">
-                            <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")}></Button>
-                            <Text as="h2" weight="bold" size={600}>{t("app.libTitle")}</Text>
-                        </div>
-                        <div className="h-full overflow-y-auto">
-                            <Browser />
-                        </div>
-                        <TagsManager />
-                    </div>
-                    <div className="w-full flex h-full flex-col gap-1">
-                        <BrowsingPath />
-                        <AssetManipulation />
-                        <AssetsGrid />
-                    </div>
+                <div className="w-full flex h-full flex-col gap-1">
+                    <BrowsingPath />
+                    <AssetManipulation />
+                    <AssetsGrid />
+                </div>
+                <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2">
-                        <div className="flex flex-col gap-2">
-                            <div className="h-[30px]"></div>
-                            <Text as="h2" weight="bold" align="end" size={400}>{t("app.assetInfoTitle")}</Text>
-                        </div>
-                        <div className="flex flex-col gap-2 w-[20vw] h-full overflow-y-auto p-1">
-                            <DetailInfo />
-                        </div>
+                        <div className="h-[30px]"></div>
+                        <Text as="h2" weight="bold" align="end" size={400}>{t("app.assetInfoTitle")}</Text>
                     </div>
-                    <ContextMenu />
-                    <FileManipulator />
+                    <div className="flex flex-col gap-2 w-[20vw] h-full overflow-y-auto p-1">
+                        <DetailInfo />
+                    </div>
                 </div>
-            </HotKeys>
-        </ContextProvider>
+                <ContextMenu />
+                <FileManipulator />
+            </div>
+        </HotKeys>
     )
 }

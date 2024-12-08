@@ -1,17 +1,22 @@
 import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, Toaster, useId, useToastController } from "@fluentui/react-components";
-import { Book20Regular, Clock20Regular, Library20Regular, New20Regular } from "@fluentui/react-icons";
+import { Book20Regular, Clock20Regular, Library20Regular, New20Regular, Settings20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
 import MsgToast from "../widgets/toast";
 import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../backend";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
+import OverlayPanel from "../widgets/overlay-panel";
+import { overlaysContext } from "../context-provider";
+import Settings from "./settings";
 
 export default function Startup() {
     const toasterId = useId("toaster");
     const { dispatchToast } = useToastController(toasterId)
     const [recentLibs, setRecentLibs] = useState<RecentLib[] | undefined>()
+
+    const overlays = useContext(overlaysContext)
 
     useEffect(() => {
         async function fetch() {
@@ -78,9 +83,16 @@ export default function Startup() {
     return (
         <div className="h-full">
             <Toaster id={toasterId} />
+            <OverlayPanel />
             <div className="absolute right-4 w-full">
                 <WindowControls className="pt-4" />
             </div>
+            <Button
+                size="large"
+                icon={<Settings20Regular />}
+                className="absolute right-4 bottom-4"
+                onClick={() => overlays?.setter({ ty: "settings" })}
+            />
             <div className="flex h-full justify-center">
                 <div className="flex flex-col flex-wrap gap-2 h-full justify-center">
                     <Image src="snowflake.svg" width={200} />

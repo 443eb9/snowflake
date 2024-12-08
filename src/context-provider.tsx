@@ -26,7 +26,7 @@ export type ContextMenuProp = {
 }
 
 export type Overlays = {
-    ty: "assetDownload" | undefined,
+    ty: "assetDownload" | "settings" | undefined,
 }
 
 export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)
