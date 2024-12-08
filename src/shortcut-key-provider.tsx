@@ -43,8 +43,8 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
     const Handlers = {
         save: async () => {
             await SaveLibrary()
-                .then(() => dispatchToast(<SuccessToast body={t("toast.save.success")} />))
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .then(() => dispatchToast(<SuccessToast body={t("toast.save.success")} />, { intent: "success" }))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         },
         delete: () => {
             if (selectedAssets?.data) {
