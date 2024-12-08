@@ -57,6 +57,10 @@ export default function AssetsGrid() {
             if (assets) {
                 setAssets(assets)
             }
+
+            if (selectoRef.current) {
+                selectoRef.current.setSelectedTargets([])
+            }
         }
 
         fetch()
