@@ -42,20 +42,14 @@ export function FolderTree() {
             if (map && rootFolderId) {
                 setFolderMap(map)
                 setFolderTree(convertFolderTreeToFlatTree(rootFolderId, map))
-
-                const rootFolder = map.get(rootFolderId) as Folder
-                browsingFolder?.setter({
-                    ...rootFolder,
-                    collection: false,
-                })
             } else {
                 nav("/startup")
             }
         }
 
-        if (!folderTree || fileManipulation?.data?.id_ty == "folder" && fileManipulation.data.submit) {
-            fetch()
-        }
+        if (fileManipulation && fileManipulation.data?.id_ty == "folder") { return }
+
+        fetch()
     }, [fileManipulation?.data])
 
     const updateBrowsingFolder = (folderId: string) => {

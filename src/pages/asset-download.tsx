@@ -97,7 +97,6 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
             }
         }
 
-        console.log(downloading, finished)
         if (downloading > 0 && finished != urls.length) {
             lockOverlay(true)
         } else if (downloading != -1) {
