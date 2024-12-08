@@ -29,7 +29,7 @@ export function BrowsingPath() {
                 id: currentFolder.id,
                 name: currentFolder.name,
                 content: currentFolder.content,
-                collection: false
+                collection: false,
             })
         }
     }

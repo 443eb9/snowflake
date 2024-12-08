@@ -80,7 +80,7 @@ async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, se
 
     selectedAssets.setter([])
     browsingFolder.setter({
-        ...browsingFolder.data
+        ...browsingFolder.data,
     })
 }
 

@@ -89,7 +89,6 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
                         console.error(err)
                     })
                 if (folder) {
-                    console.log(folder)
                     browsingFolder.setter({
                         ...folder,
                         collection: false,

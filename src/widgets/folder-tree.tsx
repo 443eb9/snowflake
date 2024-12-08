@@ -53,9 +53,9 @@ export function FolderTree() {
             }
         }
 
-        if (fileManipulation && fileManipulation.data?.id_ty == "folder") { return }
-
-        fetch()
+        if (!folderTree || fileManipulation?.data?.id_ty == "folder" && fileManipulation.data.submit) {
+            fetch()
+        }
     }, [fileManipulation?.data])
 
     const updateBrowsingFolder = (folderId: string) => {
