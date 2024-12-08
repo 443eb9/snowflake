@@ -86,7 +86,7 @@ export default function Settings() {
                     }
                     {
                         editingKeyMapping == title &&
-                        <Text>Listening</Text>
+                        <Text>{t("settings.keyMapping.listening")}</Text>
                     }
                     {
                         editingKeyMapping == title

@@ -55,6 +55,7 @@
     "settings.general.lng.en": "English",
     "settings.general.lng.zh": "简体中文",
     "settings.keyMapping": "键位",
+    "settings.keyMapping.listening": "正在监听",
     "settings.keyMapping.save": "保存",
     "settings.keyMapping.rename": "重命名",
     "settings.keyMapping.delete": "删除",

@@ -34,11 +34,17 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
         fetch()
     }, [asset.id])
 
+    const onRename = fileManipulation?.data?.ty == "rename" && fileManipulation.data.id[0] == asset.id
+
+    useEffect(() => {
+        if (onRename) {
+            setNewName(asset.name)
+        }
+    }, [fileManipulation?.data])
+
     if (!absPath) {
         return <></>
     }
-
-    const onRename = fileManipulation?.data?.ty == "rename" && fileManipulation.data.id[0] == asset.id
 
     return (
         <Button
@@ -65,7 +71,8 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
                         autoFocus
                         onKeyDown={ev => {
                             if (ev.key == "Enter") {
-                                if (fileManipulation?.data && newName) {
+                                console.log(fileManipulation.data, newName)
+                                if (fileManipulation.data && newName) {
                                     fileManipulation.setter({
                                         ...fileManipulation.data,
                                         submit: [newName]
