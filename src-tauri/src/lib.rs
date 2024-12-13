@@ -49,7 +49,6 @@ pub fn run() {
             cmd::modify_tags_of,
             cmd::delta_tags_of,
             cmd::get_assets_containing_tag,
-            cmd::compute_checksum,
             cmd::delete_folders,
             cmd::delete_assets,
             cmd::create_folders,

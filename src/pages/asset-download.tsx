@@ -5,10 +5,12 @@ import { useContext, useEffect, useState } from "react";
 import { DownloadEvent, GetFolder, ImportWebAssets } from "../backend";
 import { browsingFolderContext } from "../helpers/context-provider";
 import { Channel } from "@tauri-apps/api/core";
-import formatFileSize from "../util";
+import { formatFileSize } from "../util";
 import { t } from "i18next";
 import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
+import MsgToast from "../widgets/msg-toast";
+import DuplicationList from "../widgets/duplication-list";
 
 const eventTextStyleHook = makeStyles({
     root: {
@@ -37,8 +39,17 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
     const startDownload = async () => {
         if (browsingFolder?.data?.id) {
             statusMapper.clear()
-            await ImportWebAssets({ urls, parent: browsingFolder.data.id, progress })
+            const dup = await ImportWebAssets({ urls, parent: browsingFolder.data.id, progress })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+            if (dup) {
+                dispatchToast(<MsgToast
+                    title={t("toast.assetDuplication.title")}
+                    body={<DuplicationList list={dup} />}
+                />,
+                    { intent: "warning" }
+                )
+            }
         }
     }
 

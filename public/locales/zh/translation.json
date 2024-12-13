@@ -33,7 +33,6 @@
     "detail.modify": "上一次修改于",
     "detail.id": "唯一标识符",
     "detail.checksums": "校验和",
-    "detail.checksumsCompute": "计算",
     "quickRefCtxMenu.close": "关闭",
     "tagName.fallback": "未命名",
     "tagsContainer.noAvailable": "没有可用的标签",
@@ -66,5 +65,6 @@
     "toast.success.title": "成功",
     "toast.invalidKeyComb.title": "无效的按键组合",
     "toast.invalidKeyComb.body": "组合中至少应该存在一个不是 Ctrl, Shift 或者 Alt 的按键",
-    "toast.save.success": "已保存"
+    "toast.save.success": "已保存",
+    "toast.assetDuplication.title": "发现存在重复的图片"
 }

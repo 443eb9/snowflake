@@ -10,6 +10,8 @@ import { t } from "../i18n";
 import OverlayPanel from "../widgets/overlay-panel";
 import { overlaysContext } from "../helpers/context-provider";
 import { GlobalToasterId } from "../main";
+import MsgToast from "../widgets/msg-toast";
+import DuplicationList from "../widgets/duplication-list";
 
 export default function Startup() {
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -41,13 +43,21 @@ export default function Startup() {
         })
 
         if (path) {
-            await LoadLibrary({ rootFolder: path })
-                .then(() => {
-                    nav("/app")
-                })
+            const dup = await LoadLibrary({ rootFolder: path })
                 .catch(err => {
                     dispatch(err)
                 })
+
+            if (dup) {
+                console.log(dup)
+                dispatchToast(<MsgToast
+                    title={t("toast.assetDuplication.title")}
+                    body={<DuplicationList list={dup} />}
+                />,
+                    { intent: "warning" }
+                )
+            }
+            nav("/app")
         }
     }
 
@@ -64,13 +74,20 @@ export default function Startup() {
             })
 
             if (path) {
-                await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
-                    .then(() => {
-                        nav("app")
-                    })
+                const dup = await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
                     .catch(err => {
                         dispatch(err)
                     })
+
+                if (dup) {
+                    console.log(dup)
+                    dispatchToast(<MsgToast
+                        title={t("toast.assetDuplication.title")}
+                        body={<DuplicationList list={dup} />}
+                    />,
+                        { intent: "warning" }
+                    )
+                }
             }
         }
     }

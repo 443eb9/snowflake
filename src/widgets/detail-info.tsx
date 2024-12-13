@@ -1,11 +1,11 @@
 import { useContext, useEffect, useState } from "react"
-import { Button, Image, mergeClasses, Text, useToastController } from "@fluentui/react-components"
+import { Image, mergeClasses, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
-import { Asset, ComputeChecksum, GetAsset, GetAssetAbsPath } from "../backend"
+import { Asset, GetAsset, GetAssetAbsPath } from "../backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "../helpers/context-provider"
-import formatFileSize from "../util"
+import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
 import ErrToast from "./err-toast"
@@ -101,25 +101,10 @@ export default function DetailInfo() {
                     </ListItem>
                     <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">{t("detail.checksums")}</Text>
-                        {
-                            asset.checksums
-                                ? <div className={mergeClasses("w-full flex flex-col overflow-x-auto", darkenContentStyle.root)}>
-                                    <Text font="monospace">[CRC32]{asset.checksums.crc32}</Text>
-                                    <Text font="monospace">[MD5]{asset.checksums.md5}</Text>
-                                    <Text font="monospace">[SHA1]{asset.checksums.sha1}</Text>
-                                    <Text font="monospace">[SHA256]{asset.checksums.sha256}</Text>
-                                </div>
-                                : <Button onClick={async () => {
-                                    const computed = await ComputeChecksum({ asset: asset.id })
-                                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-                                    if (computed) {
-                                        setAsset(computed)
-                                    }
-                                }}>
-                                    <Text>{t("detail.checksumsCompute")}</Text>
-                                </Button>
-                        }
+                        <div className={mergeClasses("w-full flex flex-col overflow-x-auto", darkenContentStyle.root)}>
+                            <Text font="monospace">[CRC32]{asset.checksums.crc32}</Text>
+                            <Text font="monospace">[MD5]{asset.checksums.md5}</Text>
+                        </div>
                     </ListItem>
                 </List>
             </>

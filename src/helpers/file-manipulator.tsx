@@ -4,6 +4,9 @@ import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, Mo
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/err-toast"
+import MsgToast from "../widgets/msg-toast"
+import DuplicationList from "../widgets/duplication-list"
+import { t } from "../i18n"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -82,8 +85,17 @@ export default function FileManipulator() {
         items: string[],
         parent: string,
     ) {
-        await ImportAssets({ parent, path: items })
+        const dup = await ImportAssets({ parent, path: items })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+        if (dup) {
+            dispatchToast(<MsgToast
+                title={t("toast.assetDuplication.title")}
+                body={<DuplicationList list={dup} />}
+            />,
+                { intent: "warning" }
+            )
+        }
     }
 
     async function handleAssetsImport(
@@ -91,7 +103,7 @@ export default function FileManipulator() {
         items: string[],
         parent: string,
     ) {
-        await ImportAssets({ parent, path: items })
+        const dup = await ImportAssets({ parent, path: items })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         const folder = await GetFolder({ folder: parent })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -100,6 +112,15 @@ export default function FileManipulator() {
                 ...folder,
                 collection: false,
             })
+
+            if (dup) {
+                dispatchToast(<MsgToast
+                    title={t("toast.assetDuplication.title")}
+                    body={<DuplicationList list={dup} />}
+                />,
+                    { intent: "warning" }
+                )
+            }
         }
     }
 

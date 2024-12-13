@@ -33,7 +33,6 @@
     "detail.modify": "Last Modified",
     "detail.id": "Id",
     "detail.checksums": "Checksums",
-    "detail.checksumsCompute": "Compute",
     "quickRefCtxMenu.close": "Close",
     "tagName.fallback": "Unnamed",
     "tagsContainer.noAvailable": "No tags available.",
@@ -66,5 +65,6 @@
     "toast.success.title": "Success",
     "toast.invalidKeyComb.title": "Invalid key combination.",
     "toast.invalidKeyComb.body": "The combination should contain at least one key other than control, alt or shift.",
-    "toast.save.success": "Saved library."
+    "toast.save.success": "Saved library.",
+    "toast.assetDuplication.title": "Duplicate images detected"
 }

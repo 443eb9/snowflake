@@ -27,7 +27,7 @@ export type Asset = {
     name: string,
     ty: AssetType,
     meta: Metadata,
-    checksums: Checksums | undefined,
+    checksums: Checksums,
     tags: string[],
 }
 
@@ -47,11 +47,11 @@ export type Metadata = {
 export type Checksums = {
     crc32: number,
     md5: string,
-    sha1: string,
-    sha256: string,
 }
 
 export type AssetType = "Image" | "Unknown"
+
+export type DuplicateAssets = { [key: string]: string[] }
 
 export type RecentLib = {
     path: string,
@@ -79,11 +79,11 @@ export function SetUserSetting(params: { tab: string, item: string, value: Setti
     return invoke("set_user_setting", params)
 }
 
-export function LoadLibrary(params: { rootFolder: string }): Promise<void> {
+export function LoadLibrary(params: { rootFolder: string }): Promise<DuplicateAssets | undefined> {
     return invoke("load_library", params)
 }
 
-export function InitializeLibrary(params: { srcRootFolder: string, rootFolder: string }): Promise<void> {
+export function InitializeLibrary(params: { srcRootFolder: string, rootFolder: string }): Promise<DuplicateAssets | undefined> {
     return invoke("initialize_library", params)
 }
 
@@ -91,11 +91,11 @@ export function SaveLibrary(): Promise<void> {
     return invoke("save_library")
 }
 
-export function ImportAssets(params: { path: string[], parent: string }): Promise<void> {
+export function ImportAssets(params: { path: string[], parent: string }): Promise<DuplicateAssets | undefined> {
     return invoke("import_assets", params)
 }
 
-export function ImportWebAssets(params: { urls: string[], parent: string, progress: Channel<DownloadEvent> }): Promise<void> {
+export function ImportWebAssets(params: { urls: string[], parent: string, progress: Channel<DownloadEvent> }): Promise<DuplicateAssets | undefined> {
     return invoke("import_web_assets", params)
 }
 
@@ -158,10 +158,6 @@ export function ModifyTagsOf(params: { assets: string[], newTags: string[] }): P
 
 export function GetAssetsContainingTag(params: { tag: string }): Promise<string[]> {
     return invoke("get_assets_containing_tag", params)
-}
-
-export function ComputeChecksum(params: { asset: string }): Promise<Asset> {
-    return invoke("compute_checksum", params)
 }
 
 export function DeleteAssets(params: { assets: string[] }): Promise<void> {

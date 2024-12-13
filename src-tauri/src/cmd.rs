@@ -10,8 +10,8 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 
 use crate::{
     app::{
-        AppData, Asset, AssetId, AssetProperty, Checksums, Folder, FolderId, RawAsset, RecentLib,
-        SettingsValue, Storage, Tag, TagId, UserSettings,
+        AppData, Asset, AssetId, AssetProperty, DuplicateAssets, Folder, FolderId, RawAsset,
+        RecentLib, SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -86,10 +86,11 @@ pub fn load_library(
     storage: State<'_, Mutex<Option<Storage>>>,
     data: State<'_, Mutex<AppData>>,
     app: AppHandle,
-) -> Result<(), String> {
+) -> Result<Option<DuplicateAssets>, String> {
     log::info!("Start loading library at {:?}", root_folder);
 
     let new_storage = Storage::from_existing(&root_folder).map_err(|e| e.to_string())?;
+    let duplication = new_storage.cache.get_all_duplication();
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
     storage.replace(new_storage);
 
@@ -108,7 +109,7 @@ pub fn load_library(
     );
     data.save(&app).map_err(|e| e.to_string())?;
 
-    Ok(())
+    Ok(duplication.map(|d| DuplicateAssets(d)))
 }
 
 #[tauri::command]
@@ -118,12 +119,14 @@ pub fn initialize_library(
     storage: State<'_, Mutex<Option<Storage>>>,
     data: State<'_, Mutex<AppData>>,
     app: AppHandle,
-) -> Result<(), String> {
+) -> Result<Option<DuplicateAssets>, String> {
     log::info!("Start initializing library at {:?}", root_folder);
 
     let new_storage =
         Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
     new_storage.save().map_err(|e| e.to_string())?;
+
+    let duplication = new_storage.cache.get_all_duplication();
 
     let mut storage = storage.lock().map_err(|e| e.to_string())?;
     storage.replace(new_storage);
@@ -143,7 +146,7 @@ pub fn initialize_library(
     );
     data.save(&app).map_err(|e| e.to_string())?;
 
-    Ok(())
+    Ok(duplication.map(|d| DuplicateAssets(d)))
 }
 
 #[tauri::command]
@@ -181,7 +184,7 @@ pub async fn import_web_assets(
     parent: FolderId,
     storage: State<'_, Mutex<Option<Storage>>>,
     progress: Channel<DownloadEvent>,
-) -> Result<(), String> {
+) -> Result<Option<DuplicateAssets>, String> {
     log::info!(
         "Importing assets from web {:?} into folder {:?}.",
         urls,
@@ -560,37 +563,6 @@ pub fn get_assets_containing_tag(
             .values()
             .filter_map(|asset| asset.tags.contains(&tag).then_some(asset.id))
             .collect())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn compute_checksum(
-    asset: AssetId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Asset, String> {
-    log::info!("Compute checksum of {:?}", asset);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let path = storage
-            .get_asset_abs_path(asset)
-            .map_err(|e| e.to_string())?;
-
-        let asset = storage
-            .assets
-            .get_mut(&asset)
-            .ok_or_else(|| asset_doesnt_exist(asset))?;
-
-        if asset.checksums.is_none() {
-            asset
-                .checksums
-                .replace(Checksums::from_path(path).map_err(|e| e.to_string())?);
-        }
-
-        let asset = asset.clone();
-        storage.save().map_err(|e| e.to_string())?;
-        Ok(asset)
     } else {
         Err(storage_not_initialized())
     }

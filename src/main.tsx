@@ -22,7 +22,7 @@ root.render(
         <FluentProvider theme={webDarkTheme} className='test'>
             <ContextProvider>
                 <div className="w-[100vw] h-[100vh] overflow-hidden" style={{ backgroundColor: "var(--colorNeutralBackground1)" }}>
-                    <Toaster toasterId={GlobalToasterId} limit={3} />
+                    <Toaster toasterId={GlobalToasterId} limit={3} pauseOnHover />
                     <LanguageSwitch />
                     <Suspense>
                         <BrowserRouter>

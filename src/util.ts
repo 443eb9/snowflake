@@ -1,6 +1,6 @@
 const units = ["B", "KB", "MB", "GB"]
 
-export default function formatFileSize(bytes: number, precision = 1) {
+export function formatFileSize(bytes: number, precision = 1) {
     let value = bytes
     let unit = 0
     while (value > 1024 && unit < units.length - 1) {
