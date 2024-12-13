@@ -9,6 +9,7 @@ use std::{
 use chrono::{DateTime, FixedOffset, Local};
 use filetime::FileTime;
 use hashbrown::{HashMap, HashSet};
+use infer::MatcherType;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use thiserror::Error;
@@ -36,6 +37,8 @@ pub enum AppError {
     FolderNotFount(FolderId),
     #[error("Folder at {0} is not empty.")]
     FolderNotEmpty(PathBuf),
+    #[error("Unknown file type.")]
+    UnknownFileType,
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -171,6 +174,11 @@ fn collect_path(
 
         Ok(Some(folder_id))
     } else if path.is_file() {
+        let file_ty = infer::get_from_path(&path)?.ok_or_else(|| AppError::UnknownFileType)?;
+        if file_ty.matcher_type() != MatcherType::Image {
+            return Ok(None);
+        }
+
         let parent = folders.get_mut(&parent.unwrap()).unwrap();
         let ext = path
             .extension()

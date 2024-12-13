@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Mutex};
 use chrono::Local;
 use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
+use infer::MatcherType;
 use reqwest::Client;
 use serde::Deserialize;
 use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
@@ -218,12 +219,6 @@ pub async fn import_web_assets(
                 let total = ok.content_length();
                 let total_f = total.map(|t| t as f32);
 
-                let content_ty = ok
-                    .headers()
-                    .get("content-type")
-                    .and_then(|t| t.to_str().ok())
-                    .map(|e| e.to_string());
-
                 let mut content = Vec::new();
                 let mut stream = ok.bytes_stream();
 
@@ -252,16 +247,32 @@ pub async fn import_web_assets(
                     status: DownloadStatus::Finished,
                 });
 
+                let Some(ext) = infer::get(&content) else {
+                    let _ = progress.send(DownloadEvent {
+                        id,
+                        downloaded: f32::MAX,
+                        total: total_f,
+                        status: DownloadStatus::Error("Unknown buffer type.".to_string()),
+                    });
+                    continue;
+                };
+
+                if ext.matcher_type() != MatcherType::Image {
+                    let _ = progress.send(DownloadEvent {
+                        id,
+                        downloaded: f32::MAX,
+                        total: total_f,
+                        status: DownloadStatus::Error(format!(
+                            "Failed to import non-image assets. {}",
+                            ext.mime_type()
+                        )),
+                    });
+                    continue;
+                }
+
                 results.push(RawAsset {
                     bytes: content,
-                    ext: content_ty
-                        .map(|t| {
-                            let mut s = t.split('/');
-                            s.next();
-                            s.next().unwrap_or_default().to_string()
-                        })
-                        .unwrap_or_default()
-                        .into(),
+                    ext: ext.extension().into(),
                 });
             }
             Err(err) => {

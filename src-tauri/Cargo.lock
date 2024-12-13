@@ -3729,6 +3729,7 @@ dependencies = [
  "hashbrown 0.15.2",
  "hex",
  "imagesize",
+ "infer",
  "log",
  "md5",
  "pathdiff",
