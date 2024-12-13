@@ -290,9 +290,11 @@ pub async fn import_web_assets(
     }
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage
+        let dup = storage
             .add_raw_assets(results, parent)
-            .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())?;
+        Ok(dup)
     } else {
         Err(storage_not_initialized())
     }
