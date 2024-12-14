@@ -53,6 +53,8 @@
     "settings.general.lng": "Language",
     "settings.general.lng.en": "English",
     "settings.general.lng.zh": "简体中文",
+    "settings.library": "Library",
+    "settings.library.export": "Export Library",
     "settings.keyMapping": "Key Mapping",
     "settings.keyMapping.listening": "Listening",
     "settings.keyMapping.save": "Save",
@@ -66,5 +68,6 @@
     "toast.invalidKeyComb.title": "Invalid key combination.",
     "toast.invalidKeyComb.body": "The combination should contain at least one key other than control, alt or shift.",
     "toast.save.success": "Saved library.",
+    "toast.export.success": "Exported library.",
     "toast.assetDuplication.title": "Duplicate images detected"
 }

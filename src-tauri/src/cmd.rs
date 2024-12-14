@@ -1,4 +1,8 @@
-use std::{path::PathBuf, sync::Mutex};
+use std::{
+    fs::{copy, create_dir_all},
+    path::{Path, PathBuf},
+    sync::Mutex,
+};
 
 use chrono::Local;
 use futures::StreamExt;
@@ -10,8 +14,8 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 
 use crate::{
     app::{
-        AppData, Asset, AssetId, AssetProperty, DuplicateAssets, Folder, FolderId, RawAsset,
-        RecentLib, SettingsValue, Storage, Tag, TagId, UserSettings,
+        AppData, AppError, Asset, AssetId, AssetProperty, DuplicateAssets, Folder, FolderId,
+        RawAsset, RecentLib, SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -75,6 +79,7 @@ pub fn set_user_setting(
             SettingsUpdate::Value(v) => *s = v,
             _ => return Err("Incompatible value".into()),
         },
+        SettingsValue::Button => {}
     }
 
     Ok(())
@@ -158,6 +163,42 @@ pub fn save_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), St
     }
 
     Ok(())
+}
+
+fn export_recursion(storage: &Storage, folder: &FolderId, path: &Path) -> Result<(), AppError> {
+    if let Some(folder) = storage.folders.get(folder) {
+        let folder_path = path.join(&folder.name);
+        let _ = create_dir_all(&folder_path);
+
+        for asset in &folder.content {
+            if let Some(asset) = storage.assets.get(asset) {
+                copy(
+                    asset.get_file_path(&storage.cache.root),
+                    folder_path.join(asset.get_file_name()),
+                )?;
+            }
+        }
+
+        for child in &folder.children {
+            export_recursion(storage, child, &folder_path)?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn export_library(
+    root_folder: PathBuf,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Exporting library to {:?}", root_folder);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        export_recursion(&storage, &storage.root_id, &root_folder).map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]

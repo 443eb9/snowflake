@@ -32,6 +32,7 @@ pub fn run() {
             cmd::load_library,
             cmd::initialize_library,
             cmd::save_library,
+            cmd::export_library,
             cmd::import_assets,
             cmd::import_web_assets,
             cmd::get_asset_abs_path,

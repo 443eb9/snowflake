@@ -53,6 +53,8 @@
     "settings.general.lng": "语言",
     "settings.general.lng.en": "English",
     "settings.general.lng.zh": "简体中文",
+    "settings.library": "库",
+    "settings.library.export": "导出库",
     "settings.keyMapping": "键位",
     "settings.keyMapping.listening": "正在监听",
     "settings.keyMapping.save": "保存",
@@ -66,5 +68,6 @@
     "toast.invalidKeyComb.title": "无效的按键组合",
     "toast.invalidKeyComb.body": "组合中至少应该存在一个不是 Ctrl, Shift 或者 Alt 的按键",
     "toast.save.success": "已保存",
+    "toast.export.success": "已导出",
     "toast.assetDuplication.title": "发现存在重复的图片"
 }

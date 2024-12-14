@@ -53,6 +53,7 @@ pub enum SettingsValue {
     Sequence(Vec<String>),
     Custom(String),
     Toggle(bool),
+    Button,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -226,7 +227,7 @@ fn collect_path(
         }
 
         write(
-            root.join(IMAGE_ASSETS).join(asset.get_file_name()),
+            root.join(IMAGE_ASSETS).join(asset.get_file_name_id()),
             file_content,
         )?;
         parent.content.insert(asset.id);
@@ -494,7 +495,7 @@ impl Storage {
 
             self.cache.remove_asset_crc(asset.checksums.crc32, asset.id);
 
-            let file_name = asset.get_file_name();
+            let file_name = asset.get_file_name_id();
             let _ = std::fs::rename(
                 self.cache.root.join(IMAGE_ASSETS).join(&file_name),
                 self.cache.root.join(TEMP_RECYCLE_BIN).join(file_name),
@@ -586,14 +587,19 @@ impl Storage {
     pub fn get_asset_abs_path(&self, id: AssetId) -> AppResult<PathBuf> {
         self.assets
             .get(&id)
-            .map(|a| self.cache.root.join(IMAGE_ASSETS).join(a.get_file_name()))
+            .map(|a| {
+                self.cache
+                    .root
+                    .join(IMAGE_ASSETS)
+                    .join(a.get_file_name_id())
+            })
             .ok_or_else(|| AppError::AssetNotFount(id))
     }
 
     pub fn get_asset_virtual_path(&self, id: AssetId) -> AppResult<Vec<String>> {
         if let Some(asset) = self.assets.get(&id) {
             self.get_folder_virtual_path(asset.parent).map(|mut p| {
-                p.push(asset.get_file_name());
+                p.push(asset.get_file_name_id());
                 p
             })
         } else {
@@ -771,6 +777,14 @@ impl Asset {
 
     pub fn get_file_name(&self) -> String {
         if self.ext.is_empty() {
+            self.name.to_owned()
+        } else {
+            format!("{}.{}", self.name, self.ext)
+        }
+    }
+
+    pub fn get_file_name_id(&self) -> String {
+        if self.ext.is_empty() {
             self.id.clone().0.to_string()
         } else {
             format!("{}.{}", self.id.0, self.ext)
@@ -778,7 +792,7 @@ impl Asset {
     }
 
     pub fn get_file_path(&self, root: &Path) -> PathBuf {
-        root.join(IMAGE_ASSETS).join(self.get_file_name())
+        root.join(IMAGE_ASSETS).join(self.get_file_name_id())
     }
 }
 

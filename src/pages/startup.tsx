@@ -88,6 +88,8 @@ export default function Startup() {
                         { intent: "warning" }
                     )
                 }
+
+                nav("/app")
             }
         }
     }
