@@ -4,6 +4,7 @@
 
 - Library no longer accepts assets that it didn't recognize. For example, it won't import `.txt` or download `.html` .
 - Exporting library while keeping your folder structure.
+- Detecting duplicate assets using CRC(Cyclic Redundancy Check) hashing.
 - New `src` property for assets. You can use this to mark the source of this asset.
 
 # What's Fixed

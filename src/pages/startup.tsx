@@ -43,21 +43,23 @@ export default function Startup() {
         })
 
         if (path) {
-            const dup = await LoadLibrary({ rootFolder: path })
+            await LoadLibrary({ rootFolder: path })
+                .then(dup => {
+                    if (dup) {
+                        console.log(dup)
+                        dispatchToast(<MsgToast
+                            title={t("toast.assetDuplication.title")}
+                            body={<DuplicationList list={dup} />}
+                        />,
+                            { intent: "warning" }
+                        )
+                    }
+
+                    nav("/app")
+                })
                 .catch(err => {
                     dispatch(err)
                 })
-
-            if (dup) {
-                console.log(dup)
-                dispatchToast(<MsgToast
-                    title={t("toast.assetDuplication.title")}
-                    body={<DuplicationList list={dup} />}
-                />,
-                    { intent: "warning" }
-                )
-            }
-            nav("/app")
         }
     }
 
@@ -74,22 +76,23 @@ export default function Startup() {
             })
 
             if (path) {
-                const dup = await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
+                await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
+                    .then(dup => {
+                        if (dup) {
+                            console.log(dup)
+                            dispatchToast(<MsgToast
+                                title={t("toast.assetDuplication.title")}
+                                body={<DuplicationList list={dup} />}
+                            />,
+                                { intent: "warning" }
+                            )
+                        }
+
+                        nav("/app")
+                    })
                     .catch(err => {
                         dispatch(err)
                     })
-
-                if (dup) {
-                    console.log(dup)
-                    dispatchToast(<MsgToast
-                        title={t("toast.assetDuplication.title")}
-                        body={<DuplicationList list={dup} />}
-                    />,
-                        { intent: "warning" }
-                    )
-                }
-
-                nav("/app")
             }
         }
     }
