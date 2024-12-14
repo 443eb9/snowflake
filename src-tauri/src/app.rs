@@ -286,6 +286,13 @@ pub struct AssetId(pub Uuid);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TagId(pub Uuid);
 
+#[derive(Serialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryStatistics {
+    pub total_assets: u32,
+    pub asset_ext: HashMap<Arc<str>, u32>,
+}
+
 #[derive(Default)]
 pub struct StorageCache {
     pub root: PathBuf,
@@ -712,6 +719,24 @@ impl Storage {
         res.reverse();
 
         Ok(res)
+    }
+
+    pub fn gen_statistics(&self) -> LibraryStatistics {
+        let mut asset_ext = HashMap::default();
+
+        for asset in self.assets.values() {
+            match asset_ext.entry(asset.ext.clone()) {
+                Entry::Occupied(mut e) => *e.get_mut() += 1,
+                Entry::Vacant(e) => {
+                    e.insert(1);
+                }
+            }
+        }
+
+        LibraryStatistics {
+            total_assets: self.assets.len() as u32,
+            asset_ext,
+        }
     }
 }
 

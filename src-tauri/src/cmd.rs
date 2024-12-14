@@ -15,8 +15,8 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
-        FolderId, LibraryMeta, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue,
-        Storage, Tag, TagId, UserSettings,
+        FolderId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
+        SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -208,6 +208,19 @@ pub fn export_library(
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         export_recursion(&storage, &storage.root_id, &root_folder).map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn gen_statistics(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<LibraryStatistics, String> {
+    log::info!("Generating statistics.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        Ok(storage.gen_statistics())
     } else {
         Err(storage_not_initialized())
     }

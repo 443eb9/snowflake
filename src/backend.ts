@@ -72,6 +72,11 @@ export type QuickRefTy = {
     tag: string,
 }
 
+export type LibraryStatistics = {
+    totalAssets: number,
+    assetExt: { [ext: string]: number },
+}
+
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
 }
@@ -82,6 +87,10 @@ export function GetUserSettings(): Promise<UserSettings> {
 
 export function GetLibraryMeta(): Promise<LibraryMeta> {
     return invoke("get_library_meta")
+}
+
+export function GetLibraryStatistics(): Promise<LibraryStatistics> {
+    return invoke("gen_statistics")
 }
 
 export function GetDefaultSettings(): Promise<DefaultSettings> {
@@ -106,6 +115,10 @@ export function SaveLibrary(): Promise<void> {
 
 export function ExportLibrary(params: { rootFolder: string }): Promise<void> {
     return invoke("export_library", params)
+}
+
+export function GenStatistics(): Promise<LibraryStatistics> {
+    return invoke("gen_statistics")
 }
 
 export function GetDuplicatedAssets(): Promise<DuplicateAssets> {

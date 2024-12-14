@@ -10,6 +10,7 @@ import { Route } from 'react-router-dom'
 import QuickRef from './pages/quick-ref'
 import ContextProvider from './helpers/context-provider'
 import LanguageSwitch from './helpers/language-switch'
+import LibStatistics from './pages/lib-statistics'
 
 export const GlobalToasterId = "globalToasterId"
 
@@ -28,6 +29,7 @@ root.render(
                         <BrowserRouter>
                             <Routes>
                                 <Route path="/app" element={<MainApp />} />
+                                <Route path="/stat" element={<LibStatistics />} />
                                 <Route path="/" element={<Startup />} />
                                 <Route path="/quickref/:id" element={<QuickRef />} />
                             </Routes>

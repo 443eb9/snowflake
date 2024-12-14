@@ -1,6 +1,6 @@
 import { Button, Input, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
-import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
+import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
@@ -9,6 +9,7 @@ import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/msg-toast";
 import { open } from "@tauri-apps/plugin-dialog";
 import SuccessToast from "../widgets/success-toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState<Tab>("general")
@@ -128,6 +129,7 @@ function GeneralTab(props: TabProps) {
 function LibraryTab(props: TabProps) {
     const [libraryMeta, setLibraryMeta] = useState<LibraryMeta>()
     const [updateFlag, setUpdateFlag] = useState(false)
+    const nav = useNavigate()
 
     useEffect(() => {
         async function fetch() {
@@ -181,6 +183,9 @@ function LibraryTab(props: TabProps) {
                         }
                     }}
                 />
+            </SettingsItem>
+            <SettingsItem title="statistics" currentTab={props.currentTab}>
+                <Button icon={<ChartMultiple20Regular />} appearance="subtle" onClick={() => nav("/stat")} />
             </SettingsItem>
         </>
     )

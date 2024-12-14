@@ -36,6 +36,7 @@ pub fn run() {
             cmd::initialize_library,
             cmd::save_library,
             cmd::export_library,
+            cmd::gen_statistics,
             cmd::change_library_name,
             cmd::import_assets,
             cmd::import_web_assets,
