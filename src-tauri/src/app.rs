@@ -1,5 +1,5 @@
 use std::{
-    fs::{create_dir_all, metadata, read, read_dir, write, File},
+    fs::{copy, create_dir_all, metadata, read, read_dir, File},
     io::Write,
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
@@ -245,9 +245,10 @@ fn collect_path(
 
         let asset = Asset::new(parent.id, name, ext.into(), meta, ty, props);
 
-        write(
+        // Copy to preserve metadata
+        copy(
+            &path,
             root.join(IMAGE_ASSETS).join(asset.get_file_name_id()),
-            file_content,
         )?;
         asset_crc.insert(asset.id, crc);
         parent.content.insert(asset.id);
