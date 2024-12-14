@@ -1,8 +1,8 @@
-import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
+import { Button, Input, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
-import { DefaultSettings, ExportLibrary, GetDefaultSettings, GetUserSettings, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
+import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
@@ -82,7 +82,7 @@ export default function Settings() {
 
 type Tab = "general" | "library" | "keyMapping" | "experimental"
 
-type UpdateFn = (title: string, value: string | string[] | boolean) => void
+type UpdateFn = (title: string, value: SettingsValue) => void
 
 type TabProps = {
     currentTab: Tab,
@@ -126,7 +126,23 @@ function GeneralTab(props: TabProps) {
 }
 
 function LibraryTab(props: TabProps) {
-    if (props.currentTab != "library") {
+    const [libraryMeta, setLibraryMeta] = useState<LibraryMeta>()
+    const [updateFlag, setUpdateFlag] = useState(false)
+
+    useEffect(() => {
+        async function fetch() {
+            const libraryMeta = await GetLibraryMeta()
+                .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+            if (libraryMeta) {
+                setLibraryMeta(libraryMeta)
+            }
+        }
+
+        fetch()
+    }, [updateFlag])
+
+    if (props.currentTab != "library" || !libraryMeta) {
         return <></>
     }
 
@@ -152,6 +168,19 @@ function LibraryTab(props: TabProps) {
         <>
             <SettingsItem title="export" currentTab={props.currentTab}>
                 <Button icon={<ArrowExport20Regular />} appearance="subtle" onClick={handleExport} />
+            </SettingsItem>
+            <SettingsItem title="rename" currentTab={props.currentTab}>
+                <Input
+                    defaultValue={libraryMeta.name}
+                    onKeyDown={async ev => {
+                        if (ev.key == "Enter") {
+                            ev.currentTarget.blur()
+                            await ChangeLibraryName({ name: ev.currentTarget.value })
+                                .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                            setUpdateFlag(!updateFlag)
+                        }
+                    }}
+                />
             </SettingsItem>
         </>
     )

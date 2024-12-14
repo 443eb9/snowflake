@@ -364,6 +364,39 @@ impl StorageCache {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryMeta {
+    pub name: String,
+    pub meta: Metadata,
+}
+
+impl Default for LibraryMeta {
+    fn default() -> Self {
+        Self {
+            name: Default::default(),
+            meta: Metadata {
+                byte_size: 0,
+                created_at: None,
+                last_modified: Local::now().into(),
+            },
+        }
+    }
+}
+
+impl LibraryMeta {
+    pub fn new(name: String) -> Self {
+        Self {
+            name,
+            meta: Metadata {
+                byte_size: 0,
+                created_at: Some(Local::now().into()),
+                last_modified: Local::now().into(),
+            },
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Storage {
@@ -373,6 +406,8 @@ pub struct Storage {
     pub tags: HashMap<TagId, Tag>,
     pub folders: HashMap<FolderId, Folder>,
     pub assets: HashMap<AssetId, Asset>,
+    #[serde(default)]
+    pub lib_meta: LibraryMeta,
 }
 
 impl Storage {
@@ -410,6 +445,9 @@ impl Storage {
             tags: Default::default(),
             folders,
             assets,
+            lib_meta: LibraryMeta::new(
+                root_path.file_name().unwrap().to_string_lossy().to_string(),
+            ),
         };
         result.cache = StorageCache::build(root_path, duplication);
 
@@ -419,7 +457,7 @@ impl Storage {
     pub fn from_existing(root_folder: impl AsRef<Path>) -> Result<Self, std::io::Error> {
         let root = root_folder.as_ref();
         let path = root.join(LIBRARY_STORAGE);
-        let reader = std::fs::File::open(&path)?;
+        let reader = File::open(&path)?;
         let mut result = serde_json::from_reader::<_, Self>(reader)?;
 
         let asset_crc = result
@@ -437,11 +475,11 @@ impl Storage {
         Ok(result)
     }
 
-    pub fn save(&self) -> Result<(), std::io::Error> {
-        Ok(
-            std::fs::File::create(self.cache.root.join(LIBRARY_STORAGE))?
-                .write_all(serde_json::to_string(self)?.as_bytes())?,
-        )
+    pub fn save(&mut self) -> Result<(), std::io::Error> {
+        self.lib_meta.meta.last_modified = Local::now().into();
+
+        Ok(File::create(self.cache.root.join(LIBRARY_STORAGE))?
+            .write_all(serde_json::to_string(self)?.as_bytes())?)
     }
 
     pub fn add_assets(

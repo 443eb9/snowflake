@@ -15,6 +15,11 @@ export type DownloadEvent = {
     status: string | { Error: string },
 }
 
+export type LibraryMeta = {
+    name: string,
+    meta: Metadata,
+}
+
 export type Folder = {
     parent: string | undefined,
     id: string,
@@ -74,6 +79,10 @@ export function GetUserSettings(): Promise<UserSettings> {
     return invoke("get_user_settings")
 }
 
+export function GetLibraryMeta(): Promise<LibraryMeta> {
+    return invoke("get_library_meta")
+}
+
 export function GetDefaultSettings(): Promise<DefaultSettings> {
     return invoke("get_default_settings")
 }
@@ -100,6 +109,10 @@ export function ExportLibrary(params: { rootFolder: string }): Promise<void> {
 
 export function GetDuplicatedAssets(): Promise<DuplicateAssets> {
     return invoke("get_duplicated_assets")
+}
+
+export function ChangeLibraryName(params: { name: string }): Promise<DuplicateAssets | undefined> {
+    return invoke("change_library_name", params)
 }
 
 export function ImportAssets(params: { path: string[], parent: string }): Promise<DuplicateAssets | undefined> {

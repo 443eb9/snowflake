@@ -15,8 +15,8 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, DuplicateAssets, Folder, FolderId,
-        RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage, Tag, TagId,
-        UserSettings,
+        LibraryMeta, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage,
+        Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -24,20 +24,34 @@ use crate::{
 
 #[tauri::command]
 pub fn get_recent_libraries(data: State<'_, Mutex<AppData>>) -> Result<Vec<RecentLib>, String> {
+    log::info!("Getting recent libraries.");
     let data = data.lock().map_err(|e| e.to_string())?;
     Ok(data.recent_libs.values().cloned().collect())
 }
 
 #[tauri::command]
 pub fn get_user_settings(data: State<'_, Mutex<AppData>>) -> Result<UserSettings, String> {
+    log::info!("Getting user settings.");
     let data = data.lock().map_err(|e| e.to_string())?;
     Ok(data.settings.clone())
+}
+
+#[tauri::command]
+pub fn get_library_meta(storage: State<'_, Mutex<Option<Storage>>>) -> Result<LibraryMeta, String> {
+    log::info!("Getting library meta.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage.lib_meta.clone())
+    } else {
+        Err(storage_not_initialized())
+    }
 }
 
 #[tauri::command]
 pub fn get_default_settings(
     data: State<'_, ResourceCache>,
 ) -> Result<HashMap<String, HashMap<String, SettingsDefault>>, String> {
+    log::info!("Getting default settings.");
     Ok(data.settings.clone())
 }
 
@@ -49,6 +63,8 @@ pub fn set_user_setting(
     data: State<'_, Mutex<AppData>>,
     resource: State<'_, ResourceCache>,
 ) -> Result<(), String> {
+    log::info!("Getting user settings.");
+
     let mut data = data.lock().map_err(|e| e.to_string())?;
 
     let default = resource
@@ -130,7 +146,7 @@ pub fn initialize_library(
 ) -> Result<Option<DuplicateAssets>, String> {
     log::info!("Start initializing library at {:?}", root_folder);
 
-    let new_storage =
+    let mut new_storage =
         Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
     new_storage.save().map_err(|e| e.to_string())?;
 
@@ -161,7 +177,7 @@ pub fn initialize_library(
 pub fn save_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), String> {
     log::info!("Saving library...");
 
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         storage.save().map_err(|e| e.to_string())?;
     }
 
@@ -216,6 +232,21 @@ pub fn import_assets(
         storage
             .add_assets(path, parent)
             .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn change_library_name(
+    name: String,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Changing library name into {}", name);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        storage.lib_meta.name = name;
         storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
@@ -840,7 +871,7 @@ pub async fn quick_ref(
             .set_size(tauri::PhysicalSize::new(200, 200))
             .unwrap();
 
-        storage.save().map_err(|e| e.to_string())
+        Ok(())
     } else {
         Err(storage_not_initialized())
     }
