@@ -33,7 +33,7 @@
     "detail.created": "Created At",
     "detail.modify": "Last Modified",
     "detail.id": "Id",
-    "detail.checksums": "Checksums",
+    "detail.src": "Source",
     "quickRefCtxMenu.close": "Close",
     "tagName.fallback": "Unnamed",
     "tagsContainer.noAvailable": "No tags available.",

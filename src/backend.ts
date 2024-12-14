@@ -38,6 +38,7 @@ export type Asset = {
     ext: string,
     meta: Metadata,
     tags: string[],
+    src: string,
 }
 
 export type Tag = {
@@ -178,6 +179,10 @@ export function DeltaTagsOf(params: { assets: string[], tags: string[], mode: "A
 
 export function ModifyTagsOf(params: { assets: string[], newTags: string[] }): Promise<void> {
     return invoke("modify_tags_of", params)
+}
+
+export function ModifySrcOf(params: { asset: string, src: string }): Promise<void> {
+    return invoke("modify_src_of", params)
 }
 
 export function GetAssetsContainingTag(params: { tag: string }): Promise<string[]> {

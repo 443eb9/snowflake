@@ -33,7 +33,7 @@
     "detail.created": "创建于",
     "detail.modify": "上一次修改于",
     "detail.id": "唯一标识符",
-    "detail.checksums": "校验和",
+    "detail.source": "来源",
     "quickRefCtxMenu.close": "关闭",
     "tagName.fallback": "未命名",
     "tagsContainer.noAvailable": "没有可用的标签",

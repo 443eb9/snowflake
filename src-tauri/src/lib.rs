@@ -54,6 +54,7 @@ pub fn run() {
             cmd::get_tags,
             cmd::modify_tags_of,
             cmd::delta_tags_of,
+            cmd::modify_src_of,
             cmd::get_assets_containing_tag,
             cmd::delete_folders,
             cmd::delete_assets,

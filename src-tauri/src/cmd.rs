@@ -274,7 +274,7 @@ pub async fn import_web_assets(
 
     for (index, url) in urls.into_iter().enumerate() {
         let id = index as u32;
-        let request = match client.get(url).build() {
+        let request = match client.get(&url).build() {
             Ok(req) => req,
             Err(err) => {
                 let _ = progress.send(DownloadEvent {
@@ -354,6 +354,7 @@ pub async fn import_web_assets(
                 results.push(RawAsset {
                     bytes: content,
                     ext: ext.extension().into(),
+                    src: url,
                 });
             }
             Err(err) => {
@@ -664,6 +665,26 @@ pub fn get_assets_containing_tag(
             .values()
             .filter_map(|asset| asset.tags.contains(&tag).then_some(asset.id))
             .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn modify_src_of(
+    asset: AssetId,
+    src: String,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Modifying src of {:?} to {}", asset, src);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        if let Some(asset) = storage.assets.get_mut(&asset) {
+            asset.src = src;
+            storage.save().map_err(|e| e.to_string())
+        } else {
+            Err(asset_doesnt_exist(asset))
+        }
     } else {
         Err(storage_not_initialized())
     }

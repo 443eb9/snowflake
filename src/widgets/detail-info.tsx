@@ -1,8 +1,8 @@
 import { useContext, useEffect, useState } from "react"
-import { Image, Text, useToastController } from "@fluentui/react-components"
+import { Image, Input, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
-import { Asset, GetAsset, GetAssetAbsPath } from "../backend"
+import { Asset, GetAsset, GetAssetAbsPath, ModifySrcOf } from "../backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
 import { selectedAssetsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
@@ -16,6 +16,8 @@ export default function DetailInfo() {
     const [selectedCount, setSelectedCount] = useState(0)
     const [assetAbsPath, setAssetAbsPath] = useState<string | undefined>()
     const darkenContentStyle = darkenContentStyleHook()
+
+    const [newSrc, setNewSrc] = useState("")
 
     const selectedAssets = useContext(selectedAssetsContext)
 
@@ -44,6 +46,7 @@ export default function DetailInfo() {
 
             if (asset && absPath) {
                 setAsset(asset)
+                setNewSrc(asset.src)
                 setAssetAbsPath(absPath)
             }
         }
@@ -70,6 +73,22 @@ export default function DetailInfo() {
                     <ListItem className="flex flex-col gap-1">
                         <Text weight="bold">{t("detail.fileName")}</Text>
                         <Text>{asset.name}</Text>
+                    </ListItem>
+                    <ListItem className="flex flex-col gap-1">
+                        <Text weight="bold">{t("detail.src")}</Text>
+                        <Input
+                            size="small"
+                            appearance="underline"
+                            value={newSrc}
+                            onChange={ev => setNewSrc(ev.currentTarget.value)}
+                            onKeyDown={async ev => {
+                                if (ev.key == "Enter") {
+                                    ev.currentTarget.blur()
+                                    await ModifySrcOf({ asset: asset.id, src: newSrc })
+                                        .catch(err => <ErrToast body={err} />)
+                                }
+                            }}
+                        />
                     </ListItem>
                     <ListItem className="flex flex-col gap-1">
                         <Text weight="bold">{t("detail.tags")}</Text>

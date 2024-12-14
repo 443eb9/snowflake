@@ -243,7 +243,15 @@ fn collect_path(
         let file_content = read(&path)?;
         let crc = crc32fast::hash(&file_content);
 
-        let asset = Asset::new(parent.id, name, ext.into(), meta, ty, props);
+        let asset = Asset::new(
+            parent.id,
+            name,
+            ext.into(),
+            meta,
+            ty,
+            props,
+            Default::default(),
+        );
 
         // Copy to preserve metadata
         copy(
@@ -518,7 +526,7 @@ impl Storage {
         };
 
         let mut added_crc = HashSet::<u32>::default();
-        for RawAsset { bytes, ext } in data {
+        for RawAsset { bytes, ext, src } in data {
             let id = Uuid::new_v4();
             let path = root.join(IMAGE_ASSETS).join(if ext.is_empty() {
                 id.to_string()
@@ -549,7 +557,7 @@ impl Storage {
 
             let asset = Asset {
                 id: AssetId(id),
-                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty, props)
+                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty, props, src)
             };
 
             parent.content.insert(asset.id);
@@ -700,6 +708,7 @@ impl Storage {
 pub struct RawAsset {
     pub bytes: Vec<u8>,
     pub ext: Arc<str>,
+    pub src: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -821,6 +830,9 @@ pub struct Asset {
     pub props: Option<AssetProperty>,
     pub meta: Metadata,
     pub tags: Vec<TagId>,
+    // Backward compatibility 0.0.1
+    #[serde(default)]
+    pub src: String,
 }
 
 impl Asset {
@@ -831,6 +843,7 @@ impl Asset {
         meta: Metadata,
         ty: AssetType,
         props: Option<AssetProperty>,
+        src: String,
     ) -> Self {
         Self {
             parent,
@@ -841,6 +854,7 @@ impl Asset {
             props,
             meta,
             tags: Default::default(),
+            src,
         }
     }
 
