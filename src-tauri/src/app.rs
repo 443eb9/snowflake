@@ -277,6 +277,12 @@ fn collect_path(
 #[derive(Serialize)]
 pub struct DuplicateAssets(pub HashMap<u32, Vec<AssetId>>);
 
+impl DuplicateAssets {
+    pub fn reduce(self) -> Option<Self> {
+        (!self.0.is_empty()).then_some(self)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct FolderId(pub Uuid);
 
@@ -358,31 +364,20 @@ impl StorageCache {
         }
     }
 
-    pub fn get_all_duplication(&self) -> Option<HashMap<u32, Vec<AssetId>>> {
-        let dup = self
-            .crc_lookup
+    pub fn get_all_duplication(&self) -> HashMap<u32, Vec<AssetId>> {
+        self.crc_lookup
             .clone()
             .into_iter()
             .filter(|(_, d)| d.len() > 1)
-            .collect::<HashMap<_, _>>();
-
-        (!dup.is_empty()).then_some(dup)
+            .collect()
     }
 
-    pub fn check_duplications<'a, I>(&self, crcs: I) -> Option<DuplicateAssets>
-    where
-        I: Iterator<Item = &'a u32>,
-    {
-        let mut result = HashMap::default();
-        for crc in crcs {
-            if !result.contains_key(crc) {
-                if let Some(assets) = self.crc_lookup.get(crc) {
-                    result.insert(*crc, assets.clone());
-                }
-            }
-        }
-
-        (!result.is_empty()).then_some(DuplicateAssets(result))
+    pub fn get_duplications(&self, crcs: Vec<u32>) -> HashMap<u32, Vec<AssetId>> {
+        crcs.into_iter()
+            .filter_map(|crc| self.crc_lookup.get(&crc).map(|assets| (crc, assets)))
+            .filter(|(_, assets)| assets.len() > 1)
+            .map(|(crc, assets)| (crc.clone(), assets.clone()))
+            .collect()
     }
 }
 
@@ -508,7 +503,7 @@ impl Storage {
         &mut self,
         path: Vec<PathBuf>,
         parent: FolderId,
-    ) -> AppResult<Option<DuplicateAssets>> {
+    ) -> AppResult<DuplicateAssets> {
         if !self.folders.contains_key(&parent) {
             return Err(AppError::FolderNotFount(parent));
         }
@@ -525,14 +520,19 @@ impl Storage {
             )?;
         }
 
-        Ok(self.cache.check_duplications(asset_crc.values()))
+        self.cache.asset_crc.extend(asset_crc.clone());
+        let duplication = self
+            .cache
+            .get_duplications(asset_crc.values().cloned().collect());
+
+        Ok(DuplicateAssets(duplication))
     }
 
     pub fn add_raw_assets(
         &mut self,
         data: Vec<RawAsset>,
         parent: FolderId,
-    ) -> AppResult<Option<DuplicateAssets>> {
+    ) -> AppResult<DuplicateAssets> {
         let root = self.cache.root.clone();
         let Some(parent) = self.folders.get_mut(&parent) else {
             return Err(AppError::FolderNotFount(parent).into());
@@ -581,7 +581,9 @@ impl Storage {
             self.assets.insert(asset.id, asset);
         }
 
-        Ok(self.cache.check_duplications(added_crc.iter()))
+        Ok(DuplicateAssets(
+            self.cache.get_duplications(added_crc.into_iter().collect()),
+        ))
     }
 
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {

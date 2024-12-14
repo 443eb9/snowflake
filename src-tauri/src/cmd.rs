@@ -130,7 +130,7 @@ pub fn load_library(
     storage.replace(new_storage);
     data.save(&app).map_err(|e| e.to_string())?;
 
-    Ok(duplication.map(|d| DuplicateAssets(d)))
+    Ok(DuplicateAssets(duplication).reduce())
 }
 
 #[tauri::command]
@@ -163,7 +163,7 @@ pub fn initialize_library(
     storage.replace(new_storage);
     data.save(&app).map_err(|e| e.to_string())?;
 
-    Ok(duplication.map(|d| DuplicateAssets(d)))
+    Ok(DuplicateAssets(duplication).reduce())
 }
 
 #[tauri::command]
@@ -383,11 +383,11 @@ pub async fn import_web_assets(
     }
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let dup = storage
+        let duplication = storage
             .add_raw_assets(results, parent)
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
-        Ok(dup)
+        Ok(duplication.reduce())
     } else {
         Err(storage_not_initialized())
     }
