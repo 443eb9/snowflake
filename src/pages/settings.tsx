@@ -1,8 +1,8 @@
 import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
-import { t } from "../i18n";
+import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
-import { ExportLibrary, GetUserSettings, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
+import { DefaultSettings, ExportLibrary, GetDefaultSettings, GetUserSettings, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/err-toast";
 import { GlobalToasterId } from "../main";
@@ -13,6 +13,7 @@ import SuccessToast from "../widgets/success-toast";
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState<Tab>("general")
     const [userSettings, setUserSettings] = useState<UserSettings | undefined>()
+    const [defaultSettings, setDefaultSettings] = useState<DefaultSettings | undefined>()
 
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
 
@@ -20,21 +21,29 @@ export default function Settings() {
 
     useEffect(() => {
         async function fetch() {
-            const sets = await GetUserSettings()
+            const userSettings = await GetUserSettings()
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            if (sets) {
-                setUserSettings(sets)
+            if (userSettings) {
+                setUserSettings(userSettings)
+            }
+
+            if (!defaultSettings) {
+                const defaultSettings = await GetDefaultSettings()
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                if (defaultSettings) {
+                    setDefaultSettings(defaultSettings)
+                }
             }
         }
 
         fetch()
     }, [settingsChangeFlag?.data])
 
-    if (!userSettings) {
+    if (!userSettings || !defaultSettings) {
         return <></>
     }
 
-    const update = (title: string, value: string | string[] | boolean) => {
+    const update = (title: string, value: SettingsValue) => {
         SetUserSetting({ tab: currentTab, item: title, value })
             .catch(err => {
                 dispatchToast(<ErrToast body={err} />)
@@ -62,10 +71,10 @@ export default function Settings() {
                 </div>
             </div>
             <div className="flex flex-col gap-2 flex-grow mr-8 overflow-y-scroll">
-                <GeneralTab currentTab={currentTab} items={userSettings["general"]} update={update} dispatchToast={dispatchToast} />
-                <LibGeneralTab currentTab={currentTab} items={userSettings["library"]} update={update} dispatchToast={dispatchToast} />
-                <KeyMappingTab currentTab={currentTab} items={userSettings["keyMapping"]} update={update} dispatchToast={dispatchToast} />
-                <ExperimentalTab currentTab={currentTab} items={userSettings["experimental"]} update={update} dispatchToast={dispatchToast} />
+                <GeneralTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
+                <LibraryTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
+                <KeyMappingTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
+                <ExperimentalTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
             </div>
         </div>
     )
@@ -77,13 +86,15 @@ type UpdateFn = (title: string, value: string | string[] | boolean) => void
 
 type TabProps = {
     currentTab: Tab,
-    items: { [title: string]: SettingsValue },
+    user: UserSettings,
+    default: DefaultSettings,
     update: UpdateFn,
     dispatchToast: (content: ReactNode, options?: { intent: ToastIntent }) => void
 }
 
 function GeneralTab(props: TabProps) {
-    if (props.currentTab != "general") {
+    const tab = "general"
+    if (props.currentTab != tab) {
         return <></>
     }
 
@@ -93,23 +104,28 @@ function GeneralTab(props: TabProps) {
                 <SelectableCandidates
                     currentTab={props.currentTab}
                     title="theme"
-                    selectable={props.items["theme"] as Selectable}
-                    update={props.update}
+                    selectable={props.default[tab]["theme"] as Selectable}
+                    onSelect={props.update}
+                    value={props.user[tab]["theme"] as string}
                 />
             </SettingsItem>
             <SettingsItem title="lng" currentTab={props.currentTab}>
                 <SelectableCandidates
                     currentTab={props.currentTab}
                     title="lng"
-                    selectable={props.items["lng"] as Selectable}
-                    update={props.update}
+                    selectable={props.default[tab]["lng"] as Selectable}
+                    onSelect={(title, value) => {
+                        i18n.changeLanguage(value)
+                        props.update(title, value)
+                    }}
+                    value={props.user[tab]["lng"] as string}
                 />
             </SettingsItem>
         </>
     )
 }
 
-function LibGeneralTab(props: TabProps) {
+function LibraryTab(props: TabProps) {
     if (props.currentTab != "library") {
         return <></>
     }
@@ -135,13 +151,14 @@ function LibGeneralTab(props: TabProps) {
     return (
         <>
             <SettingsItem title="export" currentTab={props.currentTab}>
-                <Button icon={<ArrowExport20Regular />} onClick={handleExport} />
+                <Button icon={<ArrowExport20Regular />} appearance="subtle" onClick={handleExport} />
             </SettingsItem>
         </>
     )
 }
 
 function KeyMappingTab(props: TabProps) {
+    const tab = "keyMapping"
     const [editingKeyMapping, setEditingKeyMapping] = useState<string | undefined>(undefined)
     const [listenedKeyMap, setListenedKeyMap] = useState<string[]>([])
 
@@ -183,7 +200,7 @@ function KeyMappingTab(props: TabProps) {
         }
     }, [editingKeyMapping])
 
-    if (props.currentTab != "keyMapping") {
+    if (props.currentTab != tab) {
         return <></>
     }
 
@@ -191,7 +208,7 @@ function KeyMappingTab(props: TabProps) {
         <>
             {
                 Object
-                    .entries(props.items)
+                    .entries(props.user[tab])
                     .map(([title, value]) => {
                         const keys = value as string[]
 
@@ -273,21 +290,21 @@ function SettingsItem({ children, title, currentTab }: { children: ReactNode, ti
 }
 
 function SelectableCandidates({
-    currentTab, title, selectable, update
+    currentTab, title, selectable, onSelect, value
 }: {
-    currentTab: string, title: string, selectable: Selectable, update: UpdateFn
+    currentTab: string, title: string, selectable: Selectable, onSelect: (title: string, value: string) => void, value: string
 }) {
     return (
         <Menu>
             <MenuTrigger>
-                <MenuButton className="h-9" appearance="subtle">{t(`settings.${currentTab}.${title}.${selectable.selected}`)}</MenuButton>
+                <MenuButton className="h-9" appearance="subtle">{t(`settings.${currentTab}.${title}.${value}`)}</MenuButton>
             </MenuTrigger>
             <MenuPopover>
                 <MenuList>
                     {
-                        selectable.possible.map((candidate: string) =>
+                        selectable.candidates.map((candidate: string) =>
                             <MenuItem
-                                onClick={() => update(title, candidate)}
+                                onClick={() => onSelect(title, candidate)}
                             >
                                 {t(`settings.${currentTab}.${title}.${candidate}`)}
                             </MenuItem>

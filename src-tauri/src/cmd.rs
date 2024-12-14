@@ -15,7 +15,8 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, DuplicateAssets, Folder, FolderId,
-        RawAsset, RecentLib, SettingsValue, Storage, Tag, TagId, UserSettings,
+        RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage, Tag, TagId,
+        UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -33,53 +34,55 @@ pub fn get_user_settings(data: State<'_, Mutex<AppData>>) -> Result<UserSettings
     Ok(data.settings.clone())
 }
 
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum SettingsUpdate {
-    Toggle(bool),
-    Value(String),
-    Sequence(Vec<String>),
+#[tauri::command]
+pub fn get_default_settings(
+    data: State<'_, ResourceCache>,
+) -> Result<HashMap<String, HashMap<String, SettingsDefault>>, String> {
+    Ok(data.settings.clone())
 }
 
 #[tauri::command]
 pub fn set_user_setting(
     tab: String,
     item: String,
-    value: SettingsUpdate,
+    value: SettingsValue,
     data: State<'_, Mutex<AppData>>,
+    resource: State<'_, ResourceCache>,
 ) -> Result<(), String> {
     let mut data = data.lock().map_err(|e| e.to_string())?;
 
-    let item = data
+    let default = resource
         .settings
-        .get_mut(&tab)
-        .and_then(|t| t.get_mut(&item))
+        .get(&tab)
+        .and_then(|t| t.get(&item))
         .ok_or_else(|| "No settings found.".to_string())?;
 
-    match item {
-        SettingsValue::Toggle(b) => match value {
-            SettingsUpdate::Toggle(nb) => *b = nb,
-            _ => return Err("Incompatible value".into()),
-        },
-        SettingsValue::Sequence(seq) => match value {
-            SettingsUpdate::Sequence(s) => *seq = s,
-            _ => return Err("Incompatible value".into()),
-        },
-        SettingsValue::Selection { selected, possible } => match value {
-            SettingsUpdate::Value(v) => {
-                if possible.contains(&v) {
-                    *selected = v
+    let original = data
+        .settings
+        .entry(tab)
+        .or_default()
+        .entry(item)
+        .or_insert_with(|| default.clone().default_value());
+
+    match default {
+        SettingsDefault::Selection { candidates, .. } => match value {
+            SettingsValue::Name(new) => {
+                if candidates.contains(&new) {
+                    *original = SettingsValue::Name(new);
                 } else {
                     return Err("Incompatible value".into());
                 }
             }
             _ => return Err("Incompatible value".into()),
         },
-        SettingsValue::Custom(s) => match value {
-            SettingsUpdate::Value(v) => *s = v,
+        SettingsDefault::Sequence(_) => match value {
+            SettingsValue::Sequence(new) => *original = SettingsValue::Sequence(new),
             _ => return Err("Incompatible value".into()),
         },
-        SettingsValue::Button => {}
+        SettingsDefault::Toggle(_) => match value {
+            SettingsValue::Toggle(new) => *original = SettingsValue::Toggle(new),
+            _ => return Err("Incompatible value".into()),
+        },
     }
 
     Ok(())
@@ -336,6 +339,27 @@ pub async fn import_web_assets(
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(dup)
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_duplicated_assets(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<DuplicateAssets, String> {
+    log::info!("Getting duplicated assets.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(DuplicateAssets(
+            storage
+                .cache
+                .crc_lookup
+                .clone()
+                .into_iter()
+                .filter(|(_, assets)| assets.len() > 1)
+                .collect(),
+        ))
     } else {
         Err(storage_not_initialized())
     }

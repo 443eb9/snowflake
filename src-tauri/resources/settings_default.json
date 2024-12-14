@@ -1,21 +1,18 @@
 {
     "general": {
         "theme": {
-            "selected": "dark",
-            "possible": [
+            "default": "dark",
+            "candidates": [
                 "dark"
             ]
         },
         "lng": {
-            "selected": "en",
-            "possible": [
+            "default": "en",
+            "candidates": [
                 "zh",
                 "en"
             ]
         }
-    },
-    "library": {
-        "export": null
     },
     "keyMapping": {
         "save": [

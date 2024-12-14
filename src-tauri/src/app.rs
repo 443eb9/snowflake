@@ -19,7 +19,7 @@ pub const LIBRARY_STORAGE: &str = "snowflake.json";
 pub const TEMP_RECYCLE_BIN: &str = "recycle_bin";
 pub const IMAGE_ASSETS: &str = "images";
 pub const DATA: &str = "app_meta.json";
-pub const DEFAULT_SETTINGS: &str = "resources/default_settings.json";
+pub const SETTINGS: &str = "resources/settings_default.json";
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -45,18 +45,34 @@ pub type AppResult<T> = Result<T, AppError>;
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(untagged)]
-pub enum SettingsValue {
+pub enum SettingsDefault {
     Selection {
-        selected: String,
-        possible: Vec<String>,
+        default: String,
+        candidates: Vec<String>,
     },
     Sequence(Vec<String>),
-    Custom(String),
     Toggle(bool),
-    Button,
+}
+
+impl SettingsDefault {
+    pub fn default_value(self) -> SettingsValue {
+        match self {
+            SettingsDefault::Selection { default, .. } => SettingsValue::Name(default),
+            SettingsDefault::Sequence(vec) => SettingsValue::Sequence(vec),
+            SettingsDefault::Toggle(enabled) => SettingsValue::Toggle(enabled),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
+#[serde(untagged)]
+pub enum SettingsValue {
+    Name(String),
+    Toggle(bool),
+    Sequence(Vec<String>),
+}
+
+#[derive(Serialize, Deserialize, Default, Clone)]
 pub struct UserSettings(HashMap<String, HashMap<String, SettingsValue>>);
 
 impl Deref for UserSettings {
@@ -74,14 +90,35 @@ impl DerefMut for UserSettings {
 }
 
 impl UserSettings {
-    pub fn new(app: &AppHandle) -> Result<Self, AppError> {
-        Ok(serde_json::from_reader(File::open(
-            app.path().resource_dir()?.join(DEFAULT_SETTINGS),
-        )?)?)
+    pub fn fill_if_none(&mut self, cache: &ResourceCache) {
+        for (category, items) in &cache.settings {
+            let current = self.entry(category.clone()).or_default();
+
+            for (item, default) in items {
+                match current.entry(item.clone()) {
+                    Entry::Occupied(_) => {}
+                    Entry::Vacant(e) => {
+                        e.insert(default.clone().default_value());
+                    }
+                }
+            }
+        }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+pub struct ResourceCache {
+    pub settings: HashMap<String, HashMap<String, SettingsDefault>>,
+}
+
+impl ResourceCache {
+    pub fn new(app: &AppHandle) -> AppResult<Self> {
+        Ok(Self {
+            settings: serde_json::from_slice(&read(app.path().resource_dir()?.join(SETTINGS))?)?,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AppData {
     pub recent_libs: HashMap<PathBuf, RecentLib>,
@@ -89,13 +126,6 @@ pub struct AppData {
 }
 
 impl AppData {
-    pub fn new(app: &AppHandle) -> AppResult<Self> {
-        Ok(AppData {
-            recent_libs: Default::default(),
-            settings: UserSettings::new(&app)?,
-        })
-    }
-
     pub fn read(app: &AppHandle) -> AppResult<Self> {
         let cache_dir = app.path().app_cache_dir()?;
         let dir = cache_dir.join(DATA);
@@ -105,16 +135,14 @@ impl AppData {
         #[cfg(not(debug_assertions))]
         let debug = false;
 
-        if !dir.exists() || debug {
-            let data = Self::new(&app)?;
-            data.save(app)?;
-            Ok(data)
+        let mut data = if !dir.exists() || debug {
+            Self::default()
         } else {
-            let mut data = match serde_json::from_reader(std::fs::File::open(dir)?) {
+            let mut data = match serde_json::from_reader(File::open(dir)?) {
                 Ok(ok) => ok,
                 Err(_) => {
                     log::info!("Failed to parse app data, recreating one.");
-                    let data = Self::new(&app)?;
+                    let data = Self::default();
                     data.save(app)?;
                     data
                 }
@@ -125,8 +153,14 @@ impl AppData {
                 .into_iter()
                 .filter(|(p, _)| check_library_structure_validity(p))
                 .collect();
-            Ok(data)
-        }
+
+            data
+        };
+
+        data.settings
+            .fill_if_none(app.state::<ResourceCache>().inner());
+        data.save(app)?;
+        Ok(data)
     }
 
     pub fn save(&self, app: &AppHandle) -> Result<(), AppError> {
@@ -150,7 +184,7 @@ fn collect_path(
     parent: Option<FolderId>,
     folders: &mut HashMap<FolderId, Folder>,
     assets: &mut HashMap<AssetId, Asset>,
-    duplication: &mut HashMap<u32, Vec<AssetId>>,
+    asset_crc: &mut HashMap<AssetId, u32>,
 ) -> AppResult<Option<FolderId>> {
     let std_meta = metadata(&path)?;
     let meta = Metadata::from_std_meta(&std_meta);
@@ -177,7 +211,7 @@ fn collect_path(
                 Some(folder_id),
                 folders,
                 assets,
-                duplication,
+                asset_crc,
             )?;
         }
 
@@ -209,27 +243,13 @@ fn collect_path(
         let file_content = read(&path)?;
         let crc = crc32fast::hash(&file_content);
 
-        let asset = Asset::new(
-            parent.id,
-            name,
-            ext.into(),
-            meta,
-            ty,
-            props,
-            Checksums::from_buf(&file_content),
-        );
-
-        match duplication.entry(crc) {
-            Entry::Occupied(mut e) => e.get_mut().push(asset.id),
-            Entry::Vacant(e) => {
-                e.insert(vec![asset.id]);
-            }
-        }
+        let asset = Asset::new(parent.id, name, ext.into(), meta, ty, props);
 
         write(
             root.join(IMAGE_ASSETS).join(asset.get_file_name_id()),
             file_content,
         )?;
+        asset_crc.insert(asset.id, crc);
         parent.content.insert(asset.id);
         assets.insert(asset.id, asset);
 
@@ -254,38 +274,65 @@ pub struct TagId(pub Uuid);
 #[derive(Default)]
 pub struct StorageCache {
     pub root: PathBuf,
+    pub asset_crc: HashMap<AssetId, u32>,
     pub crc_lookup: HashMap<u32, Vec<AssetId>>,
 }
 
 impl StorageCache {
-    pub fn build(root: &Path, duplication: HashMap<u32, Vec<AssetId>>) -> StorageCache {
-        Self {
-            root: root.to_path_buf(),
-            crc_lookup: duplication,
-        }
-    }
-
-    pub fn add_asset_crc(&mut self, crc: u32, asset: AssetId) {
-        match self.crc_lookup.entry(crc) {
-            Entry::Occupied(mut e) => e.get_mut().push(asset),
-            Entry::Vacant(e) => {
-                e.insert(vec![asset]);
-            }
-        }
-    }
-
-    pub fn remove_asset_crc(&mut self, crc: u32, asset: AssetId) {
-        if let Some(dup) = self.crc_lookup.get_mut(&crc) {
-            for i in 0..dup.len() {
-                if dup[i] == asset {
-                    dup.remove(i);
-                    return;
+    pub fn build(root: &Path, asset_crc: HashMap<AssetId, u32>) -> StorageCache {
+        let mut crc_lookup = HashMap::<u32, Vec<AssetId>>::default();
+        for (asset, crc) in &asset_crc {
+            match crc_lookup.entry(*crc) {
+                Entry::Occupied(mut e) => e.get_mut().push(*asset),
+                Entry::Vacant(e) => {
+                    e.insert(vec![*asset]);
                 }
             }
+        }
 
-            if dup.is_empty() {
-                self.crc_lookup.remove(&crc);
+        Self {
+            root: root.to_path_buf(),
+            asset_crc,
+            crc_lookup,
+        }
+    }
+
+    pub fn add_asset(&mut self, crc: u32, asset: AssetId) -> Option<DuplicateAssets> {
+        self.asset_crc.insert(asset, crc);
+
+        match self.crc_lookup.entry(crc) {
+            Entry::Occupied(mut e) => {
+                e.get_mut().push(asset);
+                Some(DuplicateAssets(HashMap::from([(
+                    *e.key(),
+                    e.get().clone(),
+                )])))
             }
+            Entry::Vacant(e) => {
+                e.insert(vec![asset]);
+                None
+            }
+        }
+    }
+
+    pub fn remove_asset(&mut self, asset: AssetId) {
+        let Some(crc) = self.asset_crc.remove(&asset) else {
+            return;
+        };
+
+        let Some(dup) = self.crc_lookup.get_mut(&crc) else {
+            return;
+        };
+
+        for i in 0..dup.len() {
+            if dup[i] == asset {
+                dup.remove(i);
+                return;
+            }
+        }
+
+        if dup.is_empty() {
+            self.crc_lookup.remove(&crc);
         }
     }
 
@@ -300,8 +347,20 @@ impl StorageCache {
         (!dup.is_empty()).then_some(dup)
     }
 
-    pub fn check_duplication(&self, crc: u32) -> Option<Vec<AssetId>> {
-        self.crc_lookup.get(&crc).cloned()
+    pub fn check_duplications<'a, I>(&self, crcs: I) -> Option<DuplicateAssets>
+    where
+        I: Iterator<Item = &'a u32>,
+    {
+        let mut result = HashMap::default();
+        for crc in crcs {
+            if !result.contains_key(crc) {
+                if let Some(assets) = self.crc_lookup.get(crc) {
+                    result.insert(*crc, assets.clone());
+                }
+            }
+        }
+
+        (!result.is_empty()).then_some(DuplicateAssets(result))
     }
 }
 
@@ -363,7 +422,7 @@ impl Storage {
         let reader = std::fs::File::open(&path)?;
         let mut result = serde_json::from_reader::<_, Self>(reader)?;
 
-        let lookup = result
+        let asset_crc = result
             .assets
             .values()
             .filter_map(|asset| {
@@ -371,20 +430,10 @@ impl Storage {
                     .ok()
                     .map(|data| (data, asset.id))
             })
-            .map(|(data, id)| (crc32fast::hash(&data), id))
-            .collect::<Vec<_>>();
+            .map(|(data, id)| (id, crc32fast::hash(&data)))
+            .collect();
 
-        let mut duplication: HashMap<u32, Vec<AssetId>> = HashMap::default();
-        for (crc, id) in lookup {
-            match duplication.entry(crc) {
-                Entry::Occupied(mut e) => e.get_mut().push(id),
-                Entry::Vacant(e) => {
-                    e.insert(vec![id]);
-                }
-            }
-        }
-
-        result.cache = StorageCache::build(root, duplication);
+        result.cache = StorageCache::build(root, asset_crc);
         Ok(result)
     }
 
@@ -404,7 +453,7 @@ impl Storage {
             return Err(AppError::FolderNotFount(parent));
         }
 
-        let mut duplicate = HashMap::default();
+        let mut asset_crc = HashMap::default();
         for path in path {
             collect_path(
                 &self.cache.root.clone(),
@@ -412,13 +461,11 @@ impl Storage {
                 Some(parent),
                 &mut self.folders,
                 &mut self.assets,
-                &mut duplicate,
+                &mut asset_crc,
             )?;
         }
 
-        self.cache.crc_lookup.extend(duplicate.clone().into_iter());
-
-        Ok((!duplicate.is_empty()).then_some(DuplicateAssets(duplicate)))
+        Ok(self.cache.check_duplications(asset_crc.values()))
     }
 
     pub fn add_raw_assets(
@@ -431,7 +478,7 @@ impl Storage {
             return Err(AppError::FolderNotFount(parent).into());
         };
 
-        let mut crcs = HashSet::<u32>::default();
+        let mut added_crc = HashSet::<u32>::default();
         for RawAsset { bytes, ext } in data {
             let id = Uuid::new_v4();
             let path = root.join(IMAGE_ASSETS).join(if ext.is_empty() {
@@ -441,8 +488,8 @@ impl Storage {
             });
 
             let crc = crc32fast::hash(&bytes);
-            crcs.insert(crc);
-            self.cache.add_asset_crc(crc, AssetId(id));
+            added_crc.insert(crc);
+            self.cache.add_asset(crc, AssetId(id));
 
             let mut file = File::create(&path)?;
             file.write(&bytes)?;
@@ -463,28 +510,14 @@ impl Storage {
 
             let asset = Asset {
                 id: AssetId(id),
-                ..Asset::new(
-                    parent.id,
-                    id.to_string(),
-                    ext.into(),
-                    meta,
-                    ty,
-                    props,
-                    Checksums::from_buf(&bytes),
-                )
+                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty, props)
             };
 
             parent.content.insert(asset.id);
             self.assets.insert(asset.id, asset);
         }
 
-        let duplication = crcs
-            .into_iter()
-            .filter_map(|crc| self.cache.check_duplication(crc).map(|r| (crc, r)))
-            .filter(|(_, d)| d.len() > 1)
-            .collect::<HashMap<_, _>>();
-
-        Ok((!duplication.is_empty()).then_some(DuplicateAssets(duplication)))
+        Ok(self.cache.check_duplications(added_crc.iter()))
     }
 
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
@@ -493,7 +526,7 @@ impl Storage {
                 parent.content.remove(&id);
             }
 
-            self.cache.remove_asset_crc(asset.checksums.crc32, asset.id);
+            self.cache.remove_asset(asset.id);
 
             let file_name = asset.get_file_name_id();
             let _ = std::fs::rename(
@@ -748,7 +781,6 @@ pub struct Asset {
     pub ext: Arc<str>,
     pub props: Option<AssetProperty>,
     pub meta: Metadata,
-    pub checksums: Checksums,
     pub tags: Vec<TagId>,
 }
 
@@ -760,7 +792,6 @@ impl Asset {
         meta: Metadata,
         ty: AssetType,
         props: Option<AssetProperty>,
-        checksums: Checksums,
     ) -> Self {
         Self {
             parent,
@@ -770,7 +801,6 @@ impl Asset {
             ext,
             props,
             meta,
-            checksums,
             tags: Default::default(),
         }
     }
@@ -863,22 +893,6 @@ impl Metadata {
             byte_size,
             created_at: Some(Local::now().into()),
             last_modified: Local::now().into(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Checksums {
-    pub crc32: u32,
-    pub md5: Arc<str>,
-}
-
-impl Checksums {
-    pub fn from_buf(buf: &[u8]) -> Self {
-        Self {
-            crc32: crc32fast::hash(buf),
-            md5: hex::encode(md5::compute(buf).0).into(),
         }
     }
 }

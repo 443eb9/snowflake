@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use log::LevelFilter;
 use tauri::Manager;
 
-use crate::app::{AppData, Storage};
+use crate::app::{AppData, ResourceCache, Storage};
 
 mod app;
 mod cmd;
@@ -22,12 +22,14 @@ pub fn run() {
         )
         .setup(|app| {
             app.manage(Mutex::new(Option::<Storage>::None));
+            app.manage(ResourceCache::new(app.handle()).unwrap());
             app.manage(Mutex::new(AppData::read(app.handle()).unwrap()));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             cmd::get_recent_libraries,
             cmd::get_user_settings,
+            cmd::get_default_settings,
             cmd::set_user_setting,
             cmd::load_library,
             cmd::initialize_library,
@@ -35,6 +37,7 @@ pub fn run() {
             cmd::export_library,
             cmd::import_assets,
             cmd::import_web_assets,
+            cmd::get_duplicated_assets,
             cmd::get_asset_abs_path,
             cmd::get_asset_virtual_path,
             cmd::get_folder_virtual_path,

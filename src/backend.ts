@@ -1,10 +1,12 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
 
-export type Selectable = { selected: string, possible: string[] }
+export type Selectable = { default: string, candidates: string[] }
 
-export type SettingsValue = string | string[] | boolean | Selectable | undefined
+export type SettingsValue = string | string[] | boolean
 
-export type UserSettings = { [section: string]: { [item: string]: SettingsValue } }
+export type UserSettings = { [category: string]: { [item: string]: SettingsValue } }
+
+export type DefaultSettings = { [category: string]: { [item: string]: SettingsValue & Selectable } }
 
 export type DownloadEvent = {
     id: number,
@@ -77,6 +79,10 @@ export function GetUserSettings(): Promise<UserSettings> {
     return invoke("get_user_settings")
 }
 
+export function GetDefaultSettings(): Promise<DefaultSettings> {
+    return invoke("get_default_settings")
+}
+
 export function SetUserSetting(params: { tab: string, item: string, value: SettingsValue }): Promise<void> {
     return invoke("set_user_setting", params)
 }
@@ -95,6 +101,10 @@ export function SaveLibrary(): Promise<void> {
 
 export function ExportLibrary(params: { rootFolder: string }): Promise<void> {
     return invoke("export_library", params)
+}
+
+export function GetDuplicatedAssets(): Promise<DuplicateAssets> {
+    return invoke("get_duplicated_assets")
 }
 
 export function ImportAssets(params: { path: string[], parent: string }): Promise<DuplicateAssets | undefined> {
