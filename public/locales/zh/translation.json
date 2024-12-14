@@ -29,6 +29,7 @@
     "detail.fileName": "文件名",
     "detail.tags": "标签",
     "detail.size": "大小",
+    "detail.ext": "扩展名",
     "detail.created": "创建于",
     "detail.modify": "上一次修改于",
     "detail.id": "唯一标识符",

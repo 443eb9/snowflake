@@ -29,6 +29,7 @@
     "detail.fileName": "File Name",
     "detail.tags": "Tags",
     "detail.size": "Size",
+    "detail.ext": "Extension",
     "detail.created": "Created At",
     "detail.modify": "Last Modified",
     "detail.id": "Id",

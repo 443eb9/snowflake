@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { Image, mergeClasses, Text, useToastController } from "@fluentui/react-components"
+import { Image, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
 import { Asset, GetAsset, GetAssetAbsPath } from "../backend"
@@ -88,6 +88,10 @@ export default function DetailInfo() {
                         <Text font="monospace">{formatFileSize(asset.meta.byteSize)}</Text>
                     </ListItem>
                     <ListItem className="flex flex-col">
+                        <Text weight="semibold" font="monospace">{t("detail.ext")}</Text>
+                        <Text font="monospace">{asset.ext}</Text>
+                    </ListItem>
+                    <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">{t("detail.created")}</Text>
                         <Text font="monospace">{new Date(asset.meta.createdAt).toLocaleString()}</Text>
                     </ListItem>
@@ -98,13 +102,6 @@ export default function DetailInfo() {
                     <ListItem className="flex flex-col">
                         <Text weight="semibold" font="monospace">{t("detail.id")}</Text>
                         <Text font="monospace">{asset.id}</Text>
-                    </ListItem>
-                    <ListItem className="flex flex-col">
-                        <Text weight="semibold" font="monospace">{t("detail.checksums")}</Text>
-                        <div className={mergeClasses("w-full flex flex-col overflow-x-auto", darkenContentStyle.root)}>
-                            <Text font="monospace">[CRC32]{asset.checksums.crc32}</Text>
-                            <Text font="monospace">[MD5]{asset.checksums.md5}</Text>
-                        </div>
                     </ListItem>
                 </List>
             </>

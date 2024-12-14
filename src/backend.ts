@@ -30,8 +30,8 @@ export type Asset = {
     id: string,
     name: string,
     ty: AssetType,
+    ext: string,
     meta: Metadata,
-    checksums: Checksums,
     tags: string[],
 }
 
@@ -46,11 +46,6 @@ export type Metadata = {
     byteSize: number,
     createdAt: string,
     lastModified: string,
-}
-
-export type Checksums = {
-    crc32: number,
-    md5: string,
 }
 
 export type AssetType = "Image" | "Unknown"
