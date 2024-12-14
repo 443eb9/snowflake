@@ -14,9 +14,9 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 
 use crate::{
     app::{
-        AppData, AppError, Asset, AssetId, AssetProperty, DuplicateAssets, Folder, FolderId,
-        LibraryMeta, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage,
-        Tag, TagId, UserSettings,
+        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
+        FolderId, LibraryMeta, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue,
+        Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -353,6 +353,7 @@ pub async fn import_web_assets(
 
                 results.push(RawAsset {
                     bytes: content,
+                    ty: AssetType::from_matcher(ext.matcher_type()).unwrap(),
                     ext: ext.extension().into(),
                     src: url,
                 });
@@ -871,7 +872,10 @@ pub async fn quick_ref(
                 return Err(asset_doesnt_exist(*asset));
             };
 
-            let Some(AssetProperty::Image(properties)) = &asset.props else {
+            // TODO remove this once models get supported, as this pattern would be refutable then.
+            #[allow(irrefutable_let_patterns)]
+            let AssetProperty::Image(properties) = &asset.props
+            else {
                 continue;
             };
 

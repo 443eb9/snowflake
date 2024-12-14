@@ -169,7 +169,7 @@ function LibraryTab(props: TabProps) {
             <SettingsItem title="export" currentTab={props.currentTab}>
                 <Button icon={<ArrowExport20Regular />} appearance="subtle" onClick={handleExport} />
             </SettingsItem>
-            <SettingsItem title="rename" currentTab={props.currentTab}>
+            <SettingsItem title="name" currentTab={props.currentTab}>
                 <Input
                     defaultValue={libraryMeta.name}
                     onKeyDown={async ev => {

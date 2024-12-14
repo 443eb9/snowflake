@@ -228,20 +228,26 @@ fn collect_path(
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let ty = AssetType::from_extension(path.extension());
-        let props = match ty {
-            AssetType::Image => {
-                let size = imagesize::size(&path)?;
-                Some(AssetProperty::Image(ImageProperty {
-                    width: size.width as u32,
-                    height: size.height as u32,
-                }))
-            }
-            AssetType::Unknown => None,
-        };
 
         let file_content = read(&path)?;
         let crc = crc32fast::hash(&file_content);
+
+        let Some(ty) = infer::get(&file_content)
+            .map(|t| t.matcher_type())
+            .and_then(|m| AssetType::from_matcher(m))
+        else {
+            return Ok(None);
+        };
+
+        let props = match ty {
+            AssetType::Image => {
+                let size = imagesize::size(&path)?;
+                AssetProperty::Image(ImageProperty {
+                    width: size.width as u32,
+                    height: size.height as u32,
+                })
+            }
+        };
 
         let asset = Asset::new(
             parent.id,
@@ -526,7 +532,13 @@ impl Storage {
         };
 
         let mut added_crc = HashSet::<u32>::default();
-        for RawAsset { bytes, ext, src } in data {
+        for RawAsset {
+            bytes,
+            ty,
+            ext,
+            src,
+        } in data
+        {
             let id = Uuid::new_v4();
             let path = root.join(IMAGE_ASSETS).join(if ext.is_empty() {
                 id.to_string()
@@ -542,17 +554,15 @@ impl Storage {
             file.write(&bytes)?;
             file.flush()?;
 
-            let ty = AssetType::from_ext_str(&ext);
             let meta = Metadata::from_std_meta(&file.metadata()?);
             let props = match ty {
                 AssetType::Image => {
                     let size = imagesize::blob_size(&bytes)?;
-                    Some(AssetProperty::Image(ImageProperty {
+                    AssetProperty::Image(ImageProperty {
                         width: size.width as u32,
                         height: size.height as u32,
-                    }))
+                    })
                 }
-                AssetType::Unknown => None,
             };
 
             let asset = Asset {
@@ -707,6 +717,7 @@ impl Storage {
 
 pub struct RawAsset {
     pub bytes: Vec<u8>,
+    pub ty: AssetType,
     pub ext: Arc<str>,
     pub src: String,
 }
@@ -827,7 +838,7 @@ pub struct Asset {
     pub name: String,
     pub ty: AssetType,
     pub ext: Arc<str>,
-    pub props: Option<AssetProperty>,
+    pub props: AssetProperty,
     pub meta: Metadata,
     pub tags: Vec<TagId>,
     // Backward compatibility 0.0.1
@@ -842,7 +853,7 @@ impl Asset {
         ext: Arc<str>,
         meta: Metadata,
         ty: AssetType,
-        props: Option<AssetProperty>,
+        props: AssetProperty,
         src: String,
     ) -> Self {
         Self {
@@ -892,25 +903,16 @@ pub struct ImageProperty {
     pub height: u32,
 }
 
-#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum AssetType {
     Image,
-    #[default]
-    Unknown,
 }
 
 impl AssetType {
-    pub fn from_extension(ext: Option<&std::ffi::OsStr>) -> Self {
-        match ext.and_then(|e| e.to_str()) {
-            Some(ext) => Self::from_ext_str(ext),
-            None => Self::Unknown,
-        }
-    }
-
-    pub fn from_ext_str(ext: &str) -> Self {
-        match ext {
-            "png" | "jpg" | "jpeg" => Self::Image,
-            _ => Self::Unknown,
+    pub fn from_matcher(matcher: MatcherType) -> Option<Self> {
+        match matcher {
+            MatcherType::Image => Some(Self::Image),
+            _ => None,
         }
     }
 }
