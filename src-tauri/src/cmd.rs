@@ -114,23 +114,20 @@ pub fn load_library(
     log::info!("Start loading library at {:?}", root_folder);
 
     let new_storage = Storage::from_existing(&root_folder).map_err(|e| e.to_string())?;
-    let duplication = new_storage.cache.get_all_duplication();
-    let mut storage = storage.lock().map_err(|e| e.to_string())?;
-    storage.replace(new_storage);
 
     let mut data = data.lock().map_err(|e| e.to_string())?;
     data.recent_libs.insert(
         root_folder.clone(),
         RecentLib {
-            name: root_folder
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
+            name: new_storage.lib_meta.name.clone(),
             path: root_folder,
             last_open: Local::now().into(),
         },
     );
+
+    let duplication = new_storage.cache.get_all_duplication();
+    let mut storage = storage.lock().map_err(|e| e.to_string())?;
+    storage.replace(new_storage);
     data.save(&app).map_err(|e| e.to_string())?;
 
     Ok(duplication.map(|d| DuplicateAssets(d)))
@@ -150,24 +147,20 @@ pub fn initialize_library(
         Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
     new_storage.save().map_err(|e| e.to_string())?;
 
-    let duplication = new_storage.cache.get_all_duplication();
-
-    let mut storage = storage.lock().map_err(|e| e.to_string())?;
-    storage.replace(new_storage);
-
     let mut data = data.lock().map_err(|e| e.to_string())?;
     data.recent_libs.insert(
         root_folder.clone(),
         RecentLib {
-            name: root_folder
-                .file_name()
-                .unwrap()
-                .to_string_lossy()
-                .to_string(),
+            name: new_storage.lib_meta.name.clone(),
             path: root_folder,
             last_open: Local::now().into(),
         },
     );
+
+    let duplication = new_storage.cache.get_all_duplication();
+
+    let mut storage = storage.lock().map_err(|e| e.to_string())?;
+    storage.replace(new_storage);
     data.save(&app).map_err(|e| e.to_string())?;
 
     Ok(duplication.map(|d| DuplicateAssets(d)))
@@ -241,11 +234,21 @@ pub fn import_assets(
 #[tauri::command]
 pub fn change_library_name(
     name: String,
+    data: State<'_, Mutex<AppData>>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Changing library name into {}", name);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        if let Some(data) = data
+            .lock()
+            .as_deref_mut()
+            .ok()
+            .and_then(|d| d.recent_libs.get_mut(&storage.cache.root))
+        {
+            data.name = name.clone();
+        }
+
         storage.lib_meta.name = name;
         storage.save().map_err(|e| e.to_string())
     } else {
