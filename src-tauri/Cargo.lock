@@ -3768,7 +3768,7 @@ checksum = "3c5e1a9a646d36c3599cd173a41282daf47c44583ad367b8e6837255952e5c67"
 
 [[package]]
 name = "snowflake"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "chrono",
  "crc32fast",

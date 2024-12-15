@@ -14,8 +14,9 @@
   - Permanently delete object. This deletes the file in file system. If trying to permanently delete a folder, it's content and children will also be deleted, permanently, and you'll never be able to get that back.
 - Update checking. We won't force you to update the app (although this is recommended) but will remind you on startup.
 - Semi-transparent window.
+- Open assets with default app.
 
-# What's Fixed
+This version is not code-signed, so please allow this app to survive under your anti-virus software manually. 🥲
 
 # v0.0.1
 
