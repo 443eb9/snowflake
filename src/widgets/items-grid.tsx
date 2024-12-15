@@ -1,7 +1,7 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import AssetPreview from "./asset-preview"
-import { GetObjects, ItemObject } from "../backend"
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider"
+import { GetItems, Item } from "../backend"
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
 import Selecto from "react-selecto";
 import { darkenContentStyleHook } from "../helpers/styling";
 import { mergeClasses, useToastController } from "@fluentui/react-components";
@@ -17,7 +17,7 @@ export const SelectableClassTag = "selectable-asset"
 export const SelectedClassTag = "selected-asset"
 
 export default function ItemsGrid() {
-    const [objects, setObjects] = useState<ItemObject[] | undefined>()
+    const [objects, setObjects] = useState<Item[] | undefined>()
     const selectoRef = useRef<Selecto & HTMLElement>(null)
     const gridRef = useRef<HTMLDivElement>(null)
     const darkenContentStyle = darkenContentStyleHook()
@@ -27,13 +27,13 @@ export default function ItemsGrid() {
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const handleContextMenu = (ev: TriggerEvent) => {
         if (!browsingFolder?.data) { return }
-        const currentSelected = selectedObjects?.data?.length ?? 0
+        const currentSelected = selectedItems?.data?.length ?? 0
         if (selectoRef.current && ev.target && currentSelected < 2) {
             let target = ev.target as HTMLElement
             while (target.id.length == 0) {
@@ -42,7 +42,7 @@ export default function ItemsGrid() {
 
             selectoRef.current.setSelectedTargets([target])
 
-            selectedObjects?.setter([decodeId(target.id)])
+            selectedItems?.setter([decodeId(target.id)])
             target.classList.add(SelectedClassTag)
         }
 
@@ -65,7 +65,7 @@ export default function ItemsGrid() {
                 return
             }
 
-            const objects = await GetObjects({ objects: browsingFolder.data.content.map(c => c.id) })
+            const objects = await GetItems({ items: browsingFolder.data.content.map(c => c.id) })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (objects) {
@@ -96,11 +96,11 @@ export default function ItemsGrid() {
 
                     const removed = ev.removed.map(elem => decodeId(elem.id))
                     const selected = ev.added.map(elem => decodeId(elem.id))
-                        .concat(selectedObjects?.data ?? [])
+                        .concat(selectedItems?.data ?? [])
                         .filter(id => removed.find(r => r.id == id.id) == undefined)
                         .filter(id => id != null)
                     console.log(selected)
-                    selectedObjects?.setter(selected)
+                    selectedItems?.setter(selected)
                 }}
             />
             {

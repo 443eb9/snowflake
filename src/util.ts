@@ -1,4 +1,4 @@
-import { Asset, Folder, ItemId, ItemObject, ItemTy } from "./backend"
+import { ItemId, Item, ItemTy } from "./backend"
 
 const units = ["B", "KB", "MB", "GB"]
 
@@ -24,7 +24,7 @@ export function decodeId(id: string): ItemId {
     return { id: s[1], ty: s[0] as ItemTy }
 }
 
-export function decodeItemObject(item: ItemObject): { ty: ItemTy, item: Folder | Asset } {
+export function decodeItem(item: Item): { ty: ItemTy, id: string } {
     const obj = Object.entries(item)[0]
-    return { ty: obj[0] as ItemTy, item: obj[1] }
+    return { ty: obj[0] as ItemTy, id: obj[1] }
 }

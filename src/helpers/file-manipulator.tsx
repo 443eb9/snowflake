@@ -1,18 +1,18 @@
 import { useContext, useEffect } from "react"
-import { browsingFolderContext, fileManipulationContext, selectedObjectsContext } from "./context-provider"
-import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, GetRecycleBin, ImportAssets, MoveAssetsTo, MoveFoldersTo, RecoverObjects, RenameAsset, RenameFolder } from "../backend"
+import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
+import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, GetRecycleBin, ImportAssets, MoveAssetsTo, MoveFoldersTo, RecoverItem, RenameAsset, RenameFolder } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/err-toast"
 import MsgToast from "../widgets/msg-toast"
 import DuplicationList from "../widgets/duplication-list"
 import { t } from "../i18n"
-import { decodeId, decodeItemObject } from "../util"
+import { decodeId, decodeItem } from "../util"
 import { SelectedClassTag } from "../widgets/items-grid"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -21,31 +21,31 @@ export default function FileManipulator() {
         assets: string[],
         permanently: boolean,
     ) {
-        if (!browsingFolder?.data || !selectedObjects?.data) {
+        if (!browsingFolder?.data || !selectedItems?.data) {
             return
         }
 
         browsingFolder.setter({
             ...browsingFolder.data,
-            content: [...browsingFolder.data.content.filter(id => selectedObjects.data?.find(selected => selected.id == id.id) == undefined)]
+            content: [...browsingFolder.data.content.filter(id => selectedItems.data?.find(selected => selected.id == id.id) == undefined)]
         })
         await DeleteAssets({ assets, permanently })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedObjects.setter([])
+        selectedItems.setter([])
     }
 
     async function handleAssetRename(
         newName: string,
         asset: string,
     ) {
-        if (!browsingFolder?.data || !selectedObjects?.data || selectedObjects.data.length != 1) {
+        if (!browsingFolder?.data || !selectedItems?.data || selectedItems.data.length != 1) {
             return
         }
         await RenameAsset({ asset, name: newName })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedObjects.setter([])
+        selectedItems.setter([])
         browsingFolder.setter({
             ...browsingFolder.data,
         })
@@ -60,7 +60,7 @@ export default function FileManipulator() {
 
         if (browsingFolder?.data?.id && targetIds.includes(browsingFolder.data?.id)) {
             browsingFolder.setter(undefined)
-            selectedObjects?.setter([])
+            selectedItems?.setter([])
         }
     }
 
@@ -81,7 +81,7 @@ export default function FileManipulator() {
 
         if (targetId == browsingFolder?.data?.id) {
             browsingFolder.setter(undefined)
-            selectedObjects?.setter([])
+            selectedItems?.setter([])
         }
     }
 
@@ -135,7 +135,7 @@ export default function FileManipulator() {
         await MoveAssetsTo({ assets: moved, folder: target })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedObjects?.setter(selectedObjects.data?.filter(a => !moved.includes(a.id)))
+        selectedItems?.setter(selectedItems.data?.filter(a => !moved.includes(a.id)))
         if (browsingFolder?.data) {
             browsingFolder.setter({
                 ...browsingFolder.data,
@@ -151,23 +151,32 @@ export default function FileManipulator() {
         await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedObjects?.setter(selectedObjects.data?.filter(a => !moved.includes(a.id)))
+        selectedItems?.setter(selectedItems.data?.filter(a => !moved.includes(a.id)))
     }
 
     async function handleObjectsRecover() {
-        if (selectedObjects?.data && browsingFolder?.data) {
-            await RecoverObjects({ objects: selectedObjects.data.map(item => item.id) })
+        if (selectedItems?.data && browsingFolder?.data) {
+            const items = selectedItems.data.map(item => {
+                switch (item.ty) {
+                    case "asset":
+                        return { asset: item.id }
+                    case "folder":
+                        return { folder: item.id }
+                }
+            })
+
+            await RecoverItem({ items })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             const recycleBin = await GetRecycleBin()
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (recycleBin) {
-                selectedObjects.setter([])
+                selectedItems.setter([])
                 browsingFolder.setter({
                     ...browsingFolder.data,
                     content: recycleBin.map(obj => {
-                        const decoded = decodeItemObject(obj)
-                        return { id: decoded.item.id, ty: decoded.ty }
+                        const decoded = decodeItem(obj)
+                        return { id: decoded.id.id, ty: decoded.ty }
                     }),
                 })
 
@@ -183,7 +192,7 @@ export default function FileManipulator() {
 
     useEffect(() => {
         const data = fileManipulation?.data
-        if (data?.submit == undefined || !browsingFolder || !selectedObjects) { return }
+        if (data?.submit == undefined || !browsingFolder || !selectedItems) { return }
 
         if (data.id.length > 0 && data.op == "recover") {
             handleObjectsRecover()
@@ -220,11 +229,11 @@ export default function FileManipulator() {
     useEffect(() => {
         document.querySelectorAll(`.${SelectedClassTag}`)
             .forEach(elem => {
-                if (selectedObjects?.data?.find(selected => selected.id == decodeId(elem.id).id) == undefined) {
+                if (selectedItems?.data?.find(selected => selected.id == decodeId(elem.id).id) == undefined) {
                     elem.classList.remove(SelectedClassTag)
                 }
             })
-    }, [selectedObjects?.data])
+    }, [selectedItems?.data])
 
     return <></>
 }

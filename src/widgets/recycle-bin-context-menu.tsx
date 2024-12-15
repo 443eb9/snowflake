@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { Menu as CtxMenu, Item as CtxItem } from "react-contexify";
-import { browsingFolderContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
+import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider";
 import { Button, makeStyles, mergeClasses, Text } from "@fluentui/react-components";
 import { ArrowCounterclockwise20Regular, Delete20Regular } from "@fluentui/react-icons";
 import { t } from "../i18n";
@@ -22,7 +22,7 @@ const confirmTextStyleHook = makeStyles({
 
 export default function RecycleBinContextMenu() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
 
     const buttonStyle = buttonStyleHook()
@@ -31,9 +31,9 @@ export default function RecycleBinContextMenu() {
     const [onConfirm, setOnConfirm] = useState(false)
 
     const handleRecover = async () => {
-        if (selectedObjects?.data && browsingFolder?.data) {
+        if (selectedItems?.data && browsingFolder?.data) {
             fileManipulation?.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "recover",
                 submit: [],
             })
@@ -41,9 +41,9 @@ export default function RecycleBinContextMenu() {
     }
 
     const handlePermanentlyDelete = async () => {
-        if (onConfirm && selectedObjects?.data) {
+        if (onConfirm && selectedItems?.data) {
             fileManipulation?.setter({
-                id: selectedObjects?.data,
+                id: selectedItems?.data,
                 op: "deletionPermanent",
                 submit: [],
             })

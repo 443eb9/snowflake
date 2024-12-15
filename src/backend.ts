@@ -77,7 +77,7 @@ export type LibraryStatistics = {
     assetExt: { [ext: string]: number },
 }
 
-export type ItemObject = {
+export type Item = {
     asset: Asset,
 } | {
     folder: Folder,
@@ -134,11 +134,11 @@ export function GenStatistics(): Promise<LibraryStatistics> {
     return invoke("gen_statistics")
 }
 
-export function RecoverObjects(params: { objects: string[] }): Promise<void> {
-    return invoke("recover_objects", params)
+export function RecoverItem(params: { items: ({ asset: string } | { folder: string })[] }): Promise<void> {
+    return invoke("recover_items", params)
 }
 
-export function GetRecycleBin(): Promise<ItemObject[]> {
+export function GetRecycleBin(): Promise<Item[]> {
     return invoke("get_recycle_bin")
 }
 
@@ -203,8 +203,8 @@ export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
     return invoke("get_assets", params)
 }
 
-export function GetObjects(params: { objects: string[] }): Promise<ItemObject[]> {
-    return invoke("get_objects", params)
+export function GetItems(params: { items: string[] }): Promise<Item[]> {
+    return invoke("get_items", params)
 }
 
 export function GetTags(params: { tags: string[] }): Promise<Tag[]> {

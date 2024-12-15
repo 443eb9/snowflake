@@ -30,7 +30,7 @@ export type Overlays = {
 
 export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)
 export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)
-export const selectedObjectsContext = createContext<StateContext<ItemId[]> | undefined>(undefined)
+export const selectedItemsContext = createContext<StateContext<ItemId[]> | undefined>(undefined)
 export const fileManipulationContext = createContext<StateContext<FileManipulation> | undefined>(undefined)
 export const contextMenuPropContext = createContext<StateContext<ContextMenuProp> | undefined>(undefined)
 export const overlaysContext = createContext<StateContext<Overlays> | undefined>(undefined)
@@ -39,7 +39,7 @@ export const settingsChangeFlagContext = createContext<StateContext<boolean> | u
 export default function ContextProvider({ children }: { children?: ReactNode }) {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [browsingFolder, setBrowsingFolder] = useState<VirtualFolder | undefined>()
-    const [selectedObjects, setselectedObjects] = useState<ItemId[] | undefined>([])
+    const [selectedItems, setselectedItems] = useState<ItemId[] | undefined>([])
     const [fileManipulation, setFileManipulation] = useState<FileManipulation | undefined>()
     const [contextMenuProp, setContextMenuProp] = useState<ContextMenuProp | undefined>()
     const [overlays, setOverlays] = useState<Overlays | undefined>(undefined)
@@ -48,7 +48,7 @@ export default function ContextProvider({ children }: { children?: ReactNode }) 
     return (
         <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
             <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
-                <selectedObjectsContext.Provider value={{ data: selectedObjects, setter: setselectedObjects }}>
+                <selectedItemsContext.Provider value={{ data: selectedItems, setter: setselectedItems }}>
                     <fileManipulationContext.Provider value={{ data: fileManipulation, setter: setFileManipulation }}>
                         <contextMenuPropContext.Provider value={{ data: contextMenuProp, setter: setContextMenuProp }}>
                             <overlaysContext.Provider value={{ data: overlays, setter: setOverlays }}>
@@ -58,7 +58,7 @@ export default function ContextProvider({ children }: { children?: ReactNode }) 
                             </overlaysContext.Provider>
                         </contextMenuPropContext.Provider>
                     </fileManipulationContext.Provider>
-                </selectedObjectsContext.Provider>
+                </selectedItemsContext.Provider>
             </browsingFolderContext.Provider>
         </allTagsContext.Provider>
     )

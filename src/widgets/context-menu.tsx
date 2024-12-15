@@ -2,7 +2,7 @@ import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-con
 import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components";
 import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider";
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";
@@ -20,7 +20,7 @@ const buttonStyleHook = makeStyles({
 
 export default function ContextMenu() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
@@ -60,9 +60,9 @@ export default function ContextMenu() {
                 op: "deletion",
                 submit: [],
             })
-        } else if (selectedObjects?.data && browsingFolder && selectedObjects && fileManipulation) {
+        } else if (selectedItems?.data && browsingFolder && selectedItems && fileManipulation) {
             fileManipulation.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "deletion",
                 submit: [],
             })
@@ -77,9 +77,9 @@ export default function ContextMenu() {
             })
         }
 
-        if (selectedObjects?.data?.length == 1 && browsingFolder && selectedObjects && fileManipulation) {
+        if (selectedItems?.data?.length == 1 && browsingFolder && selectedItems && fileManipulation) {
             fileManipulation.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "rename",
                 submit: undefined,
             })
@@ -101,9 +101,9 @@ export default function ContextMenu() {
                 }
                 break
             case "assets":
-                if (selectedObjects?.data) {
+                if (selectedItems?.data) {
                     fileManipulation?.setter({
-                        id: selectedObjects?.data,
+                        id: selectedItems?.data,
                         op: "move",
                         submit: [dst.id],
                     })
@@ -113,7 +113,7 @@ export default function ContextMenu() {
     }
 
     const handleTagDelta = async (tag: Tag, add: boolean) => {
-        const assets = selectedObjects?.data
+        const assets = selectedItems?.data
         if (assets) {
             await DeltaTagsOf({ assets: assets.map(a => a.id), tags: [tag.id], mode: add ? "Add" : "Remove" })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -132,8 +132,8 @@ export default function ContextMenu() {
                 }
                 break
             case "assets":
-                if (selectedObjects?.data) {
-                    await QuickRef({ ty: { asset: selectedObjects.data.map(a => a.id) } })
+                if (selectedItems?.data) {
+                    await QuickRef({ ty: { asset: selectedItems.data.map(a => a.id) } })
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
@@ -147,7 +147,7 @@ export default function ContextMenu() {
     }
 
     const multipleSelected = contextMenuProp?.data?.target == "assets" &&
-        selectedObjects?.data?.length != undefined && selectedObjects.data.length > 1
+        selectedItems?.data?.length != undefined && selectedItems.data.length > 1
 
     if (!allFolders || !allTags) {
         return <></>

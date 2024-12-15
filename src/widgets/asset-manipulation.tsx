@@ -1,7 +1,7 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
 import { Add20Regular, ArrowCounterclockwise20Regular, ArrowDownload20Regular, Checkmark20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
-import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedObjectsContext } from "../helpers/context-provider"
+import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedItemsContext } from "../helpers/context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
 import { t } from "../i18n"
 
@@ -19,7 +19,7 @@ const confirmTextStyleHook = makeStyles({
 
 export default function AssetManipulation() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const overlays = useContext(overlaysContext)
 
@@ -31,9 +31,9 @@ export default function AssetManipulation() {
     const [confirmPopoverOpen, setConfirmPopoverOpen] = useState(false)
 
     const handleDelete = () => {
-        if (selectedObjects?.data) {
+        if (selectedItems?.data) {
             fileManipulation?.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "deletion",
                 submit: [],
             })
@@ -41,9 +41,9 @@ export default function AssetManipulation() {
     }
 
     const handleRename = () => {
-        if (browsingFolder && selectedObjects?.data) {
+        if (browsingFolder && selectedItems?.data) {
             fileManipulation?.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "rename",
                 submit: [newName],
             })
@@ -82,9 +82,9 @@ export default function AssetManipulation() {
     }
 
     function handleRecover() {
-        if (selectedObjects?.data) {
+        if (selectedItems?.data) {
             fileManipulation?.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "recover",
                 submit: [],
             })
@@ -92,9 +92,9 @@ export default function AssetManipulation() {
     }
 
     async function handlePermanentlyDelete() {
-        if (selectedObjects?.data) {
+        if (selectedItems?.data) {
             fileManipulation?.setter({
-                id: selectedObjects.data,
+                id: selectedItems.data,
                 op: "deletionPermanent",
                 submit: [],
             })
@@ -102,13 +102,13 @@ export default function AssetManipulation() {
             if (browsingFolder?.data) {
                 browsingFolder?.setter({
                     ...browsingFolder.data,
-                    content: browsingFolder.data.content.filter(id => selectedObjects.data?.find(selected => selected.id == id.id) == undefined)
+                    content: browsingFolder.data.content.filter(id => selectedItems.data?.find(selected => selected.id == id.id) == undefined)
                 })
             }
         }
     }
 
-    const selectedCount = selectedObjects?.data?.length ?? 0
+    const selectedCount = selectedItems?.data?.length ?? 0
 
     if (!browsingFolder?.data) {
         return <></>

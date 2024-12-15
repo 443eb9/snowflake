@@ -4,13 +4,13 @@ import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/err-toast";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedObjectsContext } from "./context-provider";
+import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedItemsContext } from "./context-provider";
 import SuccessToast from "../widgets/success-toast";
 import { t } from "../i18n";
 
 
 export default function ShortcutKeyProvider(props: HotKeysProps) {
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const browsingFolder = useContext(browsingFolderContext)
     const fileManipulation = useContext(fileManipulationContext)
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
@@ -48,18 +48,18 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         },
         delete: () => {
-            if (selectedObjects?.data) {
+            if (selectedItems?.data) {
                 fileManipulation?.setter({
-                    id: selectedObjects.data,
+                    id: selectedItems.data,
                     op: "deletion",
                     submit: [],
                 })
             }
         },
         rename: () => {
-            if (selectedObjects?.data && selectedObjects.data.length == 1) {
+            if (selectedItems?.data && selectedItems.data.length == 1) {
                 fileManipulation?.setter({
-                    id: selectedObjects.data,
+                    id: selectedItems.data,
                     op: "rename",
                     submit: undefined,
                 })

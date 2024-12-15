@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
-        FolderId, LibraryMeta, LibraryStatistics, Object, RawAsset, RecentLib, ResourceCache,
+        FolderId, Item, ItemId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
         SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
@@ -395,15 +395,15 @@ pub async fn import_web_assets(
 }
 
 #[tauri::command]
-pub fn recover_objects(
-    objects: Vec<Uuid>,
+pub fn recover_items(
+    items: Vec<ItemId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Option<DuplicateAssets>, String> {
-    log::info!("Recovering objects {:?}", objects);
+    log::info!("Recovering items {:?}", items);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         let duplication = storage
-            .recover_objects(objects, true)
+            .recover_items(items, true)
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
@@ -413,11 +413,13 @@ pub fn recover_objects(
 }
 
 #[tauri::command]
-pub fn get_recycle_bin(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Object>, String> {
+pub fn get_recycle_bin(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<HashSet<ItemId>, String> {
     log::info!("Getting recycle bin.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        Ok(storage.recycle_bin.values().cloned().collect())
+        Ok(storage.recycle_bin.clone())
     } else {
         Err(storage_not_initialized())
     }
@@ -497,7 +499,12 @@ pub fn get_folder_tree(
     log::info!("Getting folder tree.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage.folders.clone())
+        Ok(storage
+            .folders
+            .clone()
+            .into_iter()
+            .filter(|(_, f)| !f.is_deleted)
+            .collect())
     } else {
         Err(storage_not_initialized())
     }
@@ -615,23 +622,23 @@ pub fn get_assets(
 }
 
 #[tauri::command]
-pub fn get_objects(
-    objects: Vec<Uuid>,
+pub fn get_items(
+    items: Vec<Uuid>,
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<Object>, String> {
-    log::info!("Getting objects {:?}", objects);
+) -> Result<Vec<Item>, String> {
+    log::info!("Getting items {:?}", items);
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(objects
+        Ok(items
             .into_iter()
-            .filter_map(|object| {
-                let asset = storage.assets.get(&AssetId(object));
-                let folder = storage.folders.get(&FolderId(object));
+            .filter_map(|item| {
+                let asset = storage.assets.get(&AssetId(item));
+                let folder = storage.folders.get(&FolderId(item));
 
                 if asset.is_some() && folder.is_none() {
-                    Some(Object::Asset(asset.unwrap().clone()))
+                    Some(Item::Asset(asset.unwrap().clone()))
                 } else if asset.is_none() && folder.is_some() {
-                    Some(Object::Folder(folder.unwrap().clone()))
+                    Some(Item::Folder(folder.unwrap().clone()))
                 } else {
                     None
                 }

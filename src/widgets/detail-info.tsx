@@ -4,7 +4,7 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
 import { Asset, GetAsset, GetAssetAbsPath, ModifySrcOf } from "../backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
-import { selectedObjectsContext } from "../helpers/context-provider"
+import { selectedItemsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
@@ -19,23 +19,23 @@ export default function DetailInfo() {
 
     const [newSrc, setNewSrc] = useState("")
 
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
-        if (!selectedObjects?.data) {
+        if (!selectedItems?.data) {
             setAsset(undefined)
             return
         }
 
-        setSelectedCount(selectedObjects.data.length)
-        if (selectedObjects.data.length != 1) {
+        setSelectedCount(selectedItems.data.length)
+        if (selectedItems.data.length != 1) {
             setAsset(undefined)
             return
         }
 
-        const selected = selectedObjects.data[0]
+        const selected = selectedItems.data[0]
         if (asset && asset.id == selected.id) { return }
 
         async function fetch() {
@@ -54,7 +54,7 @@ export default function DetailInfo() {
         if (selected.ty == "asset") {
             fetch()
         }
-    }, [selectedObjects?.data])
+    }, [selectedItems?.data])
 
     if (selectedCount != 1) {
         return (
@@ -62,7 +62,7 @@ export default function DetailInfo() {
                 {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
             </Text>
         )
-    } else if (selectedObjects?.data && selectedObjects?.data.length > 0 && selectedObjects?.data[0].ty == "folder") {
+    } else if (selectedItems?.data && selectedItems?.data.length > 0 && selectedItems?.data[0].ty == "folder") {
         return (
             <Text className="opacity-50" size={600} italic>
                 {t("detail.folderSelect")}

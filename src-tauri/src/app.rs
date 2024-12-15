@@ -293,9 +293,16 @@ pub struct AssetId(pub Uuid);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TagId(pub Uuid);
 
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub enum ItemId {
+    Asset(Uuid),
+    Folder(Uuid),
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
-pub enum Object {
+pub enum Item {
     Asset(Asset),
     Folder(Folder),
 }
@@ -433,7 +440,7 @@ pub struct Storage {
     pub assets: HashMap<AssetId, Asset>,
     // Backward compatibility 0.0.1
     #[serde(default)]
-    pub recycle_bin: HashMap<Uuid, Object>,
+    pub recycle_bin: HashSet<ItemId>,
     // Backward compatibility 0.0.1
     #[serde(default)]
     pub lib_meta: LibraryMeta,
@@ -605,7 +612,7 @@ impl Storage {
             }
 
             self.cache.remove_asset(asset.id);
-            self.recycle_bin.insert(id.0, Object::Asset(asset));
+            self.recycle_bin.insert(ItemId::Asset(id.0));
 
             Ok(())
         } else {
@@ -627,12 +634,14 @@ impl Storage {
                 parent.children.remove(&id);
             }
 
-            self.recycle_bin.insert(id.0, Object::Folder(folder));
-
-            Ok(())
+            self.recycle_bin.insert(ItemId::Folder(id.0));
         } else {
-            Err(AppError::FolderNotFound(id))
+            return Err(AppError::FolderNotFound(id));
         }
+
+        self.folders.get_mut(&id).unwrap().is_deleted = true;
+
+        Ok(())
     }
 
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
@@ -675,64 +684,52 @@ impl Storage {
         }
     }
 
-    pub fn recover_objects(
+    pub fn recover_items(
         &mut self,
-        objects: Vec<Uuid>,
+        items: Vec<ItemId>,
         recover_folder_content: bool,
     ) -> AppResult<DuplicateAssets> {
         let mut recover_recursion = Vec::new();
-        for (id, object) in objects
-            .into_iter()
-            .filter_map(|id| self.recycle_bin.get(&id).cloned().map(|obj| (id, obj)))
-            .collect::<Vec<_>>()
-        {
-            match object {
-                Object::Asset(asset) => {
+        for id in items {
+            match id {
+                ItemId::Asset(asset) => {
+                    let Some(asset) = self.assets.get(&AssetId(asset)) else {
+                        return Err(AppError::AssetNotFound(AssetId(asset)));
+                    };
+
                     if let Some(parent) = self.folders.get_mut(&asset.parent) {
                         parent.content.insert(asset.id);
-                    } else {
-                        recover_recursion.push(asset.parent.0);
-
-                        let parent = self
-                            .recycle_bin
-                            .get_mut(&asset.parent.0)
-                            .and_then(|parent| match parent {
-                                Object::Folder(folder) => Some(folder),
-                                _ => None,
-                            });
-
-                        if let Some(parent) = parent {
-                            parent.content.insert(asset.id);
-                        }
+                    } else if let Some(parent) = self.folders.get_mut(&asset.parent) {
+                        recover_recursion.push(ItemId::Folder(asset.parent.0));
+                        parent.content.insert(asset.id);
                     }
 
                     self.cache
                         .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
-                    self.assets.insert(asset.id, asset);
                 }
-                Object::Folder(folder) => {
-                    match self.folders.entry(folder.id) {
-                        Entry::Occupied(mut e) => {
-                            e.get_mut().merge(folder.clone());
-                        }
-                        Entry::Vacant(e) => {
-                            e.insert(folder.clone());
-                        }
-                    }
+                ItemId::Folder(folder) => {
+                    let Some(folder) = self.folders.get_mut(&FolderId(folder)) else {
+                        return Err(AppError::FolderNotFound(FolderId(folder)));
+                    };
+                    folder.is_deleted = false;
+                    let folder = folder.clone();
 
                     if let Some(parent) = folder.parent {
-                        dbg!();
                         if let Some(parent) = self.folders.get_mut(&parent) {
-                            dbg!(&parent);
                             parent.children.insert(folder.id);
                         } else {
-                            dbg!();
-                            recover_recursion.push(parent.0);
+                            recover_recursion.push(ItemId::Folder(parent.0));
                         }
                     }
 
                     if recover_folder_content {
-                        recover_recursion.extend(folder.content.clone().into_iter().map(|id| id.0));
+                        recover_recursion.extend(
+                            folder
+                                .content
+                                .clone()
+                                .into_iter()
+                                .map(|id| ItemId::Asset(id.0)),
+                        );
                     }
                 }
             }
@@ -741,7 +738,7 @@ impl Storage {
         }
 
         if !recover_recursion.is_empty() {
-            self.recover_objects(recover_recursion, false)?;
+            self.recover_items(recover_recursion, false)?;
         }
 
         Ok(DuplicateAssets::default())
@@ -959,6 +956,9 @@ impl<'de> Deserialize<'de> for Color {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Folder {
+    // Backward compatibility 0.0.1
+    #[serde(default)]
+    pub is_deleted: bool,
     pub parent: Option<FolderId>,
     pub id: FolderId,
     pub name: String,
@@ -971,6 +971,7 @@ pub struct Folder {
 impl Folder {
     pub fn new(parent: Option<FolderId>, name: String, meta: Metadata) -> Self {
         Self {
+            is_deleted: false,
             parent,
             id: FolderId(Uuid::new_v4()),
             name,
@@ -979,14 +980,6 @@ impl Folder {
             meta,
             tags: Default::default(),
         }
-    }
-
-    pub fn merge(&mut self, another: Self) {
-        self.tags.extend(another.tags);
-        self.children.extend(another.children);
-        self.content.extend(another.content);
-
-        self.tags.dedup();
     }
 }
 

@@ -3,7 +3,7 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import { Button, makeStyles, useToastController } from "@fluentui/react-components"
 import { Collections20Regular } from "@fluentui/react-icons"
 import { GetAssetsContainingTag, Tag } from "../backend"
-import { allTagsContext, browsingFolderContext, contextMenuPropContext, selectedObjectsContext } from "../helpers/context-provider"
+import { allTagsContext, browsingFolderContext, contextMenuPropContext, selectedItemsContext } from "../helpers/context-provider"
 import TagName from "./tag-name"
 import { TriggerEvent, useContextMenu } from "react-contexify"
 import { CtxMenuId } from "./context-menu"
@@ -21,7 +21,7 @@ const buttonStyleHook = makeStyles({
 export default function TagsCollections() {
     const buttonStyle = buttonStyleHook()
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
@@ -32,7 +32,7 @@ export default function TagsCollections() {
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data && assets) {
-            selectedObjects?.setter([])
+            selectedItems?.setter([])
             document.querySelectorAll(`.${SelectedClassTag}`)
                 .forEach(elem => elem.classList.remove(SelectedClassTag))
             browsingFolder.setter({

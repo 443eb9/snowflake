@@ -3,7 +3,7 @@ import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, T
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import ErrToast from "./err-toast";
@@ -24,7 +24,7 @@ export function FolderTree() {
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
 
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedObjects = useContext(selectedObjectsContext)
+    const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
@@ -60,7 +60,7 @@ export function FolderTree() {
 
         const folder = folderMap?.get(folderId)
         if (folder) {
-            selectedObjects?.setter([])
+            selectedItems?.setter([])
             document.querySelectorAll(`.${SelectedClassTag}`)
                 .forEach(elem => elem.classList.remove(SelectedClassTag))
             browsingFolder?.setter({
