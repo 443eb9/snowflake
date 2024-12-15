@@ -7,9 +7,9 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset, Local};
+use file_format::{FileFormat, Kind};
 use filetime::FileTime;
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
-use infer::MatcherType;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use thiserror::Error;
@@ -36,8 +36,6 @@ pub enum AppError {
     FolderNotFound(FolderId),
     #[error("Folder at {0} is not empty.")]
     FolderNotEmpty(PathBuf),
-    #[error("Unknown file type.")]
-    UnknownFileType,
     #[error("Illegal folder deletion: {0:?}")]
     IllegalFolderDeletion(FolderId),
 }
@@ -218,8 +216,8 @@ fn collect_path(
 
         Ok(Some(folder_id))
     } else if path.is_file() {
-        let file_ty = infer::get_from_path(&path)?.ok_or_else(|| AppError::UnknownFileType)?;
-        if file_ty.matcher_type() != MatcherType::Image {
+        let file_fmt = FileFormat::from_file(&path)?;
+        if file_fmt.kind() != Kind::Image {
             return Ok(None);
         }
 
@@ -233,10 +231,7 @@ fn collect_path(
         let file_content = read(&path)?;
         let crc = crc32fast::hash(&file_content);
 
-        let Some(ty) = infer::get(&file_content)
-            .map(|t| t.matcher_type())
-            .and_then(|m| AssetType::from_matcher(m))
-        else {
+        let Some(ty) = AssetType::from_kind(file_fmt.kind()) else {
             return Ok(None);
         };
 
@@ -1068,9 +1063,9 @@ pub enum AssetType {
 }
 
 impl AssetType {
-    pub fn from_matcher(matcher: MatcherType) -> Option<Self> {
-        match matcher {
-            MatcherType::Image => Some(Self::Image),
+    pub fn from_kind(kind: Kind) -> Option<Self> {
+        match kind {
+            Kind::Image => Some(Self::Image),
             _ => None,
         }
     }

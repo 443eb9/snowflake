@@ -5,9 +5,9 @@ use std::{
 };
 
 use chrono::Local;
+use file_format::{FileFormat, Kind};
 use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
-use infer::MatcherType;
 use reqwest::Client;
 use serde::Deserialize;
 use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
@@ -356,24 +356,16 @@ pub async fn import_web_assets(
                     status: DownloadStatus::Finished,
                 });
 
-                let Some(ext) = infer::get(&content) else {
-                    let _ = progress.send(DownloadEvent {
-                        id,
-                        downloaded: f32::MAX,
-                        total: total_f,
-                        status: DownloadStatus::Error("Unknown buffer type.".to_string()),
-                    });
-                    continue;
-                };
+                let fmt = FileFormat::from_bytes(&content);
 
-                if ext.matcher_type() != MatcherType::Image {
+                if fmt.kind() != Kind::Image {
                     let _ = progress.send(DownloadEvent {
                         id,
                         downloaded: f32::MAX,
                         total: total_f,
                         status: DownloadStatus::Error(format!(
                             "Failed to import non-image assets. {}",
-                            ext.mime_type()
+                            fmt.media_type()
                         )),
                     });
                     continue;
@@ -381,8 +373,8 @@ pub async fn import_web_assets(
 
                 results.push(RawAsset {
                     bytes: content,
-                    ty: AssetType::from_matcher(ext.matcher_type()).unwrap(),
-                    ext: ext.extension().into(),
+                    ty: AssetType::from_kind(fmt.kind()).unwrap(),
+                    ext: fmt.extension().into(),
                     src: url,
                 });
             }

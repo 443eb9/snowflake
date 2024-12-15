@@ -1027,6 +1027,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "file-format"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7ef3d5e8ae27277c8285ac43ed153158178ef0f79567f32024ca8140a0c7cd8"
+
+[[package]]
 name = "filetime"
 version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3713,12 +3719,12 @@ version = "0.0.1"
 dependencies = [
  "chrono",
  "crc32fast",
+ "file-format",
  "filetime",
  "futures",
  "hashbrown 0.15.2",
  "hex",
  "imagesize",
- "infer",
  "log",
  "md5",
  "pathdiff",

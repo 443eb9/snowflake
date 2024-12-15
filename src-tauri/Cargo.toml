@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [ "macos-private-api", "protocol-asset"] }
+tauri = { version = "2", features = ["macos-private-api", "protocol-asset"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 uuid = { version = "1.11", features = ["serde", "v4"] }
@@ -31,5 +31,5 @@ pathdiff = "0.2"
 reqwest = "0.12"
 futures = "0.3"
 imagesize = "0.13"
-infer = "0.16"
 window-vibrancy = "0.5"
+file-format = { version = "0.26", features = ["reader"] }
