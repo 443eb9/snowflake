@@ -4,7 +4,7 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
 import { Asset, GetAsset, GetAssetAbsPath, ModifySrcOf } from "../backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
-import { selectedItemsContext } from "../helpers/context-provider"
+import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
@@ -20,6 +20,9 @@ export default function DetailInfo() {
     const [newSrc, setNewSrc] = useState("")
 
     const selectedItems = useContext(selectedItemsContext)
+    const browsingFolder = useContext(browsingFolderContext)
+
+    const atRecycleBin = browsingFolder?.data?.subTy == "recycleBin"
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
@@ -96,6 +99,7 @@ export default function DetailInfo() {
                                         .catch(err => <ErrToast body={err} />)
                                 }
                             }}
+                            readOnly={atRecycleBin}
                         />
                     </ListItem>
                     <ListItem className="flex flex-col gap-1">
@@ -103,6 +107,7 @@ export default function DetailInfo() {
                         <TagsContainer
                             tags={asset.tags}
                             associatedItem={asset.id}
+                            readonly={atRecycleBin}
                         />
                     </ListItem>
                 </List>
