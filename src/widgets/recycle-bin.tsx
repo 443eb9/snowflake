@@ -26,7 +26,7 @@ export default function RecycleBin() {
                             const decoded = decodeItemObject(obj)
                             return { id: decoded.item.id, ty: decoded.ty }
                         }),
-                        specialTy: "recycleBin",
+                        subTy: "recycleBin",
                     })
                 }
             }}

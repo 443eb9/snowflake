@@ -12,6 +12,7 @@
     "startup.btnRecent": "Open Recent",
     "startup.noRecent": "No recent libraries.",
     "asset-mani.rename": "New name",
+    "asset-mani.delPerm.confirm": "Are you sure?",
     "asset-mani.importDialogTitle": "Select assets you want to import.",
     "browser.folderTreeSectionTitle": "Folder Tree",
     "browser.tagCollSectionTitle": "Tag Collections",

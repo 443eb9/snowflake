@@ -39,7 +39,7 @@ export default function TagsCollections() {
                 id: tag.id,
                 name: tag.name,
                 content: assets.map(a => { return { id: a, ty: "asset" } }),
-                specialTy: "collection",
+                subTy: "collection",
             })
         }
     }

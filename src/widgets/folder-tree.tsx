@@ -67,7 +67,7 @@ export function FolderTree() {
                 id: folderId,
                 name: folder.name,
                 content: folder.content.map(a => { return { id: a, ty: "asset" } }),
-                specialTy: "folder",
+                subTy: "folder",
             })
         }
     }

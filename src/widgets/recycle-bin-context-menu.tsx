@@ -1,13 +1,9 @@
 import { useContext, useState } from "react";
 import { Menu as CtxMenu, Item as CtxItem } from "react-contexify";
 import { browsingFolderContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
-import { Button, makeStyles, mergeClasses, Text, useToastController } from "@fluentui/react-components";
-import { ArrowCounterclockwise20Regular } from "@fluentui/react-icons";
-import { GetRecycleBin, RecoverObjects } from "../backend";
-import { GlobalToasterId } from "../main";
-import ErrToast from "./err-toast";
+import { Button, makeStyles, mergeClasses, Text } from "@fluentui/react-components";
+import { ArrowCounterclockwise20Regular, Delete20Regular } from "@fluentui/react-icons";
 import { t } from "../i18n";
-import { decodeItemObject } from "../util";
 
 export const RecycleBinCtxMenuId = "recycleBinCtxMenu"
 
@@ -31,34 +27,16 @@ export default function RecycleBinContextMenu() {
 
     const buttonStyle = buttonStyleHook()
     const confirmTextStyle = confirmTextStyleHook()
-    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const [onConfirm, setOnConfirm] = useState(false)
 
     const handleRecover = async () => {
         if (selectedObjects?.data && browsingFolder?.data) {
-            await RecoverObjects({ objects: selectedObjects.data.map(item => item.id) })
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-            const recycleBin = await GetRecycleBin()
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            if (recycleBin) {
-                selectedObjects.setter([])
-                browsingFolder.setter({
-                    ...browsingFolder.data,
-                    content: recycleBin.map(obj => {
-                        const decoded = decodeItemObject(obj)
-                        return { id: decoded.item.id, ty: decoded.ty }
-                    }),
-                })
-
-                // update folder tree
-                fileManipulation?.setter({
-                    id: [],
-                    op: "create",
-                    submit: [],
-                })
-            }
+            fileManipulation?.setter({
+                id: selectedObjects.data,
+                op: "recover",
+                submit: [],
+            })
         }
     }
 
@@ -93,7 +71,7 @@ export default function RecycleBinContextMenu() {
             <CtxItem onClick={handlePermanentlyDelete} closeOnClick={onConfirm}>
                 <Button
                     className={onConfirm ? mergeClasses(buttonStyle.root, confirmTextStyle.root) : buttonStyle.root}
-                    icon={<ArrowCounterclockwise20Regular />}
+                    icon={<Delete20Regular />}
                     appearance="subtle"
                 >
                     <Text className={onConfirm ? confirmTextStyle.root : ""}>

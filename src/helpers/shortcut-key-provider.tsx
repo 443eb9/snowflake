@@ -66,7 +66,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
             }
         },
         newFolder: () => {
-            if (browsingFolder?.data?.id && !browsingFolder.data.specialTy) {
+            if (browsingFolder?.data?.id && !browsingFolder.data.subTy) {
                 fileManipulation?.setter({
                     id: [{ id: browsingFolder.data.id, ty: "folder" }],
                     op: "create",

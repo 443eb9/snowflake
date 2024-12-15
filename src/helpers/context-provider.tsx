@@ -10,12 +10,12 @@ export type VirtualFolder = {
     id: string | undefined,
     name: string,
     content: ItemId[],
-    specialTy: "collection" | "recycleBin" | "folder",
+    subTy: "collection" | "recycleBin" | "folder",
 }
 
 export type FileManipulation = {
     id: ItemId[],
-    op: "rename" | "deletion" | "deletionPermanent" | "create" | "import" | "move" | undefined,
+    op: "rename" | "deletion" | "deletionPermanent" | "create" | "import" | "move" | "recover" | undefined,
     submit: string[] | undefined,
 }
 

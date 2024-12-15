@@ -101,7 +101,7 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
                     browsingFolder.setter({
                         ...folder,
                         content: folder.content.map(asset => { return { id: asset, ty: "asset" } }),
-                        specialTy: "folder",
+                        subTy: "folder",
                     })
                 }
             }

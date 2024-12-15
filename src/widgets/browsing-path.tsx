@@ -13,7 +13,7 @@ export function BrowsingPath() {
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const pathChangeHandler = async (pop: number) => {
-        if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.specialTy) {
+        if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.subTy) {
             return
         }
 
@@ -30,7 +30,7 @@ export function BrowsingPath() {
                 id: currentFolder.id,
                 name: currentFolder.name,
                 content: currentFolder.content.map(a => { return { id: a, ty: "asset" } }),
-                specialTy: "folder",
+                subTy: "folder",
             })
         }
     }
@@ -41,7 +41,7 @@ export function BrowsingPath() {
                 return
             }
 
-            switch (browsingFolder.data.specialTy) {
+            switch (browsingFolder.data.subTy) {
                 case "collection":
                     setVirtualPath([`Tag collection ${browsingFolder.data.name}`])
                     break

@@ -51,7 +51,7 @@ export default function ItemsGrid() {
             extra: undefined,
         })
 
-        if (browsingFolder.data.specialTy == "recycleBin") {
+        if (browsingFolder.data.subTy == "recycleBin") {
             showRecycleBinCtxMenu({ event: ev })
         } else {
             showCommonCtxMenu({ event: ev })
