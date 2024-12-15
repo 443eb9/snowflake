@@ -74,7 +74,7 @@ export default function TagsManager() {
         <div>
             <Popover>
                 <PopoverTrigger>
-                    <Button icon={<Tag20Regular />}></Button>
+                    <Button icon={<Tag20Regular />} appearance="outline"></Button>
                 </PopoverTrigger>
 
                 <PopoverSurface className="flex flex-col gap-2 max-w-[500] min-w-[400px]">

@@ -319,7 +319,7 @@ function SettingsItem({ children, title, currentTab }: { children: ReactNode, ti
     return (
         <div
             className="flex justify-between items-center px-4 py-2 rounded-md"
-            style={{ backgroundColor: "var(--colorNeutralBackground2)" }}
+            style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
         >
             <Text>{t(`settings.${currentTab}.${title}`)}</Text>
             {children}

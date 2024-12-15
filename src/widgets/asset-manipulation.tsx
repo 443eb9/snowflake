@@ -119,12 +119,18 @@ export default function AssetManipulation() {
             case "folder":
                 return (
                     <>
-                        <Button icon={<Delete20Regular />} disabled={selectedCount == 0} onClick={handleDelete} />
+                        <Button
+                            icon={<Delete20Regular />}
+                            disabled={selectedCount == 0}
+                            onClick={handleDelete}
+                            appearance="outline"
+                        />
                         <Menu open={renamePopoverOpen} onOpenChange={(_, d) => setRenamePopoverOpen(d.open)}>
                             <MenuTrigger>
                                 <MenuButton
                                     icon={<Edit20Regular />}
                                     disabled={selectedCount != 1}
+                                    appearance="outline"
                                 />
                             </MenuTrigger>
                             <MenuPopover>
@@ -153,6 +159,7 @@ export default function AssetManipulation() {
                                 <MenuButton
                                     icon={<Delete20Regular />}
                                     disabled={selectedCount == 0}
+                                    appearance="outline"
                                 />
                             </MenuTrigger>
                             <MenuPopover>
@@ -185,10 +192,10 @@ export default function AssetManipulation() {
                 {
                     browsingFolder?.data?.subTy == "folder" &&
                     <>
-                        <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
-                        <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />
-                        <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} />
-                        <Button icon={<ArrowDownload20Regular />} onClick={() => overlays?.setter({ ty: "assetDownload" })} />
+                        <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} appearance="outline" />
+                        <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} appearance="outline" />
+                        <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} appearance="outline" />
+                        <Button icon={<ArrowDownload20Regular />} onClick={() => overlays?.setter({ ty: "assetDownload" })} appearance="outline" />
                     </>
                 }
             </div>

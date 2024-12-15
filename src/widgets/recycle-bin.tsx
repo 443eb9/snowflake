@@ -13,6 +13,7 @@ export default function RecycleBin() {
 
     return (
         <Button
+            appearance="outline"
             icon={<BinRecycle20Regular />}
             onClick={async () => {
                 const recycleBin = await GetRecycleBin()

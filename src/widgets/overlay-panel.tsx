@@ -27,10 +27,7 @@ export default function OverlayPanel() {
             className="absolute w-full h-full z-10 flex items-center justify-center"
             style={{ backgroundColor: "#00000080" }}
         >
-            <div
-                className="absolute w-2/3 h-2/3 rounded-md p-4"
-                style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
-            >
+            <div className="absolute w-2/3 h-2/3 rounded-md p-4 backdrop-blur-md">
                 <Button
                     className="absolute right-2 top-2"
                     icon={<Dismiss20Regular />}

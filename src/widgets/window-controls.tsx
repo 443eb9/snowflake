@@ -31,16 +31,19 @@ export default function WindowControls(props: HTMLAttributes<HTMLDivElement>) {
             <Button
                 icon={<FullScreenMinimize20Regular />}
                 onClick={() => appWindow.minimize()}
+                appearance="outline"
             >
             </Button>
             <Button
                 icon={<FullScreenMaximize20Regular />}
                 onClick={() => appWindow.toggleMaximize()}
+                appearance="outline"
             ></Button>
             <Button
                 className={closeWindow.root}
                 icon={<Dismiss20Regular />}
                 onClick={() => appWindow.close()}
+                appearance="outline"
             >
             </Button>
         </div>

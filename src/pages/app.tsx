@@ -47,7 +47,7 @@ export default function MainApp() {
             <div className="flex justify-between w-full h-full gap-2 p-4">
                 <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
                     <div className="flex items-center gap-2">
-                        <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")}></Button>
+                        <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")} appearance="outline" />
                         <Title3>{t("app.libTitle")}</Title3>
                     </div>
                     <div className="h-full overflow-y-auto">
@@ -55,7 +55,7 @@ export default function MainApp() {
                     </div>
                     <div className="flex gap-2">
                         <TagsManager />
-                        <Button icon={<Settings20Regular />} onClick={() => overlay?.setter({ ty: "settings" })} />
+                        <Button icon={<Settings20Regular />} onClick={() => overlay?.setter({ ty: "settings" })} appearance="outline" />
                         <RecycleBin />
                     </div>
                 </div>

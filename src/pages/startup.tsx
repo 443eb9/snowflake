@@ -140,6 +140,7 @@ export default function Startup() {
                 icon={<Settings20Regular />}
                 className="absolute right-4 bottom-4"
                 onClick={() => overlays?.setter({ ty: "settings" })}
+                appearance="outline"
             />
             <div className="flex h-full justify-center">
                 <div className="flex flex-col flex-wrap gap-2 h-full justify-center">
@@ -150,7 +151,7 @@ export default function Startup() {
                             icon={<Library20Regular />}
                             onClick={openLibrary}
                             className="h-12"
-                            style={{ backgroundColor: "transparent" }}
+                            appearance="outline"
                         >
                             {t("startup.btnOpenLib")}
                         </Button>
@@ -158,7 +159,7 @@ export default function Startup() {
                             icon={<New20Regular />}
                             onClick={initializeLibrary}
                             className="h-12"
-                            style={{ backgroundColor: "transparent" }}
+                            appearance="outline"
                         >
                             {t("startup.btnInitLib")}
                         </Button>
@@ -167,7 +168,7 @@ export default function Startup() {
                                 <Button
                                     icon={<Clock20Regular />}
                                     className="h-12"
-                                    style={{ backgroundColor: "transparent" }}
+                                    appearance="outline"
                                 >
                                     {t("startup.btnRecent")}
                                 </Button>
