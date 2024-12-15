@@ -231,18 +231,19 @@ fn collect_path(
         let file_content = read(&path)?;
         let crc = crc32fast::hash(&file_content);
 
-        let Some(ty) = AssetType::from_kind(file_fmt.kind()) else {
+        let Some(ty) = AssetType::from_fmt(file_fmt) else {
             return Ok(None);
         };
 
         let props = match ty {
-            AssetType::Image => {
+            AssetType::RasterGraphics => {
                 let size = imagesize::size(&path)?;
-                AssetProperty::Image(ImageProperty {
+                AssetProperty::RasterGraphics(RasterGraphicsProperty {
                     width: size.width as u32,
                     height: size.height as u32,
                 })
             }
+            AssetType::VectorGraphics => AssetProperty::VectorGraphics(VectorGraphicsProperty),
         };
 
         let asset = Asset::new(
@@ -577,13 +578,14 @@ impl Storage {
 
             let meta = Metadata::from_std_meta(&file.metadata()?);
             let props = match ty {
-                AssetType::Image => {
+                AssetType::RasterGraphics => {
                     let size = imagesize::blob_size(&bytes)?;
-                    AssetProperty::Image(ImageProperty {
+                    AssetProperty::RasterGraphics(RasterGraphicsProperty {
                         width: size.width as u32,
                         height: size.height as u32,
                     })
                 }
+                AssetType::VectorGraphics => AssetProperty::VectorGraphics(VectorGraphicsProperty),
             };
 
             let asset = Asset {
@@ -1047,25 +1049,72 @@ impl Asset {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum AssetProperty {
-    Image(ImageProperty),
+    RasterGraphics(RasterGraphicsProperty),
+    VectorGraphics(VectorGraphicsProperty),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct ImageProperty {
+pub struct RasterGraphicsProperty {
     pub width: u32,
     pub height: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VectorGraphicsProperty;
+
+#[derive(Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
 pub enum AssetType {
-    Image,
+    RasterGraphics,
+    VectorGraphics,
+}
+
+impl<'de> Deserialize<'de> for AssetType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct AssetTypeVisitor;
+        impl<'de> serde::de::Visitor<'de> for AssetTypeVisitor {
+            type Value = AssetType;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a string represents the type")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                match v {
+                    "rasterGraphics" => Ok(AssetType::RasterGraphics),
+                    "vectorGraphics" => Ok(AssetType::VectorGraphics),
+                    // Backward compatibility 0.0.1
+                    "Image" => Ok(AssetType::RasterGraphics),
+                    _ => Err(serde::de::Error::unknown_variant(
+                        v,
+                        &["rasterGraphics", "vectorGraphics"],
+                    )),
+                }
+            }
+        }
+
+        deserializer.deserialize_str(AssetTypeVisitor)
+    }
 }
 
 impl AssetType {
-    pub fn from_kind(kind: Kind) -> Option<Self> {
-        match kind {
-            Kind::Image => Some(Self::Image),
+    pub fn from_fmt(format: FileFormat) -> Option<Self> {
+        match format.kind() {
+            Kind::Image => match format.extension() {
+                // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
+                "apng" | "png" | "avif" | "gif" | "jpg" | "jpeg" | "jfif" | "pjpeg" | "pjp"
+                | "webp" | "bmp" | "ico" | "cur" | "tif" | "tiff" => Some(Self::RasterGraphics),
+                "svg" => Some(Self::VectorGraphics),
+                _ => None,
+            },
             _ => None,
         }
     }

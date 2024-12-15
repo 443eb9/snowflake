@@ -373,7 +373,7 @@ pub async fn import_web_assets(
 
                 results.push(RawAsset {
                     bytes: content,
-                    ty: AssetType::from_kind(fmt.kind()).unwrap(),
+                    ty: AssetType::from_fmt(fmt).unwrap(),
                     ext: fmt.extension().into(),
                     src: url,
                 });
@@ -976,7 +976,7 @@ pub async fn quick_ref(
 
             // TODO remove this once models get supported, as this pattern would be refutable then.
             #[allow(irrefutable_let_patterns)]
-            let AssetProperty::Image(properties) = &asset.props
+            let AssetProperty::RasterGraphics(properties) = &asset.props
             else {
                 continue;
             };

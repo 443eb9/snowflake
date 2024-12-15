@@ -54,7 +54,7 @@ export type Metadata = {
     lastModified: string,
 }
 
-export type AssetType = "Image" | "Unknown"
+export type AssetType = "rasterGraphics" | "vectorGraphics"
 
 export type DuplicateAssets = { [key: string]: string[] }
 
