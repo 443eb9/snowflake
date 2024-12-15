@@ -932,9 +932,28 @@ pub fn move_folders_to(
     }
 }
 
+#[tauri::command]
+pub fn open_with_default_app(
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Opening asset {:?} with default app.", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        opener::open(
+            storage
+                .get_asset_abs_path(asset)
+                .map_err(|e| e.to_string())?,
+        )
+        .map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub enum QuickRefTy {
+pub enum QuickRefSrcTy {
     Asset(Vec<AssetId>),
     Folder(FolderId),
     Tag(TagId),
@@ -942,7 +961,7 @@ pub enum QuickRefTy {
 
 #[tauri::command]
 pub async fn quick_ref(
-    ty: QuickRefTy,
+    ty: QuickRefSrcTy,
     storage: State<'_, Mutex<Option<Storage>>>,
     app: AppHandle,
 ) -> Result<(), String> {
@@ -954,15 +973,15 @@ pub async fn quick_ref(
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         let ids: Vec<_> = match &ty {
-            QuickRefTy::Asset(ids) => ids.iter().collect(),
-            QuickRefTy::Folder(id) => storage
+            QuickRefSrcTy::Asset(ids) => ids.iter().collect(),
+            QuickRefSrcTy::Folder(id) => storage
                 .folders
                 .get(id)
                 .ok_or_else(|| folder_doesnt_exist(*id))?
                 .content
                 .iter()
                 .collect(),
-            QuickRefTy::Tag(id) => storage
+            QuickRefSrcTy::Tag(id) => storage
                 .assets
                 .values()
                 .filter_map(|a| a.tags.contains(&id).then_some(&a.id))

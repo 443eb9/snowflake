@@ -10,3 +10,5 @@ Build for creativity, not for profit.
 
 > [!WARNING]
 > This application is still at pre-alpha stage, and under heavy development. Think twice before storing anything important.
+>
+> Backward compatibility is only available for the previous version.

@@ -26,6 +26,7 @@
     "ctxMenu.remTag": "Remove Tag",
     "ctxMenu.noTagFallback": "No tag matches query.",
     "ctxMenu.quickRef": "Quick Ref",
+    "ctxMenu.open": "Open",
     "ctxMenu.recover": "Recover",
     "ctxMenu.delPerm": "Permanently Delete",
     "ctxMenu.delPerm.confirm": "Are you sure?",

@@ -64,7 +64,7 @@ export type RecentLib = {
     lastOpen: string,
 }
 
-export type QuickRefTy = {
+export type QuickRefSrcTy = {
     asset: string[],
 } | {
     folder: string,
@@ -259,6 +259,10 @@ export function MoveFoldersTo(params: { srcFolders: string[], dstFolder: string 
     return invoke("move_folders_to", params)
 }
 
-export function QuickRef(params: { ty: QuickRefTy }): Promise<void> {
+export function OpenWithDefaultApp(params: { asset: string }): Promise<void> {
+    return invoke("open_with_default_app", params)
+}
+
+export function QuickRef(params: { ty: QuickRefSrcTy }): Promise<void> {
     return invoke("quick_ref", params)
 }

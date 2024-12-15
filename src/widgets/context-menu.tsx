@@ -1,9 +1,9 @@
 import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-contexify";
 import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components";
-import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
+import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Open20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider";
-import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
+import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, OpenWithDefaultApp, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";
 import ErrToast from "./err-toast";
@@ -143,6 +143,15 @@ export default function ContextMenu() {
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
+        }
+    }
+
+    const handleOpen = async () => {
+        const target = contextMenuProp?.data?.target
+        if (target != "assets") { return }
+
+        if (selectedItems?.data && selectedItems.data.length == 1) {
+            await OpenWithDefaultApp({ asset: selectedItems.data[0].id })
         }
     }
 
@@ -302,6 +311,15 @@ export default function ContextMenu() {
                     appearance="subtle"
                 >
                     <Text>{t("ctxMenu.quickRef")}</Text>
+                </Button>
+            </CtxItem>
+            <CtxItem onClick={handleOpen} disabled={selectedItems?.data?.length != 1}>
+                <Button
+                    className={buttonStyle.root}
+                    icon={<Open20Regular />}
+                    appearance="subtle"
+                >
+                    <Text>{t("ctxMenu.open")}</Text>
                 </Button>
             </CtxItem>
         </CtxMenu>

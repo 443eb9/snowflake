@@ -70,6 +70,7 @@ pub fn run() {
             cmd::rename_asset,
             cmd::move_folders_to,
             cmd::move_assets_to,
+            cmd::open_with_default_app,
             cmd::quick_ref,
         ])
         .run(tauri::generate_context!())
