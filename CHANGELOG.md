@@ -1,4 +1,6 @@
-# v0.0.2 [main branch, haven't released]
+# v0.0.3 [main branch, haven't released]
+
+# v0.0.2
 
 *Still, not production ready, yet.*
 
