@@ -4,7 +4,7 @@ import WindowControls from "../widgets/window-controls";
 import ErrToast from "../widgets/err-toast";
 import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
-import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib } from "../backend";
+import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib, UnloadLibrary } from "../backend";
 import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "../widgets/overlay-panel";
@@ -29,6 +29,9 @@ export default function Startup() {
             if (recentLibs) {
                 setRecentLibs(recentLibs)
             }
+
+            await UnloadLibrary()
+                .catch(err => dispatch(err))
         }
 
         fetch()

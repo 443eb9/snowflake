@@ -134,7 +134,7 @@ function LibraryTab(props: TabProps) {
     useEffect(() => {
         async function fetch() {
             const libraryMeta = await GetLibraryMeta()
-                .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                .catch(() => { })
 
             if (libraryMeta) {
                 setLibraryMeta(libraryMeta)
@@ -144,8 +144,12 @@ function LibraryTab(props: TabProps) {
         fetch()
     }, [updateFlag])
 
-    if (props.currentTab != "library" || !libraryMeta) {
+    if (props.currentTab != "library") {
         return <></>
+    }
+
+    if (!libraryMeta) {
+        return <Text>{t("settings.library.void")}</Text>
     }
 
     const handleExport = async () => {

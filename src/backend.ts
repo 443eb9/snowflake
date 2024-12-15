@@ -126,6 +126,10 @@ export function SaveLibrary(): Promise<void> {
     return invoke("save_library")
 }
 
+export function UnloadLibrary(): Promise<void> {
+    return invoke("unload_library")
+}
+
 export function ExportLibrary(params: { rootFolder: string }): Promise<void> {
     return invoke("export_library", params)
 }

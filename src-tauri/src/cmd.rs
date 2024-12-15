@@ -178,6 +178,20 @@ pub fn save_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), St
     Ok(())
 }
 
+#[tauri::command]
+pub fn unload_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), String> {
+    log::info!("Unloading library.");
+
+    if let Ok(mut storage) = storage.lock() {
+        if let Some(storage) = storage.as_mut() {
+            storage.save().map_err(|e| e.to_string())?;
+        }
+        storage.take();
+    }
+
+    Ok(())
+}
+
 fn export_recursion(storage: &Storage, folder: &FolderId, path: &Path) -> Result<(), AppError> {
     if let Some(folder) = storage.folders.get(folder) {
         let folder_path = path.join(&folder.name);
