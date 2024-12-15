@@ -38,6 +38,8 @@ pub enum AppError {
     FolderNotEmpty(PathBuf),
     #[error("Unknown file type.")]
     UnknownFileType,
+    #[error("Illegal folder deletion: {0:?}")]
+    IllegalFolderDeletion(FolderId),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -612,6 +614,10 @@ impl Storage {
     }
 
     pub fn move_folder_to_recycle_bin(&mut self, id: FolderId) -> AppResult<()> {
+        if self.root_id == id {
+            return Err(AppError::IllegalFolderDeletion(id));
+        }
+
         if let Some(folder) = self.folders.get(&id).cloned() {
             for asset in folder.content.clone() {
                 self.cache.remove_asset(asset);
@@ -645,6 +651,10 @@ impl Storage {
     }
 
     pub fn delete_folder(&mut self, id: FolderId) -> AppResult<()> {
+        if self.root_id == id {
+            return Err(AppError::IllegalFolderDeletion(id));
+        }
+
         if let Some(folder) = self.folders.remove(&id) {
             for asset in folder.content.clone() {
                 self.cache.remove_asset(asset);

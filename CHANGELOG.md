@@ -9,6 +9,9 @@
 - Detecting duplicate assets using CRC(Cyclic Redundancy Check) hashing.
 - New `src` property for assets. You can use this to mark the source of this asset.
 - Asset statistics.
+- Recycle bin.
+  - Recover deleted objects.
+  - Permanently delete object. This deletes the file in file system. If trying to permanently delete a folder, it's content and children will also be deleted, permanently, and you'll never be able to get that back.
 
 # What's Fixed
 
