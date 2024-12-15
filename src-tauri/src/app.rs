@@ -31,9 +31,9 @@ pub enum AppError {
     #[error("Image error: {0}")]
     Image(#[from] imagesize::ImageError),
     #[error("Asset {0:?} not found.")]
-    AssetNotFount(AssetId),
+    AssetNotFound(AssetId),
     #[error("Folder {0:?} not found.")]
-    FolderNotFount(FolderId),
+    FolderNotFound(FolderId),
     #[error("Folder at {0} is not empty.")]
     FolderNotEmpty(PathBuf),
     #[error("Unknown file type.")]
@@ -515,7 +515,7 @@ impl Storage {
         parent: FolderId,
     ) -> AppResult<DuplicateAssets> {
         if !self.folders.contains_key(&parent) {
-            return Err(AppError::FolderNotFount(parent));
+            return Err(AppError::FolderNotFound(parent));
         }
 
         let mut asset_crc = HashMap::default();
@@ -545,7 +545,7 @@ impl Storage {
     ) -> AppResult<DuplicateAssets> {
         let root = self.cache.root.clone();
         let Some(parent) = self.folders.get_mut(&parent) else {
-            return Err(AppError::FolderNotFount(parent).into());
+            return Err(AppError::FolderNotFound(parent).into());
         };
 
         let mut added_crc = HashSet::<u32>::default();
@@ -607,7 +607,7 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(AppError::AssetNotFount(id))
+            Err(AppError::AssetNotFound(id))
         }
     }
 
@@ -625,7 +625,7 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(AppError::FolderNotFount(id))
+            Err(AppError::FolderNotFound(id))
         }
     }
 
@@ -640,7 +640,7 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(AppError::AssetNotFount(id))
+            Err(AppError::AssetNotFound(id))
         }
     }
 
@@ -661,7 +661,7 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(AppError::FolderNotFount(id))
+            Err(AppError::FolderNotFound(id))
         }
     }
 
@@ -740,7 +740,7 @@ impl Storage {
     pub fn create_folder(&mut self, name: String, parent: FolderId) -> AppResult<()> {
         let folder = Folder::new(Some(parent), name, Metadata::now(0));
         let Some(parent) = self.folders.get_mut(&parent) else {
-            return Err(AppError::FolderNotFount(parent));
+            return Err(AppError::FolderNotFound(parent));
         };
         parent.children.insert(folder.id);
         self.folders.insert(folder.id, folder);
@@ -753,7 +753,7 @@ impl Storage {
 
             Ok(())
         } else {
-            Err(AppError::AssetNotFount(id))
+            Err(AppError::AssetNotFound(id))
         }
     }
 
@@ -762,7 +762,7 @@ impl Storage {
             folder.name = new_name;
             Ok(())
         } else {
-            Err(AppError::FolderNotFount(id))
+            Err(AppError::FolderNotFound(id))
         }
     }
 
@@ -775,10 +775,10 @@ impl Storage {
                 new_parent.content.insert(asset_id);
                 Ok(())
             } else {
-                Err(AppError::FolderNotFount(folder_id))
+                Err(AppError::FolderNotFound(folder_id))
             }
         } else {
-            Err(AppError::AssetNotFount(asset_id))
+            Err(AppError::AssetNotFound(asset_id))
         }
     }
 
@@ -791,10 +791,10 @@ impl Storage {
                 new_parent.children.insert(src_id);
                 Ok(())
             } else {
-                Err(AppError::FolderNotFount(dst_id))
+                Err(AppError::FolderNotFound(dst_id))
             }
         } else {
-            Err(AppError::FolderNotFount(src_id))
+            Err(AppError::FolderNotFound(src_id))
         }
     }
 
@@ -807,7 +807,7 @@ impl Storage {
                     .join(IMAGE_ASSETS)
                     .join(a.get_file_name_id())
             })
-            .ok_or_else(|| AppError::AssetNotFount(id))
+            .ok_or_else(|| AppError::AssetNotFound(id))
     }
 
     pub fn get_asset_virtual_path(&self, id: AssetId) -> AppResult<Vec<String>> {
@@ -817,7 +817,7 @@ impl Storage {
                 p
             })
         } else {
-            Err(AppError::AssetNotFount(id))
+            Err(AppError::AssetNotFound(id))
         }
     }
 
@@ -829,7 +829,7 @@ impl Storage {
                 res.push(folder.name.clone());
                 cur_id = folder.parent;
             } else {
-                return Err(AppError::FolderNotFount(id));
+                return Err(AppError::FolderNotFound(id));
             }
         }
 
