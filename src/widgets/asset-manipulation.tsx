@@ -108,7 +108,7 @@ export default function AssetManipulation() {
             </div>
             <div className="flex gap-1">
                 {
-                    !browsingFolder?.data?.specialTy &&
+                    browsingFolder?.data?.specialTy == "folder" &&
                     <>
                         <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
                         <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />

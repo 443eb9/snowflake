@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from "react";
-import { Menu as CtxMenu, Item as CtxItem, useContextMenu } from "react-contexify";
+import { useContext, useState } from "react";
+import { Menu as CtxMenu, Item as CtxItem } from "react-contexify";
 import { browsingFolderContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
 import { Button, makeStyles, mergeClasses, Text, useToastController } from "@fluentui/react-components";
 import { ArrowCounterclockwise20Regular } from "@fluentui/react-icons";
