@@ -176,7 +176,7 @@ export default function FileManipulator() {
                     ...browsingFolder.data,
                     content: recycleBin.map(obj => {
                         const decoded = decodeItem(obj)
-                        return { id: decoded.id.id, ty: decoded.ty }
+                        return { id: decoded.id, ty: decoded.ty }
                     }),
                 })
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "snowflake",
+  "productName": "Snowflake",
   "version": "0.0.2",
   "identifier": "com.snowflake.app",
   "build": {
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "snowflake",
+        "title": "Snowflake",
         "width": 1280,
         "height": 800,
         "decorations": false,

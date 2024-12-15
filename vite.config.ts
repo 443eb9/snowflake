@@ -8,6 +8,14 @@ const host = process.env.TAURI_DEV_HOST;
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [react()],
+  build: {
+    target: "esnext",
+  },
+  esbuild: {
+    supported: {
+      "top-level-await": true
+    }
+  },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
@@ -32,7 +40,7 @@ export default defineConfig(async () => ({
   },
   css: {
     postcss: {
-      plugins: [tailwindcss()]
-    }
-  }
+      plugins: [tailwindcss()],
+    },
+  },
 }));

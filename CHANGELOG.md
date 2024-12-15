@@ -16,6 +16,10 @@
 - Semi-transparent window.
 - Open assets with default app.
 
+# What's Fixed
+
+- Application name not start with capital letter.
+
 This version is not code-signed, so please allow this app to survive under your anti-virus software manually. 🥲
 
 # v0.0.1
