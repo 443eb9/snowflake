@@ -11,11 +11,12 @@ use infer::MatcherType;
 use reqwest::Client;
 use serde::Deserialize;
 use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use uuid::Uuid;
 
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
-        FolderId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
+        FolderId, LibraryMeta, LibraryStatistics, Object, RawAsset, RecentLib, ResourceCache,
         SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
@@ -394,6 +395,35 @@ pub async fn import_web_assets(
 }
 
 #[tauri::command]
+pub fn recover_objects(
+    objects: Vec<Uuid>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Option<DuplicateAssets>, String> {
+    log::info!("Recovering objects {:?}", objects);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        let duplication = storage
+            .recover_objects(objects, true)
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())?;
+        Ok(duplication.reduce())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_recycle_bin(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Object>, String> {
+    log::info!("Getting recycle bin.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        Ok(storage.recycle_bin.values().cloned().collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_duplicated_assets(
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<DuplicateAssets, String> {
@@ -585,6 +615,34 @@ pub fn get_assets(
 }
 
 #[tauri::command]
+pub fn get_objects(
+    objects: Vec<Uuid>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Object>, String> {
+    log::info!("Getting objects {:?}", objects);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(objects
+            .into_iter()
+            .filter_map(|object| {
+                let asset = storage.assets.get(&AssetId(object));
+                let folder = storage.folders.get(&FolderId(object));
+
+                if asset.is_some() && folder.is_none() {
+                    Some(Object::Asset(asset.unwrap().clone()))
+                } else if asset.is_none() && folder.is_some() {
+                    Some(Object::Folder(folder.unwrap().clone()))
+                } else {
+                    None
+                }
+            })
+            .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_tags(
     tags: Vec<TagId>,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -707,14 +765,21 @@ pub fn modify_src_of(
 #[tauri::command]
 pub fn delete_assets(
     assets: Vec<AssetId>,
+    permanently: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Deleting assets {:?}", assets);
+    log::info!("Deleting assets {:?}, permanently: {}", assets, permanently);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for asset in assets {
-            if let Err(e) = storage.delete_asset(asset) {
-                return Err(e.to_string());
+        if permanently {
+            for asset in assets {
+                storage.delete_asset(asset).map_err(|e| e.to_string())?;
+            }
+        } else {
+            for asset in assets {
+                storage
+                    .move_asset_to_recycle_bin(asset)
+                    .map_err(|e| e.to_string())?;
             }
         }
 
@@ -727,14 +792,25 @@ pub fn delete_assets(
 #[tauri::command]
 pub fn delete_folders(
     folders: Vec<FolderId>,
+    permanently: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Deleting folders {:?}", folders);
+    log::info!(
+        "Deleting folders {:?}, permanently: {}",
+        folders,
+        permanently
+    );
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for folder in folders {
-            if let Err(e) = storage.delete_folder(folder) {
-                return Err(e.to_string());
+        if permanently {
+            for folder in folders {
+                storage.delete_folder(folder).map_err(|e| e.to_string())?;
+            }
+        } else {
+            for folder in folders {
+                storage
+                    .move_folder_to_recycle_bin(folder)
+                    .map_err(|e| e.to_string())?;
             }
         }
 

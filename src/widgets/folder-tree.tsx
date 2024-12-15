@@ -3,11 +3,12 @@ import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Input, makeStyles, T
 import { useNavigate } from "react-router-dom";
 import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../helpers/context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
 import { useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menu";
 import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
+import { SelectedClassTag } from "./items-grid";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -23,7 +24,7 @@ export function FolderTree() {
     const [folderMap, setFolderMap] = useState<Map<string, Folder> | undefined>()
 
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
@@ -47,7 +48,7 @@ export function FolderTree() {
             }
         }
 
-        if (fileManipulation && fileManipulation.data?.id_ty == "folder") { return }
+        if (fileManipulation?.data?.id.length == 1 && fileManipulation?.data?.id[0].ty == "folder") { return }
 
         fetch()
     }, [fileManipulation?.data])
@@ -59,14 +60,14 @@ export function FolderTree() {
 
         const folder = folderMap?.get(folderId)
         if (folder) {
-            selectedAssets?.setter([])
-            document.querySelectorAll(".selected-asset")
-                .forEach(elem => elem.classList.remove("selected-asset"))
+            selectedObjects?.setter([])
+            document.querySelectorAll(`.${SelectedClassTag}`)
+                .forEach(elem => elem.classList.remove(SelectedClassTag))
             browsingFolder?.setter({
                 id: folderId,
                 name: folder.name,
-                content: folder.content,
-                collection: false,
+                content: folder.content.map(a => { return { id: a, ty: "asset" } }),
+                specialTy: "folder",
             })
         }
     }
@@ -88,7 +89,7 @@ export function FolderTree() {
                     const { name, ...treeItemProps } = flatTreeItem.getTreeItemProps()
 
                     const id = treeItemProps.value as string
-                    const editing = fileManipulation?.data?.ty != undefined && fileManipulation.data.id.includes(id)
+                    const editing = fileManipulation?.data?.op != undefined && fileManipulation.data.id.includes({ id: id, ty: "folder" })
 
                     return (
                         <FlatTreeItem
@@ -111,9 +112,8 @@ export function FolderTree() {
                                         target: "folder",
                                     })
                                     fileManipulation?.setter({
-                                        id: [id],
-                                        id_ty: "folder",
-                                        ty: undefined,
+                                        id: [{ id, ty: "folder" }],
+                                        op: undefined,
                                         submit: undefined,
                                     })
                                     showContextMenu({ event: e })

@@ -1,44 +1,55 @@
 import { useContext, useEffect } from "react"
-import { browsingFolderContext, fileManipulationContext, selectedAssetsContext, StateContext, VirtualFolder } from "./context-provider"
-import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "../backend"
+import { browsingFolderContext, fileManipulationContext, selectedObjectsContext, StateContext, VirtualFolder } from "./context-provider"
+import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, ImportAssets, ItemId, MoveAssetsTo, MoveFoldersTo, RenameAsset, RenameFolder } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/err-toast"
 import MsgToast from "../widgets/msg-toast"
 import DuplicationList from "../widgets/duplication-list"
 import { t } from "../i18n"
+import { decodeId } from "../util"
+import { SelectedClassTag } from "../widgets/items-grid"
 
 export default function FileManipulator() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
     const fileManipulation = useContext(fileManipulationContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
-    async function handleAssetDeletion(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>) {
-        if (!browsingFolder?.data || !selectedAssets?.data) {
+    async function handleAssetDeletion(
+        browsingFolder: StateContext<VirtualFolder>,
+        selectedObjects: StateContext<ItemId[]>,
+        assets: string[],
+        permanently: boolean,
+    ) {
+        if (!browsingFolder?.data || !selectedObjects?.data) {
             return
         }
 
         browsingFolder.setter({
             ...browsingFolder.data,
-            content: [...browsingFolder.data.content.filter((id: any) => !selectedAssets.data?.includes(id))]
+            content: [...browsingFolder.data.content.filter(id => selectedObjects.data?.find(selected => selected.id == id.id) == undefined)]
         })
-        await DeleteAssets({ assets: [...selectedAssets?.data?.values() ?? []] })
+        await DeleteAssets({ assets, permanently })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedAssets.setter([])
+        selectedObjects.setter([])
     }
 
-    async function handleAssetRename(browsingFolder: StateContext<VirtualFolder>, selectedAssets: StateContext<string[]>, newName: string) {
-        if (!browsingFolder?.data || !selectedAssets?.data || selectedAssets.data.length != 1) {
+    async function handleAssetRename(
+        browsingFolder: StateContext<VirtualFolder>,
+        selectedObjects: StateContext<ItemId[]>,
+        newName: string,
+        asset: string,
+    ) {
+        if (!browsingFolder?.data || !selectedObjects?.data || selectedObjects.data.length != 1) {
             return
         }
-        const target = selectedAssets.data.values().next().value as string
-        await RenameAsset({ asset: target, name: newName })
+        await RenameAsset({ asset, name: newName })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedAssets.setter([])
+        selectedObjects.setter([])
         browsingFolder.setter({
             ...browsingFolder.data,
         })
@@ -46,21 +57,22 @@ export default function FileManipulator() {
 
     async function handleFolderDeletion(
         browsingFolder: StateContext<VirtualFolder>,
-        selectedAssets: StateContext<string[]>,
+        selectedObjects: StateContext<ItemId[]>,
         targetIds: string[],
+        permanently: boolean,
     ) {
-        await DeleteFolders({ folders: targetIds })
+        await DeleteFolders({ folders: targetIds, permanently })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder.data?.id && targetIds.includes(browsingFolder.data?.id)) {
             browsingFolder.setter(undefined)
-            selectedAssets.setter([])
+            selectedObjects.setter([])
         }
     }
 
     async function handleFolderCreation(
         newNames: string[],
-        parent: string
+        parent: string,
     ) {
         await CreateFolders({ folderNames: newNames, parent })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -68,7 +80,7 @@ export default function FileManipulator() {
 
     async function handleFolderRename(
         browsingFolder: StateContext<VirtualFolder>,
-        selectedAssets: StateContext<string[]>,
+        selectedObjects: StateContext<ItemId[]>,
         targetId: string,
         newName: string,
     ) {
@@ -77,7 +89,7 @@ export default function FileManipulator() {
 
         if (targetId == browsingFolder.data?.id) {
             browsingFolder.setter(undefined)
-            selectedAssets.setter([])
+            selectedObjects.setter([])
         }
     }
 
@@ -110,7 +122,8 @@ export default function FileManipulator() {
         if (folder) {
             browsingFolder.setter({
                 ...folder,
-                collection: false,
+                content: folder.content.map(a => { return { id: a, ty: "asset" } }),
+                specialTy: "folder",
             })
 
             if (dup) {
@@ -126,71 +139,73 @@ export default function FileManipulator() {
 
     async function handleAssetsMove(
         browsingFolder: StateContext<VirtualFolder>,
-        selectedAssets: StateContext<string[]>,
+        selectedObjects: StateContext<ItemId[]>,
         moved: string[],
         target: string,
     ) {
         await MoveAssetsTo({ assets: moved, folder: target })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
+        selectedObjects.setter(selectedObjects.data?.filter(a => !moved.includes(a.id)))
         if (browsingFolder.data) {
             browsingFolder.setter({
                 ...browsingFolder.data,
-                content: browsingFolder.data.content.filter(c => !moved.includes(c))
+                content: browsingFolder.data.content.filter(c => !moved.includes(c.id))
             })
         }
     }
 
     async function handleFoldersMove(
-        selectedAssets: StateContext<string[]>,
+        selectedObjects: StateContext<ItemId[]>,
         moved: string[],
         target: string,
     ) {
         await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedAssets.setter(selectedAssets.data?.filter(a => !moved.includes(a)))
+        selectedObjects.setter(selectedObjects.data?.filter(a => !moved.includes(a.id)))
     }
 
     useEffect(() => {
         const data = fileManipulation?.data
-        if (data?.submit == undefined || !browsingFolder || !selectedAssets) { return }
+        if (data?.submit == undefined || !browsingFolder || !selectedObjects) { return }
 
-        switch (data.id_ty) {
-            case "folder":
-                switch (data.ty) {
-                    case "rename": handleFolderRename(browsingFolder, selectedAssets, data.id[0], data.submit[0]); break
-                    case "deletion": handleFolderDeletion(browsingFolder, selectedAssets, data.id); break
-                    case "create": handleFolderCreation(data.submit, data.id[0]); break
-                    case "import": handleFoldersImport(data.submit, data.id[0]); break
-                    case "move": handleFoldersMove(selectedAssets, data.id, data.submit[0]); break
-                }
-                break
-            case "assets":
-                switch (data.ty) {
-                    case "rename": handleAssetRename(browsingFolder, selectedAssets, data.submit[0]); break
-                    case "deletion": handleAssetDeletion(browsingFolder, selectedAssets); break
-                    case "create": console.error("Creating an asset is invalid."); break
-                    case "import": handleAssetsImport(browsingFolder, data.submit, data.id[0]); break
-                    case "move": handleAssetsMove(browsingFolder, selectedAssets, data.id, data.submit[0]); break
-                }
-                break
-            case "collection":
-                break
+        const assets = data.id.filter(id => id.ty == "asset").map(id => id.id)
+        const folder = data.id.filter(id => id.ty == "folder").map(id => id.id)
+
+        if (folder.length > 0) {
+            switch (data.op) {
+                case "rename": handleFolderRename(browsingFolder, selectedObjects, folder[0], data.submit[0]); break
+                case "deletion": handleFolderDeletion(browsingFolder, selectedObjects, folder, false); break
+                case "deletionPermanent": handleFolderDeletion(browsingFolder, selectedObjects, folder, true); break
+                case "create": handleFolderCreation(data.submit, folder[0]); break
+                case "import": handleFoldersImport(data.submit, folder[0]); break
+                case "move": handleFoldersMove(selectedObjects, folder, data.submit[0]); break
+            }
+        }
+
+        if (assets.length > 0) {
+            switch (data.op) {
+                case "rename": handleAssetRename(browsingFolder, selectedObjects, data.submit[0], assets[0]); break
+                case "deletion": handleAssetDeletion(browsingFolder, selectedObjects, assets, false); break
+                case "deletionPermanent": handleAssetDeletion(browsingFolder, selectedObjects, assets, true); break
+                case "create": console.error("Creating an asset is invalid."); break
+                case "import": handleAssetsImport(browsingFolder, data.submit, assets[0]); break
+                case "move": handleAssetsMove(browsingFolder, selectedObjects, assets, data.submit[0]); break
+            }
         }
 
         fileManipulation?.setter(undefined)
     }, [fileManipulation])
 
     useEffect(() => {
-        document.querySelectorAll(".selected-asset")
+        document.querySelectorAll(`.${SelectedClassTag}`)
             .forEach(elem => {
-                if (!selectedAssets?.data?.includes(elem.id)) {
-                    elem.classList.remove("selected-asset")
+                if (selectedObjects?.data?.find(selected => selected.id == decodeId(elem.id).id) == undefined) {
+                    elem.classList.remove(SelectedClassTag)
                 }
             })
-    }, [selectedAssets?.data])
+    }, [selectedObjects?.data])
 
     return <></>
 }

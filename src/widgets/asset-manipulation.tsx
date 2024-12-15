@@ -1,7 +1,7 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
 import { Add20Regular, ArrowDownload20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
-import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedAssetsContext } from "../helpers/context-provider"
+import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedObjectsContext } from "../helpers/context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
 import { t } from "../i18n"
 
@@ -13,7 +13,7 @@ const renameInputStyleHook = makeStyles({
 
 export default function AssetManipulation() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const overlays = useContext(overlaysContext)
 
@@ -23,22 +23,20 @@ export default function AssetManipulation() {
     const [renamePopoverOpen, setRenamePopoverOpen] = useState(false)
 
     const handleDelete = () => {
-        if (fileManipulation && selectedAssets?.data) {
-            fileManipulation.setter({
-                id: selectedAssets.data,
-                ty: "deletion",
-                id_ty: "assets",
+        if (selectedObjects?.data) {
+            fileManipulation?.setter({
+                id: selectedObjects.data,
+                op: "deletion",
                 submit: [],
             })
         }
     }
 
     const handleRename = () => {
-        if (browsingFolder && fileManipulation && selectedAssets?.data) {
-            fileManipulation.setter({
-                id: selectedAssets.data,
-                ty: "rename",
-                id_ty: "assets",
+        if (browsingFolder && selectedObjects?.data) {
+            fileManipulation?.setter({
+                id: selectedObjects.data,
+                op: "rename",
                 submit: [newName],
             })
             setRenamePopoverOpen(false)
@@ -57,9 +55,8 @@ export default function AssetManipulation() {
 
         if (items) {
             fileManipulation?.setter({
-                id: [parent],
-                ty: "import",
-                id_ty: folder ? "folder" : "assets",
+                id: [{ id: parent, ty: folder ? "folder" : "asset" }],
+                op: "import",
                 submit: items,
             })
         }
@@ -70,16 +67,15 @@ export default function AssetManipulation() {
         if (!parent) { return }
 
         fileManipulation?.setter({
-            id: [parent],
-            id_ty: "folder",
-            ty: "create",
+            id: [{ id: parent, ty: "folder" }],
+            op: "create",
             submit: ["New Folder"],
         })
     }
 
-    const selectedCount = selectedAssets?.data?.length ?? 0
+    const selectedCount = selectedObjects?.data?.length ?? 0
 
-    if (!browsingFolder?.data) {
+    if (!browsingFolder?.data || browsingFolder.data.specialTy == "recycleBin") {
         return <></>
     }
 
@@ -112,7 +108,7 @@ export default function AssetManipulation() {
             </div>
             <div className="flex gap-1">
                 {
-                    !browsingFolder?.data?.collection &&
+                    !browsingFolder?.data?.specialTy &&
                     <>
                         <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} />
                         <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} />

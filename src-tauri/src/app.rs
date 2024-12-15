@@ -1,5 +1,5 @@
 use std::{
-    fs::{copy, create_dir_all, metadata, read, read_dir, File},
+    fs::{copy, create_dir_all, metadata, read, read_dir, remove_file, File},
     io::Write,
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
@@ -16,7 +16,6 @@ use thiserror::Error;
 use uuid::Uuid;
 
 pub const LIBRARY_STORAGE: &str = "snowflake.json";
-pub const TEMP_RECYCLE_BIN: &str = "recycle_bin";
 pub const IMAGE_ASSETS: &str = "images";
 pub const DATA: &str = "app_meta.json";
 pub const SETTINGS: &str = "resources/settings_default.json";
@@ -274,7 +273,7 @@ fn collect_path(
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct DuplicateAssets(pub HashMap<u32, Vec<AssetId>>);
 
 impl DuplicateAssets {
@@ -291,6 +290,13 @@ pub struct AssetId(pub Uuid);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TagId(pub Uuid);
+
+#[derive(Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub enum Object {
+    Asset(Asset),
+    Folder(Folder),
+}
 
 #[derive(Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -423,6 +429,10 @@ pub struct Storage {
     pub tags: HashMap<TagId, Tag>,
     pub folders: HashMap<FolderId, Folder>,
     pub assets: HashMap<AssetId, Asset>,
+    // Backward compatibility 0.0.1
+    #[serde(default)]
+    pub recycle_bin: HashMap<Uuid, Object>,
+    // Backward compatibility 0.0.1
     #[serde(default)]
     pub lib_meta: LibraryMeta,
 }
@@ -440,7 +450,6 @@ impl Storage {
         }
 
         let _ = create_dir_all(root_path.join(IMAGE_ASSETS));
-        let _ = create_dir_all(root_path.join(TEMP_RECYCLE_BIN));
 
         let mut folders = HashMap::default();
         let mut assets = HashMap::default();
@@ -462,6 +471,7 @@ impl Storage {
             tags: Default::default(),
             folders,
             assets,
+            recycle_bin: Default::default(),
             lib_meta: LibraryMeta::new(
                 root_path.file_name().unwrap().to_string_lossy().to_string(),
             ),
@@ -586,6 +596,39 @@ impl Storage {
         ))
     }
 
+    pub fn move_asset_to_recycle_bin(&mut self, id: AssetId) -> AppResult<()> {
+        if let Some(asset) = self.assets.get(&id).cloned() {
+            if let Some(parent) = self.folders.get_mut(&asset.parent) {
+                parent.content.remove(&id);
+            }
+
+            self.cache.remove_asset(asset.id);
+            self.recycle_bin.insert(id.0, Object::Asset(asset));
+
+            Ok(())
+        } else {
+            Err(AppError::AssetNotFount(id))
+        }
+    }
+
+    pub fn move_folder_to_recycle_bin(&mut self, id: FolderId) -> AppResult<()> {
+        if let Some(folder) = self.folders.get(&id).cloned() {
+            for asset in folder.content.clone() {
+                self.cache.remove_asset(asset);
+            }
+
+            if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
+                parent.children.remove(&id);
+            }
+
+            self.recycle_bin.insert(id.0, Object::Folder(folder));
+
+            Ok(())
+        } else {
+            Err(AppError::FolderNotFount(id))
+        }
+    }
+
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
@@ -593,12 +636,7 @@ impl Storage {
             }
 
             self.cache.remove_asset(asset.id);
-
-            let file_name = asset.get_file_name_id();
-            let _ = std::fs::rename(
-                self.cache.root.join(IMAGE_ASSETS).join(&file_name),
-                self.cache.root.join(TEMP_RECYCLE_BIN).join(file_name),
-            );
+            remove_file(asset.get_file_path(&self.cache.root))?;
 
             Ok(())
         } else {
@@ -608,8 +646,13 @@ impl Storage {
 
     pub fn delete_folder(&mut self, id: FolderId) -> AppResult<()> {
         if let Some(folder) = self.folders.remove(&id) {
-            for asset in folder.content {
+            for asset in folder.content.clone() {
+                self.cache.remove_asset(asset);
                 self.delete_asset(asset)?;
+            }
+
+            for child in folder.children {
+                self.delete_folder(child)?;
             }
 
             if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
@@ -620,6 +663,78 @@ impl Storage {
         } else {
             Err(AppError::FolderNotFount(id))
         }
+    }
+
+    pub fn recover_objects(
+        &mut self,
+        objects: Vec<Uuid>,
+        recover_folder_content: bool,
+    ) -> AppResult<DuplicateAssets> {
+        let mut recover_recursion = Vec::new();
+        for (id, object) in objects
+            .into_iter()
+            .filter_map(|id| self.recycle_bin.get(&id).cloned().map(|obj| (id, obj)))
+            .collect::<Vec<_>>()
+        {
+            match object {
+                Object::Asset(asset) => {
+                    if let Some(parent) = self.folders.get_mut(&asset.parent) {
+                        parent.content.insert(asset.id);
+                    } else {
+                        recover_recursion.push(asset.parent.0);
+
+                        let parent = self
+                            .recycle_bin
+                            .get_mut(&asset.parent.0)
+                            .and_then(|parent| match parent {
+                                Object::Folder(folder) => Some(folder),
+                                _ => None,
+                            });
+
+                        if let Some(parent) = parent {
+                            parent.content.insert(asset.id);
+                        }
+                    }
+
+                    self.cache
+                        .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
+                    self.assets.insert(asset.id, asset);
+                }
+                Object::Folder(folder) => {
+                    match self.folders.entry(folder.id) {
+                        Entry::Occupied(mut e) => {
+                            e.get_mut().merge(folder.clone());
+                        }
+                        Entry::Vacant(e) => {
+                            e.insert(folder.clone());
+                        }
+                    }
+
+                    if let Some(parent) = folder.parent {
+                        dbg!();
+                        if let Some(parent) = self.folders.get_mut(&parent) {
+                            dbg!(&parent);
+                            parent.children.insert(folder.id);
+                        } else {
+                            dbg!();
+                            recover_recursion.push(parent.0);
+                        }
+                    }
+
+                    if recover_folder_content {
+                        recover_recursion.extend(folder.content.clone().into_iter().map(|id| id.0));
+                    }
+                }
+            }
+
+            self.recycle_bin.remove(&id);
+        }
+
+        if !recover_recursion.is_empty() {
+            self.recover_objects(recover_recursion, false)?;
+        }
+
+        Ok(DuplicateAssets::default())
     }
 
     pub fn create_folder(&mut self, name: String, parent: FolderId) -> AppResult<()> {
@@ -831,7 +946,7 @@ impl<'de> Deserialize<'de> for Color {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Folder {
     pub parent: Option<FolderId>,
@@ -854,6 +969,14 @@ impl Folder {
             meta,
             tags: Default::default(),
         }
+    }
+
+    pub fn merge(&mut self, another: Self) {
+        self.tags.extend(another.tags);
+        self.children.extend(another.children);
+        self.content.extend(another.content);
+
+        self.tags.dedup();
     }
 }
 
@@ -914,6 +1037,12 @@ impl Asset {
 
     pub fn get_file_path(&self, root: &Path) -> PathBuf {
         root.join(IMAGE_ASSETS).join(self.get_file_name_id())
+    }
+
+    pub fn compute_crc(&self, root: &Path) -> std::io::Result<u32> {
+        Ok(crc32fast::hash(&read(
+            root.join(IMAGE_ASSETS).join(self.get_file_name_id()),
+        )?))
     }
 }
 

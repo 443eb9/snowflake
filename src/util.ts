@@ -1,3 +1,5 @@
+import { Asset, Folder, ItemId, ItemObject, ItemTy } from "./backend"
+
 const units = ["B", "KB", "MB", "GB"]
 
 export function formatFileSize(bytes: number, precision = 1) {
@@ -11,4 +13,18 @@ export function formatFileSize(bytes: number, precision = 1) {
     const p = Math.pow(10, precision)
     const x = Math.round(value * p) / p
     return `${x} ${units[unit]}`
+}
+
+export function encodeId(id: string, ty: ItemTy) {
+    return `${ty}/${id}`
+}
+
+export function decodeId(id: string): ItemId {
+    const s = id.split("/")
+    return { id: s[1], ty: s[0] as ItemTy }
+}
+
+export function decodeItemObject(item: ItemObject): { ty: ItemTy, item: Folder | Asset } {
+    const obj = Object.entries(item)[0]
+    return { ty: obj[0] as ItemTy, item: obj[1] }
 }

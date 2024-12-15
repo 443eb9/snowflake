@@ -77,6 +77,19 @@ export type LibraryStatistics = {
     assetExt: { [ext: string]: number },
 }
 
+export type ItemObject = {
+    asset: Asset,
+} | {
+    folder: Folder,
+}
+
+export type ItemTy = "asset" | "folder"
+
+export type ItemId = {
+    id: string,
+    ty: ItemTy,
+}
+
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
 }
@@ -119,6 +132,14 @@ export function ExportLibrary(params: { rootFolder: string }): Promise<void> {
 
 export function GenStatistics(): Promise<LibraryStatistics> {
     return invoke("gen_statistics")
+}
+
+export function RecoverObjects(params: { objects: string[] }): Promise<void> {
+    return invoke("recover_objects", params)
+}
+
+export function GetRecycleBin(): Promise<ItemObject[]> {
+    return invoke("get_recycle_bin")
 }
 
 export function GetDuplicatedAssets(): Promise<DuplicateAssets> {
@@ -182,6 +203,10 @@ export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
     return invoke("get_assets", params)
 }
 
+export function GetObjects(params: { objects: string[] }): Promise<ItemObject[]> {
+    return invoke("get_objects", params)
+}
+
 export function GetTags(params: { tags: string[] }): Promise<Tag[]> {
     return invoke("get_tags", params)
 }
@@ -202,11 +227,11 @@ export function GetAssetsContainingTag(params: { tag: string }): Promise<string[
     return invoke("get_assets_containing_tag", params)
 }
 
-export function DeleteAssets(params: { assets: string[] }): Promise<void> {
+export function DeleteAssets(params: { assets: string[], permanently: boolean }): Promise<void> {
     return invoke("delete_assets", params)
 }
 
-export function DeleteFolders(params: { folders: string[] }): Promise<void> {
+export function DeleteFolders(params: { folders: string[], permanently: boolean }): Promise<void> {
     return invoke("delete_folders", params)
 }
 

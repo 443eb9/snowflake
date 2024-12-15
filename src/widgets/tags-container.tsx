@@ -30,17 +30,17 @@ export default function TagsContainer({
 
             const currentFolder = browsingFolder.data
 
-            if (isDismiss && currentFolder?.collection && newTags.find(t => t.id == currentFolder?.id) == undefined) {
+            if (isDismiss && currentFolder?.specialTy && newTags.find(t => t.id == currentFolder?.id) == undefined) {
                 browsingFolder.setter({
                     ...currentFolder,
-                    content: currentFolder.content.filter(itemId => itemId != associatedItem)
+                    content: currentFolder.content.filter(itemId => itemId.id != associatedItem)
                 })
             }
 
-            if (!isDismiss && currentFolder?.collection && selected.find(t => t.id == currentFolder.id) == undefined) {
+            if (!isDismiss && currentFolder?.specialTy && selected.find(t => t.id == currentFolder.id) == undefined) {
                 browsingFolder.setter({
                     ...currentFolder,
-                    content: [...currentFolder.content, associatedItem]
+                    content: [...currentFolder.content, { id: associatedItem, ty: "asset" }]
                 })
             }
 

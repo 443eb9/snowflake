@@ -4,7 +4,7 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
 import { Asset, GetAsset, GetAssetAbsPath, ModifySrcOf } from "../backend"
 import { convertFileSrc } from "@tauri-apps/api/core"
-import { selectedAssetsContext } from "../helpers/context-provider"
+import { selectedObjectsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
@@ -19,29 +19,29 @@ export default function DetailInfo() {
 
     const [newSrc, setNewSrc] = useState("")
 
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
-        if (!selectedAssets?.data) {
+        if (!selectedObjects?.data) {
             setAsset(undefined)
             return
         }
 
-        setSelectedCount(selectedAssets.data.length)
-        if (selectedAssets.data.length != 1) {
+        setSelectedCount(selectedObjects.data.length)
+        if (selectedObjects.data.length != 1) {
             setAsset(undefined)
             return
         }
 
-        const selected = selectedAssets.data[0]
-        if (asset && asset.id == selected) { return }
+        const selected = selectedObjects.data[0]
+        if (asset && asset.id == selected.id) { return }
 
         async function fetch() {
-            const asset = await GetAsset({ asset: selected })
+            const asset = await GetAsset({ asset: selected.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            const absPath = await GetAssetAbsPath({ asset: selected })
+            const absPath = await GetAssetAbsPath({ asset: selected.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (asset && absPath) {
@@ -51,13 +51,21 @@ export default function DetailInfo() {
             }
         }
 
-        fetch()
-    }, [selectedAssets?.data])
+        if (selected.ty == "asset") {
+            fetch()
+        }
+    }, [selectedObjects?.data])
 
     if (selectedCount != 1) {
         return (
             <Text className="opacity-50" size={600} italic>
                 {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
+            </Text>
+        )
+    } else if (selectedObjects?.data && selectedObjects?.data.length > 0 && selectedObjects?.data[0].ty == "folder") {
+        return (
+            <Text className="opacity-50" size={600} italic>
+                {t("detail.folderSelect")}
             </Text>
         )
     } else if (asset && assetAbsPath) {

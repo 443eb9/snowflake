@@ -2,14 +2,14 @@ import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-con
 import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components";
 import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedAssetsContext } from "../helpers/context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedObjectsContext } from "../helpers/context-provider";
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, QuickRef, Tag } from "../backend";
 import FilterableSearch from "./filterable-search";
 import { t } from "../i18n";
 import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
 
-export const CtxMenuId = "context-menu"
+export const CtxMenuId = "contextMenu"
 
 const buttonStyleHook = makeStyles({
     root: {
@@ -20,7 +20,7 @@ const buttonStyleHook = makeStyles({
 
 export default function ContextMenu() {
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
@@ -56,34 +56,31 @@ export default function ContextMenu() {
         const folderId = (ev.triggerEvent.target as HTMLElement).id
         if (folderId.length > 0) {
             fileManipulation?.setter({
-                id: [folderId],
-                id_ty: "folder",
-                ty: "deletion",
+                id: [{ id: folderId, ty: "folder" }],
+                op: "deletion",
                 submit: [],
             })
-        } else if (selectedAssets?.data && browsingFolder && selectedAssets && fileManipulation) {
+        } else if (selectedObjects?.data && browsingFolder && selectedObjects && fileManipulation) {
             fileManipulation.setter({
-                id: selectedAssets.data,
-                id_ty: "assets",
-                ty: "deletion",
+                id: selectedObjects.data,
+                op: "deletion",
                 submit: [],
             })
         }
     }
 
     const handleRename = () => {
-        if (fileManipulation?.data?.id_ty == "folder") {
+        if (fileManipulation?.data?.id[0].ty == "folder") {
             fileManipulation.setter({
                 ...fileManipulation.data,
-                ty: "rename",
+                op: "rename",
             })
         }
 
-        if (selectedAssets?.data?.length == 1 && browsingFolder && selectedAssets && fileManipulation) {
+        if (selectedObjects?.data?.length == 1 && browsingFolder && selectedObjects && fileManipulation) {
             fileManipulation.setter({
-                id: selectedAssets.data,
-                id_ty: "assets",
-                ty: "rename",
+                id: selectedObjects.data,
+                op: "rename",
                 submit: undefined,
             })
         }
@@ -97,19 +94,17 @@ export default function ContextMenu() {
             case "folder":
                 if (contextMenuProp.data?.extra) {
                     fileManipulation?.setter({
-                        id: [contextMenuProp.data?.extra],
-                        id_ty: "folder",
-                        ty: "move",
+                        id: [{ id: contextMenuProp.data?.extra, ty: "folder" }],
+                        op: "move",
                         submit: [dst.id],
                     })
                 }
                 break
             case "assets":
-                if (selectedAssets?.data) {
+                if (selectedObjects?.data) {
                     fileManipulation?.setter({
-                        id: selectedAssets?.data,
-                        id_ty: "assets",
-                        ty: "move",
+                        id: selectedObjects?.data,
+                        op: "move",
                         submit: [dst.id],
                     })
                 }
@@ -118,9 +113,9 @@ export default function ContextMenu() {
     }
 
     const handleTagDelta = async (tag: Tag, add: boolean) => {
-        const assets = selectedAssets?.data
+        const assets = selectedObjects?.data
         if (assets) {
-            await DeltaTagsOf({ assets, tags: [tag.id], mode: add ? "Add" : "Remove" })
+            await DeltaTagsOf({ assets: assets.map(a => a.id), tags: [tag.id], mode: add ? "Add" : "Remove" })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
     }
@@ -137,8 +132,8 @@ export default function ContextMenu() {
                 }
                 break
             case "assets":
-                if (selectedAssets?.data) {
-                    await QuickRef({ ty: { asset: selectedAssets.data } })
+                if (selectedObjects?.data) {
+                    await QuickRef({ ty: { asset: selectedObjects.data.map(a => a.id) } })
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
@@ -152,7 +147,7 @@ export default function ContextMenu() {
     }
 
     const multipleSelected = contextMenuProp?.data?.target == "assets" &&
-        selectedAssets?.data?.length != undefined && selectedAssets.data.length > 1
+        selectedObjects?.data?.length != undefined && selectedObjects.data.length > 1
 
     if (!allFolders || !allTags) {
         return <></>

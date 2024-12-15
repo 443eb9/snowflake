@@ -4,13 +4,13 @@ import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/err-toast";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedAssetsContext } from "./context-provider";
+import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedObjectsContext } from "./context-provider";
 import SuccessToast from "../widgets/success-toast";
 import { t } from "../i18n";
 
 
 export default function ShortcutKeyProvider(props: HotKeysProps) {
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
     const browsingFolder = useContext(browsingFolderContext)
     const fileManipulation = useContext(fileManipulationContext)
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
@@ -48,31 +48,28 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         },
         delete: () => {
-            if (selectedAssets?.data) {
+            if (selectedObjects?.data) {
                 fileManipulation?.setter({
-                    id: selectedAssets.data,
-                    id_ty: "assets",
-                    ty: "deletion",
+                    id: selectedObjects.data,
+                    op: "deletion",
                     submit: [],
                 })
             }
         },
         rename: () => {
-            if (selectedAssets?.data && selectedAssets.data.length == 1) {
+            if (selectedObjects?.data && selectedObjects.data.length == 1) {
                 fileManipulation?.setter({
-                    id: selectedAssets.data,
-                    ty: "rename",
-                    id_ty: "assets",
+                    id: selectedObjects.data,
+                    op: "rename",
                     submit: undefined,
                 })
             }
         },
         newFolder: () => {
-            if (browsingFolder?.data?.id && !browsingFolder.data.collection) {
+            if (browsingFolder?.data?.id && !browsingFolder.data.specialTy) {
                 fileManipulation?.setter({
-                    id: [browsingFolder.data.id],
-                    ty: "create",
-                    id_ty: "folder",
+                    id: [{ id: browsingFolder.data.id, ty: "folder" }],
+                    op: "create",
                     submit: ["New Folder"],
                 })
             }

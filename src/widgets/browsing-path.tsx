@@ -13,7 +13,7 @@ export function BrowsingPath() {
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const pathChangeHandler = async (pop: number) => {
-        if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.collection) {
+        if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.specialTy) {
             return
         }
 
@@ -29,26 +29,35 @@ export function BrowsingPath() {
             browsingFolder.setter({
                 id: currentFolder.id,
                 name: currentFolder.name,
-                content: currentFolder.content,
-                collection: false,
+                content: currentFolder.content.map(a => { return { id: a, ty: "asset" } }),
+                specialTy: "folder",
             })
         }
     }
 
     useEffect(() => {
         async function fetch() {
-            if (!browsingFolder?.data?.id) {
+            if (!browsingFolder?.data) {
                 return
             }
 
-            if (browsingFolder.data.collection) {
-                setVirtualPath([`Tag collection ${browsingFolder.data.name}`])
-            } else {
-                const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
-                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                if (path) {
-                    setVirtualPath(path)
-                }
+            switch (browsingFolder.data.specialTy) {
+                case "collection":
+                    setVirtualPath([`Tag collection ${browsingFolder.data.name}`])
+                    break
+                case "recycleBin":
+                    setVirtualPath([browsingFolder.data.name])
+                    break
+                case "folder":
+                    if (browsingFolder.data.id) {
+                        const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+                        if (path) {
+                            setVirtualPath(path)
+                        }
+                    }
+                    break
             }
         }
 

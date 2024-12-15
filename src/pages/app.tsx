@@ -1,4 +1,4 @@
-import AssetsGrid from "../widgets/assets-grid";
+import ItemsGrid from "../widgets/items-grid";
 import Browser from "../widgets/browser";
 import DetailInfo from "../widgets/detail-info";
 import WindowControls from "../widgets/window-controls";
@@ -17,6 +17,8 @@ import "../context.css"
 import { t } from "../i18n";
 import { overlaysContext } from "../helpers/context-provider";
 import ShortcutKeyProvider from "../helpers/shortcut-key-provider";
+import RecycleBin from "../widgets/recycle-bin";
+import RecycleBinContextMenu from "../widgets/recycle-bin-context-menu";
 
 export default function MainApp() {
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
@@ -54,12 +56,13 @@ export default function MainApp() {
                     <div className="flex gap-2">
                         <TagsManager />
                         <Button icon={<Settings20Regular />} onClick={() => overlay?.setter({ ty: "settings" })} />
+                        <RecycleBin />
                     </div>
                 </div>
                 <div className="w-full flex h-full flex-col gap-1">
                     <BrowsingPath />
                     <AssetManipulation />
-                    <AssetsGrid />
+                    <ItemsGrid />
                 </div>
                 <div className="flex flex-col gap-2">
                     <div className="flex flex-col gap-2">
@@ -71,6 +74,7 @@ export default function MainApp() {
                     </div>
                 </div>
                 <ContextMenu />
+                <RecycleBinContextMenu />
                 <FileManipulator />
             </div>
         </ShortcutKeyProvider>

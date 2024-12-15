@@ -5,6 +5,8 @@ import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext } from "../helpers/context-provider";
 import ErrToast from "./err-toast";
 import { GlobalToasterId } from "../main";
+import { SelectableClassTag } from "./items-grid";
+import { encodeId } from "../util";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -34,7 +36,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
         fetch()
     }, [asset.id])
 
-    const onRename = fileManipulation?.data?.ty == "rename" && fileManipulation.data.id[0] == asset.id
+    const onRename = fileManipulation?.data?.op == "rename" && fileManipulation.data.id[0].id == asset.id
 
     useEffect(() => {
         if (onRename) {
@@ -48,10 +50,10 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
 
     return (
         <Button
-            id={asset.id}
-            className="flex flex-col gap-2 selectable-asset"
-            appearance="subtle"
             {...props}
+            id={encodeId(asset.id, "asset")}
+            className={`flex flex-col gap-2 ${SelectableClassTag}`}
+            appearance="subtle"
         >
             <div className="flex h-full items-center">
                 <Image

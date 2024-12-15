@@ -3,12 +3,13 @@ import { List, ListItem } from "@fluentui/react-list-preview"
 import { Button, makeStyles, useToastController } from "@fluentui/react-components"
 import { Collections20Regular } from "@fluentui/react-icons"
 import { GetAssetsContainingTag, Tag } from "../backend"
-import { allTagsContext, browsingFolderContext, contextMenuPropContext, selectedAssetsContext } from "../helpers/context-provider"
+import { allTagsContext, browsingFolderContext, contextMenuPropContext, selectedObjectsContext } from "../helpers/context-provider"
 import TagName from "./tag-name"
 import { TriggerEvent, useContextMenu } from "react-contexify"
 import { CtxMenuId } from "./context-menu"
 import ErrToast from "./err-toast"
 import { GlobalToasterId } from "../main"
+import { SelectedClassTag } from "./items-grid"
 
 const buttonStyleHook = makeStyles({
     root: {
@@ -20,7 +21,7 @@ const buttonStyleHook = makeStyles({
 export default function TagsCollections() {
     const buttonStyle = buttonStyleHook()
     const browsingFolder = useContext(browsingFolderContext)
-    const selectedAssets = useContext(selectedAssetsContext)
+    const selectedObjects = useContext(selectedObjectsContext)
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const { show: showCtxMenu } = useContextMenu({ id: CtxMenuId })
@@ -31,14 +32,14 @@ export default function TagsCollections() {
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data && assets) {
-            selectedAssets?.setter([])
-            document.querySelectorAll(".selected-asset")
-                .forEach(elem => elem.classList.remove("selected-asset"))
+            selectedObjects?.setter([])
+            document.querySelectorAll(`.${SelectedClassTag}`)
+                .forEach(elem => elem.classList.remove(SelectedClassTag))
             browsingFolder.setter({
                 id: tag.id,
                 name: tag.name,
-                content: assets,
-                collection: true,
+                content: assets.map(a => { return { id: a, ty: "asset" } }),
+                specialTy: "collection",
             })
         }
     }
