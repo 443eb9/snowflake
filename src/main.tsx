@@ -20,9 +20,9 @@ const root = createRoot(container!)
 
 root.render(
     <React.StrictMode>
-        <FluentProvider theme={webDarkTheme} className='test'>
+        <FluentProvider theme={webDarkTheme} style={{ backgroundColor: "transparent" }}>
             <ContextProvider>
-                <div className="w-[100vw] h-[100vh] overflow-hidden" style={{ backgroundColor: "var(--colorNeutralBackground1)" }}>
+                <div className="w-[100vw] h-[100vh] overflow-hidden">
                     <Toaster toasterId={GlobalToasterId} limit={3} pauseOnHover />
                     <LanguageSwitch />
                     <Suspense>

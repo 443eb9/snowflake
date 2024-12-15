@@ -24,6 +24,8 @@ pub fn run() {
             app.manage(Mutex::new(Option::<Storage>::None));
             app.manage(ResourceCache::new(app.handle()).unwrap());
             app.manage(Mutex::new(AppData::read(app.handle()).unwrap()));
+            let main_window = app.get_webview_window("main").unwrap();
+            window_vibrancy::apply_mica(main_window, Some(true)).unwrap();
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

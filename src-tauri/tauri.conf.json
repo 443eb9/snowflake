@@ -10,13 +10,15 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "title": "snowflake",
         "width": 1280,
         "height": 800,
         "decorations": false,
-        "dragDropEnabled": false
+        "dragDropEnabled": false,
+        "transparent": true
       }
     ],
     "security": {

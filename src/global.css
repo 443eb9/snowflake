@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html,
+body,
+#root {
+    background-color: transparent;
+}
+
 #root {
     height: 100vh;
     overflow: hidden;

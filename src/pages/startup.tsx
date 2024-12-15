@@ -147,6 +147,7 @@ export default function Startup() {
                             icon={<Library20Regular />}
                             onClick={openLibrary}
                             className="h-12"
+                            style={{ backgroundColor: "transparent" }}
                         >
                             {t("startup.btnOpenLib")}
                         </Button>
@@ -154,6 +155,7 @@ export default function Startup() {
                             icon={<New20Regular />}
                             onClick={initializeLibrary}
                             className="h-12"
+                            style={{ backgroundColor: "transparent" }}
                         >
                             {t("startup.btnInitLib")}
                         </Button>
@@ -162,6 +164,7 @@ export default function Startup() {
                                 <Button
                                     icon={<Clock20Regular />}
                                     className="h-12"
+                                    style={{ backgroundColor: "transparent" }}
                                 >
                                     {t("startup.btnRecent")}
                                 </Button>
