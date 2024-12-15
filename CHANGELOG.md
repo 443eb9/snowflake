@@ -12,6 +12,7 @@
 - Recycle bin.
   - Recover deleted objects.
   - Permanently delete object. This deletes the file in file system. If trying to permanently delete a folder, it's content and children will also be deleted, permanently, and you'll never be able to get that back.
+- Update checking. We won't force you to update the app (although this is recommended) but will remind you on startup.
 
 # What's Fixed
 

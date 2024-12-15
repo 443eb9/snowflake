@@ -12,6 +12,7 @@ import { overlaysContext } from "../helpers/context-provider";
 import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/msg-toast";
 import DuplicationList from "../widgets/duplication-list";
+import { app } from "@tauri-apps/api";
 
 export default function Startup() {
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -31,6 +32,34 @@ export default function Startup() {
         }
 
         fetch()
+    }, [])
+
+    useEffect(() => {
+        type GitTags = {
+            name: string,
+        }
+
+        async function check() {
+            const tags = await fetch("https://api.github.com/repos/443eb9/snowflake/tags")
+                .then(async resp => (await resp.json()) as GitTags[])
+                .catch(err => dispatch(err))
+
+            if (tags) {
+                const current = await app.getVersion()
+                const latest = tags[0].name
+
+                if (current != latest) {
+                    dispatchToast(
+                        <MsgToast
+                            title={t("update.title")}
+                            body={t("update.body", { current, latest })}
+                        />
+                    )
+                }
+            }
+        }
+
+        check()
     }, [])
 
     const dispatch = (ctn: string) => {

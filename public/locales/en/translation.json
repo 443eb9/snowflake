@@ -11,6 +11,8 @@
     "startup.btnInitLib": "Initialize Library",
     "startup.btnRecent": "Open Recent",
     "startup.noRecent": "No recent libraries.",
+    "update.title": "Update Available",
+    "update.body": "You are now using {{current}}, while the latest is {{latest}}",
     "asset-mani.rename": "New name",
     "asset-mani.delPerm.confirm": "Are you sure?",
     "asset-mani.importDialogTitle": "Select assets you want to import.",
