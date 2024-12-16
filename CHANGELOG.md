@@ -1,5 +1,10 @@
 # v0.0.3 [main branch, haven't released]
 
+# What's New
+
+- Loading screen on startup.
+- Refined overlay panels.
+
 # What's Fixed
 
 - Adding tag to an asset *visually* duplicates it. (Although it will disappear after refresh)

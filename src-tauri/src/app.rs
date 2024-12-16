@@ -434,11 +434,7 @@ pub struct Storage {
     pub tags: HashMap<TagId, Tag>,
     pub folders: HashMap<FolderId, Folder>,
     pub assets: HashMap<AssetId, Asset>,
-    // Backward compatibility 0.0.1
-    #[serde(default)]
     pub recycle_bin: HashSet<ItemId>,
-    // Backward compatibility 0.0.1
-    #[serde(default)]
     pub lib_meta: LibraryMeta,
 }
 
@@ -953,8 +949,6 @@ impl<'de> Deserialize<'de> for Color {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Folder {
-    // Backward compatibility 0.0.1
-    #[serde(default)]
     pub is_deleted: bool,
     pub parent: Option<FolderId>,
     pub id: FolderId,
@@ -991,8 +985,6 @@ pub struct Asset {
     pub props: AssetProperty,
     pub meta: Metadata,
     pub tags: Vec<TagId>,
-    // Backward compatibility 0.0.1
-    #[serde(default)]
     pub src: String,
 }
 
@@ -1064,45 +1056,11 @@ pub struct RasterGraphicsProperty {
 #[serde(rename_all = "camelCase")]
 pub struct VectorGraphicsProperty;
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub enum AssetType {
     RasterGraphics,
     VectorGraphics,
-}
-
-impl<'de> Deserialize<'de> for AssetType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        struct AssetTypeVisitor;
-        impl<'de> serde::de::Visitor<'de> for AssetTypeVisitor {
-            type Value = AssetType;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a string represents the type")
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                match v {
-                    "rasterGraphics" => Ok(AssetType::RasterGraphics),
-                    "vectorGraphics" => Ok(AssetType::VectorGraphics),
-                    // Backward compatibility 0.0.1
-                    "Image" => Ok(AssetType::RasterGraphics),
-                    _ => Err(serde::de::Error::unknown_variant(
-                        v,
-                        &["rasterGraphics", "vectorGraphics"],
-                    )),
-                }
-            }
-        }
-
-        deserializer.deserialize_str(AssetTypeVisitor)
-    }
 }
 
 impl AssetType {
