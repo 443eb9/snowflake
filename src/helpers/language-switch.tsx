@@ -2,7 +2,7 @@ import { useContext, useEffect } from "react"
 import { GetUserSettings } from "../backend"
 import i18n from "../i18n"
 import { settingsChangeFlagContext } from "./context-provider"
-import ErrToast from "../widgets/err-toast"
+import ErrToast from "../widgets/toasts/err-toast"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 

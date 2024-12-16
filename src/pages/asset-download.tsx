@@ -7,9 +7,9 @@ import { browsingFolderContext } from "../helpers/context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import { formatFileSize } from "../util";
 import { t } from "i18next";
-import ErrToast from "../widgets/err-toast";
+import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
-import MsgToast from "../widgets/msg-toast";
+import MsgToast from "../widgets/toasts/msg-toast";
 import DuplicationList from "../widgets/duplication-list";
 
 const eventTextStyleHook = makeStyles({

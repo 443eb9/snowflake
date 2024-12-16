@@ -1,9 +1,9 @@
 import { useContext, useState } from "react"
 import { overlaysContext } from "../helpers/context-provider"
-import AssetDownload from "../pages/asset-download"
+import AssetDownload from "./asset-download"
 import { Button } from "@fluentui/react-components"
 import { Dismiss20Regular } from "@fluentui/react-icons"
-import Settings from "../pages/settings"
+import Settings from "./settings"
 
 export default function OverlayPanel() {
     const overlays = useContext(overlaysContext)

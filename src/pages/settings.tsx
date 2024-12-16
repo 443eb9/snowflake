@@ -4,11 +4,11 @@ import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, Cha
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
-import ErrToast from "../widgets/err-toast";
+import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
-import MsgToast from "../widgets/msg-toast";
+import MsgToast from "../widgets/toasts/msg-toast";
 import { open } from "@tauri-apps/plugin-dialog";
-import SuccessToast from "../widgets/success-toast";
+import SuccessToast from "../widgets/toasts/success-toast";
 import { useNavigate } from "react-router-dom";
 
 export default function Settings() {

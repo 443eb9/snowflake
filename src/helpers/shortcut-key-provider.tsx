@@ -2,10 +2,10 @@ import { HotKeys, HotKeysProps } from "react-hotkeys";
 import { GetUserSettings, SaveLibrary } from "../backend";
 import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../main";
-import ErrToast from "../widgets/err-toast";
+import ErrToast from "../widgets/toasts/err-toast";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedItemsContext } from "./context-provider";
-import SuccessToast from "../widgets/success-toast";
+import SuccessToast from "../widgets/toasts/success-toast";
 import { t } from "../i18n";
 
 

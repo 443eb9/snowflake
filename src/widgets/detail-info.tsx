@@ -8,7 +8,7 @@ import { browsingFolderContext, selectedItemsContext } from "../helpers/context-
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
-import ErrToast from "./err-toast"
+import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
 
 export default function DetailInfo() {

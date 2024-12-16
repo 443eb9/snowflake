@@ -3,7 +3,7 @@ import { BinRecycle20Regular } from "@fluentui/react-icons";
 import { useContext } from "react";
 import { browsingFolderContext } from "../helpers/context-provider";
 import { GetRecycleBin } from "../backend";
-import ErrToast from "./err-toast";
+import ErrToast from "./toasts/err-toast";
 import { t } from "../i18n";
 import { decodeItem } from "../util";
 

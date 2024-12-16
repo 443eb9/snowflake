@@ -9,7 +9,7 @@ import TagName from "./tag-name";
 import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
 import { TinyColor } from "@ctrl/tinycolor";
 import { t } from "../i18n";
-import ErrToast from "./err-toast";
+import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 
 type TagEditingStatus = {

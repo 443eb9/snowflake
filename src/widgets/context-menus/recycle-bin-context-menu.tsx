@@ -1,9 +1,9 @@
 import { useContext, useState } from "react";
 import { Menu as CtxMenu, Item as CtxItem } from "react-contexify";
-import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider";
+import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "../../helpers/context-provider";
 import { Button, makeStyles, mergeClasses, Text } from "@fluentui/react-components";
 import { ArrowCounterclockwise20Regular, Delete20Regular } from "@fluentui/react-icons";
-import { t } from "../i18n";
+import { t } from "../../i18n";
 
 export const RecycleBinCtxMenuId = "recycleBinCtxMenu"
 

@@ -3,7 +3,7 @@ import { Asset, GetAssetAbsPath } from "../backend";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext } from "../helpers/context-provider";
-import ErrToast from "./err-toast";
+import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import { SelectableClassTag } from "./items-grid";
 import { encodeId } from "../util";

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
 import { GetAssetAbsPath } from "../backend"
 import { useContextMenu } from "react-contexify"
-import QuickRefContextMenu, { QuickRefCtxMenuId } from "../widgets/quick-ref-context-menu"
+import QuickRefContextMenu, { QuickRefCtxMenuId } from "../widgets/context-menus/quick-ref-context-menu"
 
 const appWindow = getCurrentWindow()
 

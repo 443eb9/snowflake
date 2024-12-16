@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ArrowExit20Regular } from "@fluentui/react-icons";
 import { GetLibraryMeta, GetLibraryStatistics, LibraryMeta, LibraryStatistics } from "../backend";
 import { useEffect, useState } from "react";
-import ErrToast from "../widgets/err-toast";
+import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import WindowControls from "../widgets/window-controls";
 

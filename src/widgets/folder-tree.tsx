@@ -5,8 +5,8 @@ import { Folder20Regular } from "@fluentui/react-icons";
 import { Folder, GetFolderTree, GetRootFolderId } from "../backend";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider";
 import { useContextMenu } from "react-contexify";
-import { CtxMenuId } from "./context-menu";
-import ErrToast from "./err-toast";
+import { CtxMenuId } from "./context-menus/context-menu";
+import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import { SelectedClassTag } from "./items-grid";
 

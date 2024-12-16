@@ -1,6 +1,6 @@
 import { Toast, ToastBody, ToastFooter, ToastTitle } from "@fluentui/react-components";
 import { ReactNode } from "react";
-import { t } from "../i18n";
+import { t } from "../../i18n";
 
 export default function ErrToast({ body, footer }: { body?: ReactNode, footer?: ReactNode }) {
     return (

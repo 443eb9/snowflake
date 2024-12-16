@@ -1,16 +1,16 @@
 import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, useToastController } from "@fluentui/react-components";
 import { Book20Regular, Clock20Regular, Library20Regular, New20Regular, Settings20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
-import ErrToast from "../widgets/err-toast";
+import ErrToast from "../widgets/toasts/err-toast";
 import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib, UnloadLibrary } from "../backend";
 import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
-import OverlayPanel from "../widgets/overlay-panel";
+import OverlayPanel from "./overlay-panel";
 import { overlaysContext } from "../helpers/context-provider";
 import { GlobalToasterId } from "../main";
-import MsgToast from "../widgets/msg-toast";
+import MsgToast from "../widgets/toasts/msg-toast";
 import DuplicationList from "../widgets/duplication-list";
 import { app } from "@tauri-apps/api";
 
