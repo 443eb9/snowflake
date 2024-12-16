@@ -140,16 +140,7 @@ impl AppData {
         let mut data = if !dir.exists() || debug {
             Self::default()
         } else {
-            let mut data = match serde_json::from_reader(File::open(dir)?) {
-                Ok(ok) => ok,
-                Err(_) => {
-                    log::info!("Failed to parse app data, recreating one.");
-                    let data = Self::default();
-                    data.save(app)?;
-                    data
-                }
-            };
-
+            let mut data = serde_json::from_reader::<_, Self>(File::open(dir)?)?;
             data.recent_libs = data
                 .recent_libs
                 .into_iter()

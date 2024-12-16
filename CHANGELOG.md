@@ -9,6 +9,7 @@
 
 - Adding tag to an asset *visually* duplicates it. (Although it will disappear after refresh)
 - The selection area can go out of the container.
+- Library data gets overridden if failed to parse.
 
 # v0.0.2
 
