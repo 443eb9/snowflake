@@ -37,7 +37,7 @@
     "detail.src": "Source",
     "detail.tags": "Tags",
     "quickRefCtxMenu.close": "Close",
-    "recycleBin.title": "Recycle Bin [Unstable]",
+    "recycleBin.title": "Recycle Bin",
     "settings.experimental": "Experimental",
     "settings.experimental.aigcDetect": "AIGC Detection",
     "settings.general": "General",

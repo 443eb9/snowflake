@@ -62,7 +62,7 @@ export default function Settings() {
                         defaultSelectedValue="general"
                         onTabSelect={(_, data) => setCurrentTab(data.value as Tab)}
                         className="h-full p-2 rounded-md"
-                        style={{ backgroundColor: "var(--colorNeutralBackground2)" }}
+                        style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
                     >
                         <Tab icon={<Box20Regular />} value="general">{t("settings.general")}</Tab>
                         <Tab icon={<Book20Regular />} value="library">{t("settings.library")}</Tab>
@@ -173,7 +173,7 @@ function LibraryTab(props: TabProps) {
     return (
         <>
             <SettingsItem title="export" currentTab={props.currentTab}>
-                <Button icon={<ArrowExport20Regular />} appearance="subtle" onClick={handleExport} />
+                <Button icon={<ArrowExport20Regular />} onClick={handleExport} />
             </SettingsItem>
             <SettingsItem title="name" currentTab={props.currentTab}>
                 <Input
@@ -189,7 +189,7 @@ function LibraryTab(props: TabProps) {
                 />
             </SettingsItem>
             <SettingsItem title="statistics" currentTab={props.currentTab}>
-                <Button icon={<ChartMultiple20Regular />} appearance="subtle" onClick={() => nav("/stat")} />
+                <Button icon={<ChartMultiple20Regular />} onClick={() => nav("/stat")} />
             </SettingsItem>
         </>
     )
@@ -335,7 +335,7 @@ function SelectableCandidates({
     return (
         <Menu>
             <MenuTrigger>
-                <MenuButton className="h-9" appearance="subtle">{t(`settings.${currentTab}.${title}.${value}`)}</MenuButton>
+                <MenuButton className="h-9">{t(`settings.${currentTab}.${title}.${value}`)}</MenuButton>
             </MenuTrigger>
             <MenuPopover>
                 <MenuList>
