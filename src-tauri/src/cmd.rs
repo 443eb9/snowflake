@@ -15,8 +15,8 @@ use uuid::Uuid;
 
 use crate::{
     app::{
-        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
-        FolderId, Item, ItemId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
+        AppData, AppError, Asset, AssetId, AssetType, DuplicateAssets, Folder, FolderId, Item,
+        ItemId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
         SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
@@ -201,7 +201,7 @@ fn export_recursion(storage: &Storage, folder: &FolderId, path: &Path) -> Result
             if let Some(asset) = storage.assets.get(asset) {
                 copy(
                     asset.get_file_path(&storage.cache.root),
-                    folder_path.join(asset.get_file_name()),
+                    folder_path.join(asset.gen_file_name()),
                 )?;
             }
         }
@@ -971,6 +971,11 @@ pub async fn quick_ref(
         return Err("Main window not found.".into());
     };
 
+    let Ok(Some(monitor)) = main_window.current_monitor() else {
+        return Err("Monitor not found.".into());
+    };
+    let screen_resolution = [monitor.size().width, monitor.size().height];
+
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         let ids: Vec<_> = match &ty {
             QuickRefSrcTy::Asset(ids) => ids.iter().collect(),
@@ -993,23 +998,22 @@ pub async fn quick_ref(
                 return Err(asset_doesnt_exist(*asset));
             };
 
-            // TODO remove this once models get supported, as this pattern would be refutable then.
-            #[allow(irrefutable_let_patterns)]
-            let AssetProperty::RasterGraphics(properties) = &asset.props
-            else {
-                continue;
-            };
+            let size = asset.props.get_quick_ref_size(screen_resolution);
+            let image_like = matches!(
+                asset.ty,
+                AssetType::RasterGraphics | AssetType::VectorGraphics
+            );
 
             WebviewWindowBuilder::new(
                 &app,
                 format!("quickref-{}", asset.id.0.to_string()),
                 WebviewUrl::App(format!("quickref/{}", asset.id.0).into()),
             )
-            .inner_size(properties.width as f64, properties.height as f64)
+            .inner_size(size[0] as f64, size[1] as f64)
             .skip_taskbar(true)
             .always_on_top(true)
-            .decorations(false)
-            .resizable(false)
+            .decorations(!image_like)
+            .resizable(!image_like)
             .parent(&main_window)
             .map_err(|e| e.to_string())?
             .build()

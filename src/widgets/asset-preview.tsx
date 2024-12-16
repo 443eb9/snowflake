@@ -7,6 +7,8 @@ import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import { SelectableClassTag } from "./items-grid";
 import { encodeId } from "../util";
+import GraphicsPreview from "./preview/graphics-preview";
+import ModelPreview from "./preview/model-preview";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -16,25 +18,10 @@ const inputStyleHook = makeStyles({
 })
 
 export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTMLAttributes<HTMLButtonElement>) {
-    const [absPath, setAbsPath] = useState<string | undefined>()
     const [newName, setNewName] = useState<string>()
     const inputStyle = inputStyleHook()
 
     const fileManipulation = useContext(fileManipulationContext)
-
-    const { dispatchToast } = useToastController(GlobalToasterId)
-
-    useEffect(() => {
-        async function fetch() {
-            const path = await GetAssetAbsPath({ asset: asset.id })
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            if (path) {
-                setAbsPath(path)
-            }
-        }
-
-        fetch()
-    }, [asset.id])
 
     const onRename = fileManipulation?.data?.op == "rename" && fileManipulation.data.id[0].id == asset.id
 
@@ -44,8 +31,15 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
         }
     }, [fileManipulation?.data])
 
-    if (!absPath) {
-        return <></>
+    function getPreview() {
+        switch (asset.ty) {
+            case "rasterGraphics":
+            case "vectorGraphics":
+                return <GraphicsPreview asset={asset} />
+            case "gltfModel":
+                console.log(asset)
+                return <ModelPreview asset={asset} />
+        }
     }
 
     return (
@@ -56,12 +50,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
             appearance="subtle"
         >
             <div className="flex h-full items-center">
-                <Image
-                    className="max-w-48 max-h-48"
-                    src={convertFileSrc(absPath)}
-                    shape="rounded"
-                    shadow
-                />
+                {getPreview()}
             </div>
             {
                 onRename

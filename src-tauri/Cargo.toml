@@ -34,3 +34,4 @@ imagesize = "0.13"
 window-vibrancy = "0.5"
 file-format = { version = "0.26", features = ["reader"] }
 opener = "0.7"
+svg = "0.18"

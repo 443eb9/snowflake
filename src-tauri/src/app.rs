@@ -17,11 +17,14 @@ use uuid::Uuid;
 
 pub const LIBRARY_STORAGE: &str = "snowflake.json";
 pub const IMAGE_ASSETS: &str = "images";
+pub const MODEL_ASSETS: &str = "models";
 pub const DATA: &str = "app_meta.json";
 pub const SETTINGS: &str = "resources/settings_default.json";
 
 #[derive(Debug, Error)]
 pub enum AppError {
+    #[error("Invalid library.")]
+    InvalidLibrary,
     #[error("Io error: {0}")]
     Io(#[from] std::io::Error),
     #[error("Json error: {0}")]
@@ -150,7 +153,7 @@ impl AppData {
             data.recent_libs = data
                 .recent_libs
                 .into_iter()
-                .filter(|(p, _)| check_library_structure_validity(p))
+                .filter(|(p, _)| validate_library(p))
                 .collect();
 
             data
@@ -217,9 +220,6 @@ fn collect_path(
         Ok(Some(folder_id))
     } else if path.is_file() {
         let file_fmt = FileFormat::from_file(&path)?;
-        if file_fmt.kind() != Kind::Image {
-            return Ok(None);
-        }
 
         let parent = folders.get_mut(&parent.unwrap()).unwrap();
         let ext = path
@@ -238,12 +238,16 @@ fn collect_path(
         let props = match ty {
             AssetType::RasterGraphics => {
                 let size = imagesize::size(&path)?;
-                AssetProperty::RasterGraphics(RasterGraphicsProperty {
-                    width: size.width as u32,
-                    height: size.height as u32,
-                })
+                AssetProperty::RasterGraphics(RasterGraphicsProperty::new(size))
             }
-            AssetType::VectorGraphics => AssetProperty::VectorGraphics(VectorGraphicsProperty),
+            AssetType::VectorGraphics => {
+                if let Some(prop) = VectorGraphicsProperty::new(file_content) {
+                    AssetProperty::VectorGraphics(prop)
+                } else {
+                    return Ok(None);
+                }
+            }
+            AssetType::GltfModel => AssetProperty::GltfModel(GltfModelProperty),
         };
 
         let asset = Asset::new(
@@ -257,10 +261,7 @@ fn collect_path(
         );
 
         // Copy to preserve metadata
-        copy(
-            &path,
-            root.join(IMAGE_ASSETS).join(asset.get_file_name_id()),
-        )?;
+        copy(&path, asset.get_file_path(root))?;
         asset_crc.insert(asset.id, crc);
         parent.content.insert(asset.id);
         assets.insert(asset.id, asset);
@@ -450,7 +451,7 @@ impl Storage {
             return Err(AppError::FolderNotEmpty(root_path.to_path_buf()));
         }
 
-        let _ = create_dir_all(root_path.join(IMAGE_ASSETS));
+        validate_library(root_path);
 
         let mut folders = HashMap::default();
         let mut assets = HashMap::default();
@@ -482,8 +483,12 @@ impl Storage {
         Ok(result)
     }
 
-    pub fn from_existing(root_folder: impl AsRef<Path>) -> Result<Self, std::io::Error> {
+    pub fn from_existing(root_folder: impl AsRef<Path>) -> Result<Self, AppError> {
         let root = root_folder.as_ref();
+        if !validate_library(root) {
+            return Err(AppError::InvalidLibrary);
+        }
+
         let path = root.join(LIBRARY_STORAGE);
         let reader = File::open(&path)?;
         let mut result = serde_json::from_reader::<_, Self>(reader)?;
@@ -558,7 +563,7 @@ impl Storage {
         } in data
         {
             let id = Uuid::new_v4();
-            let path = root.join(IMAGE_ASSETS).join(if ext.is_empty() {
+            let path = root.join(ty.storage_folder()).join(if ext.is_empty() {
                 id.to_string()
             } else {
                 format!("{}.{}", id, ext)
@@ -576,12 +581,16 @@ impl Storage {
             let props = match ty {
                 AssetType::RasterGraphics => {
                     let size = imagesize::blob_size(&bytes)?;
-                    AssetProperty::RasterGraphics(RasterGraphicsProperty {
-                        width: size.width as u32,
-                        height: size.height as u32,
-                    })
+                    AssetProperty::RasterGraphics(RasterGraphicsProperty::new(size))
                 }
-                AssetType::VectorGraphics => AssetProperty::VectorGraphics(VectorGraphicsProperty),
+                AssetType::VectorGraphics => {
+                    if let Some(props) = VectorGraphicsProperty::new(bytes) {
+                        AssetProperty::VectorGraphics(props)
+                    } else {
+                        continue;
+                    }
+                }
+                AssetType::GltfModel => AssetProperty::GltfModel(GltfModelProperty),
             };
 
             let asset = Asset {
@@ -801,19 +810,14 @@ impl Storage {
     pub fn get_asset_abs_path(&self, id: AssetId) -> AppResult<PathBuf> {
         self.assets
             .get(&id)
-            .map(|a| {
-                self.cache
-                    .root
-                    .join(IMAGE_ASSETS)
-                    .join(a.get_file_name_id())
-            })
+            .map(|a| a.get_file_path(&self.cache.root))
             .ok_or_else(|| AppError::AssetNotFound(id))
     }
 
     pub fn get_asset_virtual_path(&self, id: AssetId) -> AppResult<Vec<String>> {
         if let Some(asset) = self.assets.get(&id) {
             self.get_folder_virtual_path(asset.parent).map(|mut p| {
-                p.push(asset.get_file_name_id());
+                p.push(asset.get_file_name());
                 p
             })
         } else {
@@ -1011,7 +1015,7 @@ impl Asset {
         }
     }
 
-    pub fn get_file_name(&self) -> String {
+    pub fn gen_file_name(&self) -> String {
         if self.ext.is_empty() {
             self.name.to_owned()
         } else {
@@ -1019,7 +1023,7 @@ impl Asset {
         }
     }
 
-    pub fn get_file_name_id(&self) -> String {
+    pub fn get_file_name(&self) -> String {
         if self.ext.is_empty() {
             self.id.clone().0.to_string()
         } else {
@@ -1028,12 +1032,14 @@ impl Asset {
     }
 
     pub fn get_file_path(&self, root: &Path) -> PathBuf {
-        root.join(IMAGE_ASSETS).join(self.get_file_name_id())
+        root.join(self.ty.storage_folder())
+            .join(self.get_file_name())
     }
 
     pub fn compute_crc(&self, root: &Path) -> std::io::Result<u32> {
         Ok(crc32fast::hash(&read(
-            root.join(IMAGE_ASSETS).join(self.get_file_name_id()),
+            root.join(self.ty.storage_folder())
+                .join(self.get_file_name()),
         )?))
     }
 }
@@ -1043,6 +1049,26 @@ impl Asset {
 pub enum AssetProperty {
     RasterGraphics(RasterGraphicsProperty),
     VectorGraphics(VectorGraphicsProperty),
+    GltfModel(GltfModelProperty),
+}
+
+impl AssetProperty {
+    const QUICK_REF_SCALE: f32 = 0.3;
+
+    pub fn get_quick_ref_size(&self, screen: [u32; 2]) -> [u32; 2] {
+        match self {
+            AssetProperty::RasterGraphics(prop) => [prop.width, prop.height],
+            AssetProperty::VectorGraphics(prop) => {
+                let width = screen[0] as f32 * Self::QUICK_REF_SCALE;
+                let height = width * prop.aspect;
+                [width as u32, height as u32]
+            }
+            AssetProperty::GltfModel(_) => [
+                (screen[0] as f32 * Self::QUICK_REF_SCALE) as u32,
+                (screen[1] as f32 * Self::QUICK_REF_SCALE) as u32,
+            ],
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -1052,15 +1078,67 @@ pub struct RasterGraphicsProperty {
     pub height: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct VectorGraphicsProperty;
+impl RasterGraphicsProperty {
+    pub fn new(size: imagesize::ImageSize) -> Self {
+        Self {
+            width: size.width as u32,
+            height: size.height as u32,
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VectorGraphicsProperty {
+    // Backward compatibility 0.0.2
+    #[serde(default)]
+    pub width: u32,
+    // Backward compatibility 0.0.2
+    #[serde(default)]
+    pub height: u32,
+    // Backward compatibility 0.0.2
+    #[serde(default)]
+    pub aspect: f32,
+}
+
+impl VectorGraphicsProperty {
+    pub fn new(content: Vec<u8>) -> Option<Self> {
+        let content = String::from_utf8(content).ok()?;
+        let mut parser = svg::read(&content).ok()?;
+        let size = parser.find_map(|ev| match ev {
+            svg::parser::Event::Tag(_, _, hash_map) => hash_map.get("viewBox").cloned(),
+            _ => None,
+        })?;
+
+        let borders = size
+            .split(' ')
+            .filter_map(|val| val.parse().ok())
+            .collect::<Vec<u32>>();
+        if borders.len() != 4 {
+            return None;
+        }
+
+        let width = borders[2] - borders[0];
+        let height = borders[3] - borders[1];
+
+        Some(Self {
+            width,
+            height,
+            aspect: width as f32 / height as f32,
+        })
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GltfModelProperty;
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
 pub enum AssetType {
     RasterGraphics,
     VectorGraphics,
+    GltfModel,
 }
 
 impl AssetType {
@@ -1073,7 +1151,18 @@ impl AssetType {
                 "svg" => Some(Self::VectorGraphics),
                 _ => None,
             },
+            Kind::Model => match format.extension() {
+                "gltf" | "glb" => Some(Self::GltfModel),
+                _ => None,
+            },
             _ => None,
+        }
+    }
+
+    pub fn storage_folder(self) -> &'static str {
+        match self {
+            AssetType::RasterGraphics | AssetType::VectorGraphics => IMAGE_ASSETS,
+            AssetType::GltfModel => MODEL_ASSETS,
         }
     }
 }
@@ -1113,7 +1202,14 @@ impl Metadata {
     }
 }
 
-fn check_library_structure_validity(root_folder: impl AsRef<Path>) -> bool {
+fn validate_library(root_folder: impl AsRef<Path>) -> bool {
     let root = root_folder.as_ref();
-    root.join(LIBRARY_STORAGE).exists() && root.join(IMAGE_ASSETS).exists()
+    if root.join(LIBRARY_STORAGE).exists() {
+        let _ = create_dir_all(root.join(IMAGE_ASSETS));
+        let _ = create_dir_all(root.join(MODEL_ASSETS));
+
+        true
+    } else {
+        false
+    }
 }
