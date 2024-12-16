@@ -18,7 +18,7 @@ import { t } from "../i18n";
 import { overlaysContext } from "../helpers/context-provider";
 import ShortcutKeyProvider from "../helpers/shortcut-key-provider";
 import RecycleBin from "../widgets/recycle-bin";
-import RecycleBinContextMenu from "../widgets/recycle-bin-context-menu";
+import RecycleBinContextMenu from "../widgets/context-menus/recycle-bin-context-menu";
 
 export default function MainApp() {
     const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()

@@ -9,7 +9,7 @@ import { TriggerEvent, useContextMenu } from "react-contexify";
 import { CtxMenuId } from "./context-menus/context-menu";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
-import { RecycleBinCtxMenuId } from "./recycle-bin-context-menu";
+import { RecycleBinCtxMenuId } from "./context-menus/recycle-bin-context-menu";
 import FolderPreview from "./folder-preview";
 import { decodeId } from "../util";
 
