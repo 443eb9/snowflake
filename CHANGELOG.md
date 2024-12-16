@@ -3,6 +3,7 @@
 # What's Fixed
 
 - Adding tag to an asset *visually* duplicates it. (Although it will disappear after refresh)
+- The selection area can go out of the container.
 
 # v0.0.2
 

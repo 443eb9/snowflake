@@ -20,6 +20,7 @@ export default function ItemsGrid() {
     const [objects, setObjects] = useState<Item[] | undefined>()
     const selectoRef = useRef<Selecto & HTMLElement>(null)
     const gridRef = useRef<HTMLDivElement>(null)
+    const boundRef = useRef<HTMLDivElement>(null)
     const darkenContentStyle = darkenContentStyleHook()
 
     const { show: showCommonCtxMenu } = useContextMenu({ id: CtxMenuId })
@@ -81,10 +82,14 @@ export default function ItemsGrid() {
     }, [browsingFolder?.data])
 
     return (
-        <div className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}>
+        <div
+            className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}
+            ref={boundRef}
+        >
             <Selecto
                 ref={selectoRef}
                 container={gridRef.current}
+                boundContainer={boundRef.current}
                 selectableTargets={[`.${SelectableClassTag}`]}
                 hitRate={0}
                 selectByClick
