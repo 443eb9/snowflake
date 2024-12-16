@@ -1,5 +1,9 @@
 # v0.0.3 [main branch, haven't released]
 
+# What's Fixed
+
+- Adding tag to an asset *visually* duplicates it. (Although it will disappear after refresh)
+
 # v0.0.2
 
 *Still, not production ready, yet.*
