@@ -1058,19 +1058,32 @@ pub enum AssetProperty {
 }
 
 impl AssetProperty {
-    const QUICK_REF_SCALE: f32 = 0.3;
+    const QUICK_REF_MAX_PORTION: f32 = 0.3;
 
     pub fn get_quick_ref_size(&self, screen: [u32; 2]) -> [u32; 2] {
         match self {
-            AssetProperty::RasterGraphics(prop) => [prop.width, prop.height],
+            AssetProperty::RasterGraphics(prop) => {
+                let aspect = prop.width as f32 / prop.height as f32;
+                if prop.width > prop.height {
+                    let width = prop
+                        .width
+                        .min((screen[0] as f32 * Self::QUICK_REF_MAX_PORTION) as u32);
+                    [width, (width as f32 / aspect) as u32]
+                } else {
+                    let height = prop
+                        .height
+                        .min((screen[1] as f32 * Self::QUICK_REF_MAX_PORTION) as u32);
+                    [(height as f32 * aspect) as u32, height]
+                }
+            }
             AssetProperty::VectorGraphics(prop) => {
-                let width = screen[0] as f32 * Self::QUICK_REF_SCALE;
+                let width = screen[0] as f32 * Self::QUICK_REF_MAX_PORTION;
                 let height = width * prop.aspect;
                 [width as u32, height as u32]
             }
             AssetProperty::GltfModel(_) => [
-                (screen[0] as f32 * Self::QUICK_REF_SCALE) as u32,
-                (screen[1] as f32 * Self::QUICK_REF_SCALE) as u32,
+                (screen[0] as f32 * Self::QUICK_REF_MAX_PORTION) as u32,
+                (screen[1] as f32 * Self::QUICK_REF_MAX_PORTION) as u32,
             ],
         }
     }
