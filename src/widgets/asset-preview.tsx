@@ -1,14 +1,10 @@
-import { Button, Image, Input, makeStyles, Text, useToastController } from "@fluentui/react-components";
-import { Asset, GetAssetAbsPath } from "../backend";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { Button, Input, makeStyles, Text } from "@fluentui/react-components";
+import { Asset } from "../backend";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext } from "../helpers/context-provider";
-import ErrToast from "./toasts/err-toast";
-import { GlobalToasterId } from "../main";
 import { SelectableClassTag } from "./items-grid";
 import { encodeId } from "../util";
-import GraphicsPreview from "./preview/graphics-preview";
-import ModelPreview from "./preview/model-preview";
+import AssetImage from "./asset-image";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -31,17 +27,6 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
         }
     }, [fileManipulation?.data])
 
-    function getPreview() {
-        switch (asset.ty) {
-            case "rasterGraphics":
-            case "vectorGraphics":
-                return <GraphicsPreview asset={asset} />
-            case "gltfModel":
-                console.log(asset)
-                return <ModelPreview asset={asset} />
-        }
-    }
-
     return (
         <Button
             {...props}
@@ -50,7 +35,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
             appearance="subtle"
         >
             <div className="flex h-full items-center">
-                {getPreview()}
+                <AssetImage className="max-w-48 max-h-48" asset={asset} />
             </div>
             {
                 onRename

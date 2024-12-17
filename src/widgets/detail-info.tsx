@@ -10,6 +10,8 @@ import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
+import AssetPreview from "./asset-preview"
+import AssetImage from "./asset-image"
 
 export default function DetailInfo() {
     const [asset, setAsset] = useState<Asset | undefined>()
@@ -74,12 +76,13 @@ export default function DetailInfo() {
     } else if (asset && assetAbsPath) {
         return (
             <>
-                <Image
+                {/* <Image
                     className="w-full"
                     src={convertFileSrc(assetAbsPath)}
                     shape="rounded"
                     shadow
-                />
+                /> */}
+                <AssetImage className="w-full" asset={asset} />
                 <List className="flex flex-col gap-2">
                     <ListItem className="flex flex-col gap-1">
                         <Text weight="bold">{t("detail.fileName")}</Text>

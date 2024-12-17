@@ -12,7 +12,7 @@
     "asset-mani.rename": "New name",
     "browser.folderTreeSectionTitle": "Folder Tree",
     "browser.tagCollSectionTitle": "Tag Collections",
-    "assetPreview.renderingFallback": "Rendering",
+    "assetPreview.renderingFallback": "Not available",
     "ctxMenu.addTag": "Add Tag",
     "ctxMenu.del": "Delete",
     "ctxMenu.delPerm": "Permanently Delete",

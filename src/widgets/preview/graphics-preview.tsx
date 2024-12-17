@@ -1,11 +1,11 @@
-import { Image, useToastController } from "@fluentui/react-components";
+import { Image, ImageProps, useToastController } from "@fluentui/react-components";
 import { Asset, GetAssetAbsPath } from "../../backend";
 import { useEffect, useState } from "react";
 import { GlobalToasterId } from "../../main";
 import ErrToast from "../toasts/err-toast";
 import { convertFileSrc } from "@tauri-apps/api/core";
 
-export default function GraphicsPreview({ asset }: { asset: Asset }) {
+export default function GraphicsPreview({ asset, ...props }: { asset: Asset } & ImageProps) {
     const [absPath, setAbsPath] = useState<string | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -28,7 +28,7 @@ export default function GraphicsPreview({ asset }: { asset: Asset }) {
 
     return (
         <Image
-            className="max-w-48 max-h-48"
+            {...props}
             src={convertFileSrc(absPath)}
             shape="rounded"
             shadow

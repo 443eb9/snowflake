@@ -9,6 +9,9 @@
     "core:window:allow-close",
     "core:window:allow-start-dragging",
     "core:window:allow-inner-size",
-    "core:window:allow-set-size"
+    "core:window:allow-set-size",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "core:window:allow-destroy"
   ]
 }

@@ -266,3 +266,15 @@ export function OpenWithDefaultApp(params: { asset: string }): Promise<void> {
 export function QuickRef(params: { ty: QuickRefSrcTy }): Promise<void> {
     return invoke("quick_ref", params)
 }
+
+export function ComputeCameraPos(params: { yFov: number, aspectRatio: number, asset: string }): Promise<[number, number, number]> {
+    return invoke("compute_camera_pos", params)
+}
+
+export function SaveRenderResult(params: { asset: string, base64Data: string }): Promise<string | undefined> {
+    return invoke("save_render_result", params)
+}
+
+export function GetRenderResult(params: { asset: string }): Promise<string | undefined> {
+    return invoke("get_render_result", params)
+}

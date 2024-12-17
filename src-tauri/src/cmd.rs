@@ -1,9 +1,10 @@
 use std::{
-    fs::{copy, create_dir_all},
+    fs::{copy, create_dir_all, write},
     path::{Path, PathBuf},
     sync::Mutex,
 };
 
+use base64::Engine;
 use chrono::Local;
 use file_format::{FileFormat, Kind};
 use futures::StreamExt;
@@ -15,9 +16,9 @@ use uuid::Uuid;
 
 use crate::{
     app::{
-        AppData, AppError, Asset, AssetId, AssetType, DuplicateAssets, Folder, FolderId, Item,
-        ItemId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
-        SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings,
+        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
+        FolderId, Item, ItemId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
+        SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings, CACHE,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -1025,6 +1026,91 @@ pub async fn quick_ref(
             .unwrap();
 
         Ok(())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn compute_camera_pos(
+    y_fov: f32,
+    aspect_ratio: f32,
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<[f32; 3], String> {
+    log::info!("Computing camera pos for {:?}", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        if let Some(asset) = storage.assets.get(&asset) {
+            match &asset.props {
+                AssetProperty::GltfModel(prop) => {
+                    Ok(prop.compute_camera_pos(y_fov, [-1.0, -1.0, -1.0], aspect_ratio))
+                }
+                _ => Err("Asset is not a model.".into()),
+            }
+        } else {
+            Err(asset_doesnt_exist(asset))
+        }
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn save_render_result(
+    asset: AssetId,
+    base64_data: String,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Saving render result for {:?}", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        if let Some(asset) = storage.assets.get_mut(&asset) {
+            let file_name = format!("{}.png", asset.id.0);
+
+            match &mut asset.props {
+                AssetProperty::GltfModel(prop) => {
+                    let engine = base64::engine::GeneralPurpose::new(
+                        &base64::alphabet::STANDARD,
+                        Default::default(),
+                    );
+                    write(
+                        storage.cache.root.join(CACHE).join(&file_name),
+                        engine.decode(base64_data).map_err(|e| e.to_string())?,
+                    )
+                    .map_err(|e| e.to_string())?;
+                    prop.cached_image = Some(file_name);
+                    Ok(())
+                }
+                _ => Err("Asset is not a model.".into()),
+            }
+        } else {
+            Err(asset_doesnt_exist(asset))
+        }
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_render_result(
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Option<PathBuf>, String> {
+    log::info!("Getting render result for {:?}", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        if let Some(asset) = storage.assets.get(&asset) {
+            match &asset.props {
+                AssetProperty::GltfModel(prop) => Ok(prop
+                    .cached_image
+                    .as_ref()
+                    .map(|name| storage.cache.root.join(CACHE).join(name))),
+                _ => Err("Asset is not a model.".into()),
+            }
+        } else {
+            Err(asset_doesnt_exist(asset))
+        }
     } else {
         Err(storage_not_initialized())
     }

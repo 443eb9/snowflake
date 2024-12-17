@@ -92,6 +92,7 @@ export default function QuickRef() {
                     <ModelReference
                         {...props}
                         src={absPath}
+                        asset={asset.id}
                     />
                 )
         }

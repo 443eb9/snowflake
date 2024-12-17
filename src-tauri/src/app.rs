@@ -9,6 +9,7 @@ use std::{
 use chrono::{DateTime, FixedOffset, Local};
 use file_format::{FileFormat, Kind};
 use filetime::FileTime;
+use glam::{Mat4, Vec3};
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
@@ -18,6 +19,7 @@ use uuid::Uuid;
 pub const LIBRARY_STORAGE: &str = "snowflake.json";
 pub const IMAGE_ASSETS: &str = "images";
 pub const MODEL_ASSETS: &str = "models";
+pub const CACHE: &str = "cache";
 pub const DATA: &str = "app_meta.json";
 pub const SETTINGS: &str = "resources/settings_default.json";
 
@@ -144,7 +146,7 @@ impl AppData {
             data.recent_libs = data
                 .recent_libs
                 .into_iter()
-                .filter(|(p, _)| validate_library(p))
+                .filter(|(p, _)| validate_library(p, false))
                 .collect();
 
             data
@@ -238,7 +240,13 @@ fn collect_path(
                     return Ok(None);
                 }
             }
-            AssetType::GltfModel => AssetProperty::GltfModel(GltfModelProperty),
+            AssetType::GltfModel => {
+                if let Some(props) = GltfModelProperty::new(&file_content) {
+                    AssetProperty::GltfModel(props)
+                } else {
+                    return Ok(None);
+                }
+            }
         };
 
         let asset = Asset::new(
@@ -442,7 +450,7 @@ impl Storage {
             return Err(AppError::FolderNotEmpty(root_path.to_path_buf()));
         }
 
-        validate_library(root_path);
+        validate_library(root_path, true);
 
         let mut folders = HashMap::default();
         let mut assets = HashMap::default();
@@ -476,7 +484,7 @@ impl Storage {
 
     pub fn from_existing(root_folder: impl AsRef<Path>) -> Result<Self, AppError> {
         let root = root_folder.as_ref();
-        if !validate_library(root) {
+        if !validate_library(root, false) {
             return Err(AppError::InvalidLibrary);
         }
 
@@ -581,7 +589,13 @@ impl Storage {
                         continue;
                     }
                 }
-                AssetType::GltfModel => AssetProperty::GltfModel(GltfModelProperty),
+                AssetType::GltfModel => {
+                    if let Some(props) = GltfModelProperty::new(&bytes) {
+                        AssetProperty::GltfModel(props)
+                    } else {
+                        continue;
+                    }
+                }
             };
 
             let asset = Asset {
@@ -1081,14 +1095,8 @@ impl RasterGraphicsProperty {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct VectorGraphicsProperty {
-    // Backward compatibility 0.0.2
-    #[serde(default)]
     pub width: u32,
-    // Backward compatibility 0.0.2
-    #[serde(default)]
     pub height: u32,
-    // Backward compatibility 0.0.2
-    #[serde(default)]
     pub aspect: f32,
 }
 
@@ -1122,7 +1130,86 @@ impl VectorGraphicsProperty {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct GltfModelProperty;
+pub struct GltfModelProperty {
+    pub min: [f32; 3],
+    pub max: [f32; 3],
+    pub size: [f32; 3],
+    pub cached_image: Option<String>,
+}
+
+impl GltfModelProperty {
+    pub fn new(content: &[u8]) -> Option<Self> {
+        let (document, ..) = gltf::import_slice(content).ok()?;
+        let mut min = [f32::MAX, f32::MAX, f32::MAX];
+        let mut max = [f32::MIN, f32::MIN, f32::MIN];
+
+        for mesh in document.meshes() {
+            for primitive in mesh.primitives() {
+                let bounding = primitive.bounding_box();
+
+                min[0] = min[0].min(bounding.min[0]);
+                min[1] = min[1].min(bounding.min[1]);
+                min[2] = min[2].min(bounding.min[2]);
+
+                max[0] = max[0].max(bounding.max[0]);
+                max[1] = max[1].max(bounding.max[1]);
+                max[2] = max[2].max(bounding.max[2]);
+            }
+        }
+
+        Some(Self {
+            max,
+            min,
+            size: [max[0] - min[0], max[1] - min[1], max[2] - min[2]],
+            cached_image: None,
+        })
+    }
+
+    // TODO validate if the computation is correct
+    pub fn compute_camera_pos(
+        &self,
+        y_fov: f32,
+        view_dir: [f32; 3],
+        aspect_ratio: f32,
+    ) -> [f32; 3] {
+        let world_min = Vec3::from(self.min) * 1.1;
+        let world_max = Vec3::from(self.max) * 1.1;
+        let verts_world = [
+            Vec3::new(world_min.x, world_min.y, world_min.z),
+            Vec3::new(world_max.x, world_min.y, world_min.z),
+            Vec3::new(world_min.x, world_max.y, world_min.z),
+            Vec3::new(world_max.x, world_max.y, world_min.z),
+            Vec3::new(world_min.x, world_min.y, world_max.z),
+            Vec3::new(world_max.x, world_min.y, world_max.z),
+            Vec3::new(world_min.x, world_max.y, world_max.z),
+            Vec3::new(world_max.x, world_max.y, world_max.z),
+        ];
+
+        let view_mat = Mat4::look_to_lh(Vec3::ZERO, view_dir.into(), Vec3::Y);
+        let mut verts_view = verts_world;
+        for v in &mut verts_view {
+            *v = (view_mat * v.extend(1.0)).truncate();
+        }
+        let (view_min, view_max) = verts_view
+            .into_iter()
+            .fold((Vec3::MAX, Vec3::MIN), |(min, max), v| {
+                (v.min(min), v.max(max))
+            });
+        let view_coverage = view_max.abs().max(view_min.abs());
+        let view_half_coverage = view_coverage * 0.5;
+
+        let tan_half_y_fov = (y_fov * 0.5).tan();
+        let tan_half_x_fov = (0.5 * aspect_ratio) / (0.5 / aspect_ratio / tan_half_y_fov);
+        let depth = (view_half_coverage.x / tan_half_x_fov)
+            .max(view_half_coverage.x / tan_half_y_fov)
+            .max(view_half_coverage.y / tan_half_x_fov)
+            .max(view_half_coverage.y / tan_half_y_fov);
+
+        (view_mat.inverse() * (Vec3::Z * depth).extend(1.0))
+            .truncate()
+            .into()
+    }
+}
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 #[serde(rename_all = "camelCase")]
@@ -1143,7 +1230,7 @@ impl AssetType {
                 _ => None,
             },
             Kind::Model => match format.extension() {
-                "gltf" | "glb" => Some(Self::GltfModel),
+                "glb" => Some(Self::GltfModel),
                 _ => None,
             },
             _ => None,
@@ -1193,11 +1280,12 @@ impl Metadata {
     }
 }
 
-fn validate_library(root_folder: impl AsRef<Path>) -> bool {
+fn validate_library(root_folder: impl AsRef<Path>, create_structure: bool) -> bool {
     let root = root_folder.as_ref();
-    if root.join(LIBRARY_STORAGE).exists() {
+    if root.join(LIBRARY_STORAGE).exists() || create_structure {
         let _ = create_dir_all(root.join(IMAGE_ASSETS));
         let _ = create_dir_all(root.join(MODEL_ASSETS));
+        let _ = create_dir_all(root.join(CACHE));
 
         true
     } else {
