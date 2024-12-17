@@ -73,8 +73,8 @@ pub fn run() {
             cmd::open_with_default_app,
             cmd::quick_ref,
             cmd::compute_camera_pos,
-            cmd::save_render_result,
-            cmd::get_render_result,
+            cmd::save_render_cache,
+            cmd::get_render_cache,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

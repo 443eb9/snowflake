@@ -9,7 +9,6 @@ import GraphicsReference from "../widgets/quick-ref/graphics-reference"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
-import ModelPreview from "../widgets/preview/model-preview"
 import ModelReference from "../widgets/quick-ref/model-reference"
 
 const appWindow = getCurrentWindow()

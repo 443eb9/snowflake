@@ -10,6 +10,10 @@
 - Adding tag to an asset *visually* duplicates it. (Although it will disappear after refresh)
 - The selection area can go out of the container.
 - Library data gets overridden if failed to parse.
+- `glb` model support.
+  - Importing into library.
+  - View it with quick ref.
+  - Caching preview image after first quick ref.
 
 # v0.0.2
 

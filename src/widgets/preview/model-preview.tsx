@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Asset, GetRenderResult } from "../../backend";
+import { Asset, GetRenderCache } from "../../backend";
 import { Image, ImageProps, Text, useToastController } from "@fluentui/react-components";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Cube48Regular } from "@fluentui/react-icons";
@@ -13,10 +13,10 @@ export default function ModelPreview({ asset, ...props }: { asset: Asset } & Ima
 
     useEffect(() => {
         async function fetch() {
-            const previewPath = await GetRenderResult({ asset: asset.id })
+            const cache = await GetRenderCache({ asset: asset.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />))
-            if (previewPath) {
-                setPreviewPath(previewPath)
+            if (cache) {
+                setPreviewPath(cache.path)
             }
         }
 

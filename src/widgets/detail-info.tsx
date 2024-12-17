@@ -1,16 +1,14 @@
 import { useContext, useEffect, useState } from "react"
-import { Image, Input, Text, useToastController } from "@fluentui/react-components"
+import { Input, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
 import { Asset, GetAsset, GetAssetAbsPath, ModifySrcOf } from "../backend"
-import { convertFileSrc } from "@tauri-apps/api/core"
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
 import { t } from "../i18n"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
-import AssetPreview from "./asset-preview"
 import AssetImage from "./asset-image"
 
 export default function DetailInfo() {

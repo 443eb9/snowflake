@@ -90,6 +90,16 @@ export type ItemId = {
     ty: ItemTy,
 }
 
+export type GltfPreviewCamera = {
+    pos: [number, number, number],
+    rot: [number, number, number, number]
+}
+
+export type GltfPreviewCache = {
+    path: string,
+    camera: GltfPreviewCamera,
+}
+
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
 }
@@ -271,10 +281,10 @@ export function ComputeCameraPos(params: { yFov: number, aspectRatio: number, as
     return invoke("compute_camera_pos", params)
 }
 
-export function SaveRenderResult(params: { asset: string, base64Data: string }): Promise<string | undefined> {
-    return invoke("save_render_result", params)
+export function SaveRenderCache(params: { asset: string, base64Data: string, camera: GltfPreviewCamera }): Promise<string | undefined> {
+    return invoke("save_render_cache", params)
 }
 
-export function GetRenderResult(params: { asset: string }): Promise<string | undefined> {
-    return invoke("get_render_result", params)
+export function GetRenderCache(params: { asset: string }): Promise<GltfPreviewCache | undefined> {
+    return invoke("get_render_cache", params)
 }

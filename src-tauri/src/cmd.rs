@@ -10,15 +10,16 @@ use file_format::{FileFormat, Kind};
 use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 use uuid::Uuid;
 
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
-        FolderId, Item, ItemId, LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache,
-        SettingsDefault, SettingsValue, Storage, Tag, TagId, UserSettings, CACHE,
+        FolderId, GltfPreviewCamera, Item, ItemId, LibraryMeta, LibraryStatistics, RawAsset,
+        RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage, Tag, TagId,
+        UserSettings, CACHE,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -1057,9 +1058,10 @@ pub fn compute_camera_pos(
 }
 
 #[tauri::command]
-pub fn save_render_result(
+pub fn save_render_cache(
     asset: AssetId,
     base64_data: String,
+    camera: GltfPreviewCamera,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Saving render result for {:?}", asset);
@@ -1079,8 +1081,9 @@ pub fn save_render_result(
                         engine.decode(base64_data).map_err(|e| e.to_string())?,
                     )
                     .map_err(|e| e.to_string())?;
-                    prop.cached_image = Some(file_name);
-                    Ok(())
+                    prop.cache_camera = Some(camera);
+
+                    storage.save().map_err(|e| e.to_string())
                 }
                 _ => Err("Asset is not a model.".into()),
             }
@@ -1092,20 +1095,32 @@ pub fn save_render_result(
     }
 }
 
+#[derive(Serialize)]
+pub struct GltfPreviewCache {
+    pub path: PathBuf,
+    pub camera: GltfPreviewCamera,
+}
+
 #[tauri::command]
-pub fn get_render_result(
+pub fn get_render_cache(
     asset: AssetId,
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Option<PathBuf>, String> {
+) -> Result<Option<GltfPreviewCache>, String> {
     log::info!("Getting render result for {:?}", asset);
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         if let Some(asset) = storage.assets.get(&asset) {
             match &asset.props {
-                AssetProperty::GltfModel(prop) => Ok(prop
-                    .cached_image
-                    .as_ref()
-                    .map(|name| storage.cache.root.join(CACHE).join(name))),
+                AssetProperty::GltfModel(prop) => {
+                    Ok(prop.cache_camera.clone().map(|camera| GltfPreviewCache {
+                        path: storage
+                            .cache
+                            .root
+                            .join(CACHE)
+                            .join(format!("{}.png", asset.id.0)),
+                        camera,
+                    }))
+                }
                 _ => Err("Asset is not a model.".into()),
             }
         } else {

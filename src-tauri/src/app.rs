@@ -1134,7 +1134,14 @@ pub struct GltfModelProperty {
     pub min: [f32; 3],
     pub max: [f32; 3],
     pub size: [f32; 3],
-    pub cached_image: Option<String>,
+    pub cache_camera: Option<GltfPreviewCamera>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GltfPreviewCamera {
+    pub pos: [f32; 3],
+    pub rot: [f32; 4],
 }
 
 impl GltfModelProperty {
@@ -1161,7 +1168,7 @@ impl GltfModelProperty {
             max,
             min,
             size: [max[0] - min[0], max[1] - min[1], max[2] - min[2]],
-            cached_image: None,
+            cache_camera: None,
         })
     }
 

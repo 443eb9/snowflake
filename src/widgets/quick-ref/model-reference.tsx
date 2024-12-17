@@ -4,8 +4,8 @@ import { OrbitControls, Stats } from "@react-three/drei";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Camera, WebGLRenderer } from "three";
-import { SaveRenderResult } from "../../backend";
+import { Euler, Quaternion } from "three";
+import { GetRenderCache, GltfPreviewCamera, SaveRenderCache } from "../../backend";
 import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../../main";
 import ErrToast from "../toasts/err-toast";
@@ -19,16 +19,16 @@ export default function ModelReference({ src, asset }: { src: string, asset: str
 
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const [changedFlag, setChangedFlag] = useState(false)
-    const [camera, setCamera] = useState<Camera>()
+    const [camera, setCamera] = useState<GltfPreviewCamera>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
         const unlisten = window.onCloseRequested(async () => {
-            if (canvasRef.current) {
+            if (canvasRef.current && camera) {
                 const data = canvasRef.current.toDataURL()
                 const base64Data = data.substring("data:image/png;base64,".length)
-                await SaveRenderResult({ asset, base64Data })
+                await SaveRenderCache({ asset, base64Data, camera })
                     .catch(err => dispatchToast(<ErrToast body={err} />))
             }
         })
@@ -39,32 +39,63 @@ export default function ModelReference({ src, asset }: { src: string, asset: str
             }
             clean()
         }
+    }, [camera])
+
+    useEffect(() => {
+        async function fetch() {
+            const cache = await GetRenderCache({ asset })
+                .catch(err => dispatchToast(<ErrToast body={err} />))
+            if (cache) {
+                setCamera(cache.camera)
+            } else {
+                setCamera({
+                    pos: [0, 0, -10],
+                    rot: [0, 0, 0, 1],
+                })
+            }
+        }
+
+        fetch()
     }, [])
 
     function CameraRetriever() {
         const camera = useThree(st => st.camera)
 
         useEffect(() => {
-            setCamera(camera)
+            setCamera({
+                pos: camera.position.toArray(),
+                rot: new Quaternion().setFromEuler(camera.rotation).toArray()
+            })
         }, [changedFlag])
 
         return <></>
     }
 
+    if (!camera) {
+        return
+    }
+
     return (
         <Suspense>
             <Canvas
-                // TODO use computed position or stored position
-                camera={{ position: [0, 0, -10] }}
+                camera={{
+                    position: camera.pos,
+                    rotation: new Euler().setFromQuaternion(
+                        new Quaternion(camera.rot[0], camera.rot[1], camera.rot[2], camera.rot[3])
+                    )
+                }}
                 shadows
                 onCreated={st => {
                     st.gl.setClearColor("#2b2c2f")
-                    // st.gl.autoClear = false
                 }}
                 ref={canvasRef}
                 gl={{ preserveDrawingBuffer: true }}
             >
-                <OrbitControls onChange={() => setChangedFlag(!changedFlag)} />
+                <OrbitControls
+                    // TODO enable after figure about how to set initial rotation
+                    enablePan={false}
+                    onChange={() => setChangedFlag(!changedFlag)}
+                />
                 <directionalLight castShadow />
                 <primitive object={gltf.scene} />
                 <axesHelper />
