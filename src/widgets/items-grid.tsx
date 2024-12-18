@@ -23,8 +23,7 @@ export default function ItemsGrid() {
     const boundRef = useRef<HTMLDivElement>(null)
     const darkenContentStyle = darkenContentStyleHook()
 
-    const { show: showCommonCtxMenu } = useContextMenu({ id: CtxMenuId })
-    const { show: showRecycleBinCtxMenu } = useContextMenu({ id: RecycleBinCtxMenuId })
+    const { show: showCtxMenu } = useContextMenu()
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const browsingFolder = useContext(browsingFolderContext)
@@ -35,6 +34,7 @@ export default function ItemsGrid() {
     const handleContextMenu = (ev: TriggerEvent) => {
         if (!browsingFolder?.data) { return }
         const currentSelected = selectedItems?.data?.length ?? 0
+
         if (selectoRef.current && ev.target && currentSelected < 2) {
             let target = ev.target as HTMLElement
             while (target.id.length == 0) {
@@ -53,9 +53,9 @@ export default function ItemsGrid() {
         })
 
         if (browsingFolder.data.subTy == "recycleBin") {
-            showRecycleBinCtxMenu({ event: ev })
+            showCtxMenu({ event: ev, id: RecycleBinCtxMenuId })
         } else {
-            showCommonCtxMenu({ event: ev })
+            showCtxMenu({ event: ev, id: CtxMenuId })
         }
     }
 
@@ -85,13 +85,21 @@ export default function ItemsGrid() {
         <div
             className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}
             ref={boundRef}
+        // onContextMenu={ev => {
+        //     selectoRef.current?.setSelectedTargets([])
+        //     selectedItems?.setter([])
+        //     document.querySelectorAll(`.${SelectedClassTag}`)
+        //         .forEach(elem => elem.classList.remove(SelectedClassTag))
+
+        //     handleContextMenu(ev)
+        // }}
         >
             <Selecto
                 ref={selectoRef}
                 container={gridRef.current}
                 boundContainer={boundRef.current}
                 selectableTargets={[`.${SelectableClassTag}`]}
-                hitRate={0}
+                hitRate={-1}
                 selectByClick
                 toggleContinueSelect={"shift"}
                 dragCondition={() => fileManipulation?.data?.op != "rename"}
@@ -104,7 +112,6 @@ export default function ItemsGrid() {
                         .concat(selectedItems?.data ?? [])
                         .filter(id => removed.find(r => r.id == id.id) == undefined)
                         .filter(id => id != null)
-                    console.log(selected)
                     selectedItems?.setter(selected)
                 }}
             />

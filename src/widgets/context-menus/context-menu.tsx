@@ -1,6 +1,6 @@
 import { Menu as CtxMenu, Item as CtxItem, ItemParams, Submenu } from "react-contexify";
 import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components";
-import { ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Open20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
+import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, FolderArrowRight20Regular, Open20Regular, Tag20Regular, TagDismiss20Regular, TagMultiple20Regular } from "@fluentui/react-icons";
 import { useContext, useEffect, useState } from "react";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../../helpers/context-provider";
 import { DeltaTagsOf, Folder, GetAllTags, GetFolderTree, OpenWithDefaultApp, QuickRef, Tag } from "../../backend";
@@ -51,6 +51,10 @@ export default function ContextMenu() {
 
         fetch()
     }, [contextMenuProp?.data])
+
+    const handleRefresh = () => {
+        window.location.reload()
+    }
 
     const handleDelete = (ev: ItemParams) => {
         const folderId = (ev.triggerEvent.target as HTMLElement).id
@@ -164,6 +168,15 @@ export default function ContextMenu() {
 
     return (
         <CtxMenu id={CtxMenuId} theme="dark">
+            <CtxItem onClick={handleRefresh}>
+                <Button
+                    className={buttonStyle.root}
+                    icon={<ArrowCounterclockwise20Regular />}
+                    appearance="subtle"
+                >
+                    <Text>{t("ctxMenu.refresh")}</Text>
+                </Button>
+            </CtxItem>
             <CtxItem onClick={handleDelete}>
                 <Button
                     className={buttonStyle.root}

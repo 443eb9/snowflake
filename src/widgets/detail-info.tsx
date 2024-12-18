@@ -27,13 +27,9 @@ export default function DetailInfo() {
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
-        if (!selectedItems?.data) {
-            setAsset(undefined)
-            return
-        }
-
-        setSelectedCount(selectedItems.data.length)
-        if (selectedItems.data.length != 1) {
+        const selectedCount = selectedItems?.data?.length ?? 0
+        setSelectedCount(selectedCount)
+        if (!selectedItems?.data || selectedCount == 0) {
             setAsset(undefined)
             return
         }
@@ -65,7 +61,7 @@ export default function DetailInfo() {
                 {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
             </Text>
         )
-    } else if (selectedItems?.data && selectedItems?.data.length > 0 && selectedItems?.data[0].ty == "folder") {
+    }if (selectedItems?.data && selectedItems?.data.length > 0 && selectedItems?.data[0].ty == "folder") {
         return (
             <Text className="opacity-50" size={600} italic>
                 {t("detail.folderSelect")}
@@ -74,12 +70,6 @@ export default function DetailInfo() {
     } else if (asset && assetAbsPath) {
         return (
             <>
-                {/* <Image
-                    className="w-full"
-                    src={convertFileSrc(assetAbsPath)}
-                    shape="rounded"
-                    shadow
-                /> */}
                 <AssetImage className="w-full" asset={asset} />
                 <List className="flex flex-col gap-2">
                     <ListItem className="flex flex-col gap-1">
