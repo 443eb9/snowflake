@@ -2,7 +2,7 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls, Stats } from "@react-three/drei";
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { MouseEvent, Suspense, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Euler, Quaternion } from "three";
 import { GetRenderCache, GltfPreviewCamera, SaveRenderCache } from "../../backend";
@@ -10,7 +10,7 @@ import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../../main";
 import ErrToast from "../toasts/err-toast";
 
-export default function ModelReference({ src, asset }: { src: string, asset: string }) {
+export default function ModelReference({ src, asset, onContextMenu }: { src: string, asset: string, onContextMenu: (ev: MouseEvent) => void }) {
     const gltf = useLoader(GLTFLoader, convertFileSrc(src))
     gltf.scene.castShadow = true
     gltf.scene.receiveShadow = true
@@ -29,7 +29,7 @@ export default function ModelReference({ src, asset }: { src: string, asset: str
                 const data = canvasRef.current.toDataURL()
                 const base64Data = data.substring("data:image/png;base64,".length)
                 await SaveRenderCache({ asset, base64Data, camera })
-                    .catch(err => dispatchToast(<ErrToast body={err} />))
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             }
         })
 
@@ -44,7 +44,7 @@ export default function ModelReference({ src, asset }: { src: string, asset: str
     useEffect(() => {
         async function fetch() {
             const cache = await GetRenderCache({ asset })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (cache) {
                 setCamera(cache.camera)
             } else {
@@ -78,6 +78,7 @@ export default function ModelReference({ src, asset }: { src: string, asset: str
     return (
         <Suspense>
             <Canvas
+                onContextMenu={onContextMenu}
                 camera={{
                     position: camera.pos,
                     rotation: new Euler().setFromQuaternion(
@@ -96,9 +97,8 @@ export default function ModelReference({ src, asset }: { src: string, asset: str
                     enablePan={false}
                     onChange={() => setChangedFlag(!changedFlag)}
                 />
-                <directionalLight castShadow />
+                <ambientLight />
                 <primitive object={gltf.scene} />
-                <axesHelper />
                 <Stats />
                 <CameraRetriever />
             </Canvas>

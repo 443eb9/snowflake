@@ -168,6 +168,10 @@ export function ImportAssets(params: { path: string[], parent: string }): Promis
     return invoke("import_assets", params)
 }
 
+export function ImportMemoryAssets(params: { data: Uint8Array, format: string, parent: string }): Promise<DuplicateAssets | undefined> {
+    return invoke("import_memory_asset", params)
+}
+
 export function ImportWebAssets(params: { urls: string[], parent: string, progress: Channel<DownloadEvent> }): Promise<DuplicateAssets | undefined> {
     return invoke("import_web_assets", params)
 }

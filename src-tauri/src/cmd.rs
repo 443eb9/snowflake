@@ -287,6 +287,34 @@ pub fn change_library_name(
 }
 
 #[tauri::command]
+pub fn import_memory_asset(
+    data: Vec<u8>,
+    format: String,
+    parent: FolderId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Option<DuplicateAssets>, String> {
+    log::info!("Importing memory asset");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        let duplication = storage
+            .add_raw_assets(
+                vec![RawAsset {
+                    bytes: data,
+                    ext: format.into(),
+                    src: Default::default(),
+                }],
+                parent,
+            )
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())?;
+
+        Ok(duplication.reduce())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub async fn import_web_assets(
     urls: Vec<String>,
     parent: FolderId,
@@ -375,7 +403,6 @@ pub async fn import_web_assets(
 
                 results.push(RawAsset {
                     bytes: content,
-                    ty: AssetType::from_fmt(fmt).unwrap(),
                     ext: fmt.extension().into(),
                     src: url,
                 });

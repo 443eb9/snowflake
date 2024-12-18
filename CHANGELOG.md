@@ -8,6 +8,7 @@
   - Importing into library.
   - View it with quick ref.
   - Caching preview image after first quick ref.
+  - Taking screenshot.
 
 # What's Fixed
 

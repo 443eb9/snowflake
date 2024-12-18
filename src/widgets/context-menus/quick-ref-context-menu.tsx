@@ -1,8 +1,14 @@
-import { Button, makeStyles, Text } from "@fluentui/react-components";
-import { Dismiss20Regular } from "@fluentui/react-icons";
+import { Button, makeStyles, Text, useToastController } from "@fluentui/react-components";
+import { Dismiss20Regular, Screenshot20Regular } from "@fluentui/react-icons";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Item, Menu } from "react-contexify";
 import { t } from "../../i18n";
+import { Asset, ImportMemoryAssets } from "../../backend";
+import { GlobalToasterId } from "../../main";
+import ErrToast from "../toasts/err-toast";
+import MsgToast from "../toasts/msg-toast";
+import DuplicationList from "../duplication-list";
+import SuccessToast from "../toasts/success-toast";
 
 export const QuickRefCtxMenuId = "quickrefctxmenu"
 
@@ -15,8 +21,35 @@ const buttonStyleHook = makeStyles({
     }
 })
 
-export default function QuickRefContextMenu() {
+export default function QuickRefContextMenu({ asset }: { asset: Asset }) {
     const buttonStyle = buttonStyleHook()
+    const { dispatchToast } = useToastController(GlobalToasterId)
+
+    const handleScreenshot = async () => {
+        const canvas = document.querySelector("canvas")
+
+        if (canvas) {
+            canvas.toBlob(async blob => {
+                const data = await blob?.arrayBuffer()
+
+                if (data) {
+                    const dup = await ImportMemoryAssets({ data: new Uint8Array(data), format: "png", parent: asset.parent })
+                        .then(dup => {
+                            dispatchToast(<SuccessToast body={t("toast.screenshot.success")} />, { intent: "success" })
+                            return dup
+                        })
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+                    if (dup) {
+                        dispatchToast(
+                            <MsgToast title={t("toast.assetDuplication.title")} body={<DuplicationList list={dup} />} />,
+                            { intent: "warning" }
+                        )
+                    }
+                }
+            })
+        }
+    }
 
     return (
         <Menu id={QuickRefCtxMenuId}>
@@ -27,6 +60,15 @@ export default function QuickRefContextMenu() {
                     appearance="subtle"
                 >
                     <Text>{t("quickRefCtxMenu.close")}</Text>
+                </Button>
+            </Item>
+            <Item onClick={handleScreenshot} disabled={asset.ty != "gltfModel"}>
+                <Button
+                    className={buttonStyle.root}
+                    icon={<Screenshot20Regular />}
+                    appearance="subtle"
+                >
+                    <Text>{t("quickRefCtxMenu.screenshot")}</Text>
                 </Button>
             </Item>
         </Menu>

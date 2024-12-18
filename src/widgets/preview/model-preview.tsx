@@ -14,7 +14,7 @@ export default function ModelPreview({ asset, ...props }: { asset: Asset } & Ima
     useEffect(() => {
         async function fetch() {
             const cache = await GetRenderCache({ asset: asset.id })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (cache) {
                 setPreviewPath(cache.path)
             }

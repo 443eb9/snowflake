@@ -42,6 +42,7 @@ pub fn run() {
             cmd::gen_statistics,
             cmd::change_library_name,
             cmd::import_assets,
+            cmd::import_memory_asset,
             cmd::import_web_assets,
             cmd::recover_items,
             cmd::get_recycle_bin,

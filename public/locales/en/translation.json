@@ -90,5 +90,7 @@
     "toast.save.success": "Saved library.",
     "toast.success.title": "Success",
     "update.body": "You are now using {{current}}, while the latest is {{latest}}",
-    "update.title": "Update Available"
+    "update.title": "Update Available",
+    "quickRefCtxMenu.screenshot": "Screenshot",
+    "toast.screenshot.success": "Successfully took screenshot. You may need to refresh the parent folder to see it."
 }

@@ -18,7 +18,7 @@ export default function LanguageSwitch() {
             if (userSettings) {
                 i18n.changeLanguage((userSettings["general"]["lng"] as any)["selected"])
                     .catch(err => {
-                        dispatchToast(<ErrToast body={err} />)
+                        dispatchToast(<ErrToast body={err} />, { intent: "error" })
                     })
             }
         }

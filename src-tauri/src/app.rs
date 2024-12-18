@@ -7,7 +7,6 @@ use std::{
 };
 
 use chrono::{DateTime, FixedOffset, Local};
-use file_format::{FileFormat, Kind};
 use filetime::FileTime;
 use glam::{Mat4, Vec3};
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
@@ -214,8 +213,6 @@ fn collect_path(
 
         Ok(Some(folder_id))
     } else if path.is_file() {
-        let file_fmt = FileFormat::from_file(&path)?;
-
         let parent = folders.get_mut(&parent.unwrap()).unwrap();
         let ext = path
             .extension()
@@ -226,7 +223,7 @@ fn collect_path(
         let file_content = read(&path)?;
         let crc = crc32fast::hash(&file_content);
 
-        let Some(ty) = AssetType::from_fmt(file_fmt) else {
+        let Some(ty) = AssetType::from_ext(&ext) else {
             return Ok(None);
         };
 
@@ -570,13 +567,10 @@ impl Storage {
         };
 
         let mut added_crc = HashSet::<u32>::default();
-        for RawAsset {
-            bytes,
-            ty,
-            ext,
-            src,
-        } in data
-        {
+        for RawAsset { bytes, ext, src } in data {
+            let Some(ty) = AssetType::from_ext(&ext) else {
+                continue;
+            };
             let id = Uuid::new_v4();
             let path = root.join(ty.storage_folder()).join(if ext.is_empty() {
                 id.to_string()
@@ -884,7 +878,6 @@ impl Storage {
 
 pub struct RawAsset {
     pub bytes: Vec<u8>,
-    pub ty: AssetType,
     pub ext: Arc<str>,
     pub src: String,
 }
@@ -1259,19 +1252,13 @@ pub enum AssetType {
 }
 
 impl AssetType {
-    pub fn from_fmt(format: FileFormat) -> Option<Self> {
-        match format.kind() {
-            Kind::Image => match format.extension() {
-                // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
-                "apng" | "png" | "avif" | "gif" | "jpg" | "jpeg" | "jfif" | "pjpeg" | "pjp"
-                | "webp" | "bmp" | "ico" | "cur" | "tif" | "tiff" => Some(Self::RasterGraphics),
-                "svg" => Some(Self::VectorGraphics),
-                _ => None,
-            },
-            Kind::Model => match format.extension() {
-                "glb" => Some(Self::GltfModel),
-                _ => None,
-            },
+    pub fn from_ext(ext: &str) -> Option<Self> {
+        match ext {
+            // https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
+            "apng" | "png" | "avif" | "gif" | "jpg" | "jpeg" | "jfif" | "pjpeg" | "pjp"
+            | "webp" | "bmp" | "ico" | "cur" | "tif" | "tiff" => Some(Self::RasterGraphics),
+            "svg" => Some(Self::VectorGraphics),
+            "glb" => Some(Self::GltfModel),
             _ => None,
         }
     }

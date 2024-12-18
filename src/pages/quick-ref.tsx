@@ -99,7 +99,7 @@ export default function QuickRef() {
 
     return (
         <>
-            <QuickRefContextMenu />
+            <QuickRefContextMenu asset={asset} />
             {getReference()}
         </>
     )
