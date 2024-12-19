@@ -41,8 +41,6 @@ pub enum AppError {
     FolderNotFound(FolderId),
     #[error("Folder at {0} is not empty.")]
     FolderNotEmpty(PathBuf),
-    #[error("Invalid asset {0:?}")]
-    InvalidAsset(AssetId),
     #[error("Illegal folder deletion: {0:?}")]
     IllegalFolderDeletion(FolderId),
 }
@@ -494,20 +492,6 @@ impl Storage {
         let path = root.join(LIBRARY_STORAGE);
         let reader = File::open(&path)?;
         let mut result = serde_json::from_reader::<_, Self>(reader)?;
-
-        // Backward compatibility 0.0.2
-        for asset in result.assets.values_mut() {
-            match asset.props {
-                // In 0.0.2, vector graphics don't have properties.
-                AssetProperty::None => {
-                    asset.props = AssetProperty::VectorGraphics(
-                        VectorGraphicsProperty::new(read(asset.get_file_path(root))?)
-                            .ok_or_else(|| AppError::InvalidAsset(asset.id))?,
-                    );
-                }
-                _ => {}
-            }
-        }
 
         let asset_crc = result
             .assets
@@ -1068,8 +1052,6 @@ pub enum AssetProperty {
     RasterGraphics(RasterGraphicsProperty),
     VectorGraphics(VectorGraphicsProperty),
     GltfModel(GltfModelProperty),
-    // Backward compatibility 0.0.2
-    None,
 }
 
 impl AssetProperty {
@@ -1100,7 +1082,6 @@ impl AssetProperty {
                 (screen[0] as f32 * Self::QUICK_REF_MAX_PORTION) as u32,
                 (screen[1] as f32 * Self::QUICK_REF_MAX_PORTION) as u32,
             ],
-            AssetProperty::None => unreachable!(),
         }
     }
 }
