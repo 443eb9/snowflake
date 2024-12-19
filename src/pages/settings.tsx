@@ -1,15 +1,17 @@
 import { Button, Input, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
-import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
+import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/toasts/msg-toast";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
+import { open as openURL } from "@tauri-apps/plugin-shell";
 import SuccessToast from "../widgets/toasts/success-toast";
 import { useNavigate } from "react-router-dom";
+import { app } from "@tauri-apps/api";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState<Tab>("general")
@@ -85,6 +87,7 @@ export default function Settings() {
                         <Tab icon={<Cube20Regular />} value="modelRendering">{t("settings.modelRendering")}</Tab>
                         <Tab icon={<Diamond20Regular />} value="keyMapping">{t("settings.keyMapping")}</Tab>
                         <Tab icon={<Beaker20Regular />} value="experimental" disabled>{t("settings.experimental")}</Tab>
+                        <Tab icon={<Beaker20Regular />} value="about">{t("settings.about")}</Tab>
                     </TabList>
                 </div>
             </div>
@@ -97,12 +100,13 @@ export default function Settings() {
                 <KeyMappingTab {...props} />
                 <ModelRenderingTab {...props} />
                 <ExperimentalTab {...props} />
+                <AboutTab {...props} />
             </div>
         </div>
     )
 }
 
-type Tab = "general" | "library" | "modelRendering" | "keyMapping" | "experimental"
+type Tab = "general" | "library" | "modelRendering" | "keyMapping" | "experimental" | "about"
 
 type UpdateFn = (title?: string, value?: SettingsValue) => void
 
@@ -167,7 +171,7 @@ function LibraryTab({ libraryMeta, ...props }: TabProps & { libraryMeta: Library
     }
 
     const handleExport = async () => {
-        const root = await open({
+        const root = await openDialog({
             directory: true,
         }).catch(err => {
             props.dispatchToast(<ErrToast body={err} />, { intent: "error" })
@@ -352,10 +356,72 @@ function ExperimentalTab(props: TabProps) {
     return <></>
 }
 
+function AboutTab(props: TabProps) {
+    const [version, setVersion] = useState<string | undefined>()
+
+    useEffect(() => {
+        async function fetch() {
+            setVersion(await app.getVersion())
+        }
+
+        fetch()
+    }, [])
+
+    if (props.currentTab != "about") {
+        return <></>
+    }
+
+    return (
+        <>
+            <SettingsItem title="ver" currentTab={props.currentTab}>
+                <Text>{version}</Text>
+            </SettingsItem>
+            <SettingsItem title="repo" currentTab={props.currentTab}>
+                <Button
+                    icon={<ArrowUpRight20Regular />}
+                    onClick={() => openURL("https://github.com/443eb9/snowflake")}
+                />
+            </SettingsItem>
+            <SettingsItem title="updateCheck" currentTab={props.currentTab}>
+                <Button
+                    icon={<ArrowUp20Regular />}
+                    onClick={async () => {
+                        const tags = await fetch("https://api.github.com/repos/443eb9/snowflake/tags")
+                            .then(async resp => (await resp.json()) as { name: string }[])
+                            .catch(err => props.dispatchToast(<ErrToast body={err} />))
+
+                        if (tags) {
+                            const current = await app.getVersion()
+                            const latest = tags[0].name
+
+                            if (current == latest) {
+                                props.dispatchToast(
+                                    <MsgToast
+                                        title={t("update.title.already")}
+                                        body={t("update.body.already")}
+                                    />,
+                                    { intent: "success" }
+                                )
+                            } else {
+                                props.dispatchToast(
+                                    <MsgToast
+                                        title={t("update.title")}
+                                        body={t("update.body", { current, latest })}
+                                    />
+                                )
+                            }
+                        }
+                    }}
+                />
+            </SettingsItem>
+        </>
+    )
+}
+
 function SettingsItem({ children, title, currentTab }: { children: ReactNode, title: string, currentTab: string }) {
     return (
         <div
-            className="flex justify-between items-center px-4 py-2 rounded-md"
+            className="flex justify-between items-center px-4 py-2 rounded-md h-12"
             style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
         >
             <Text>{t(`settings.${currentTab}.${title}`)}</Text>

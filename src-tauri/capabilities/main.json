@@ -15,6 +15,7 @@
     "core:window:allow-close",
     "dialog:allow-open",
     "log:default",
-    "core:window:allow-set-size"
+    "core:window:allow-set-size",
+    "shell:default"
   ]
 }

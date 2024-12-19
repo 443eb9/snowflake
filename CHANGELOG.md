@@ -12,6 +12,9 @@
   - Custom framerate.
 - Display properties of assets: width, height etc.
 - Double click behavior: Open with default app or quick ref.
+- About page
+  - Check for update.
+  - App version and repository.
 
 # What's Fixed
 
@@ -21,6 +24,7 @@
 - Quick ref for images can be larger than monitor if the image has a higher resolution than monitor.
 - Native webview context menu pops up when right clicking on elements don't have `onContextMenu` defined.
 - `Library` section is able to access even though no library is loaded.
+- Settings won't update unless refresh the app.
 
 # v0.0.2
 
