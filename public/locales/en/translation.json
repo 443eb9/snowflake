@@ -61,7 +61,6 @@
     "settings.library.export": "Export",
     "settings.library.name": "Name",
     "settings.library.statistics": "Statistics",
-    "settings.library.void": "No library loaded.",
     "settings.title": "Settings",
     "startup.btnInitLib": "Initialize Library",
     "startup.btnOpenLib": "Open Library",

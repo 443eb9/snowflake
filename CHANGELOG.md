@@ -18,6 +18,7 @@
 - Library data gets overridden if failed to parse.
 - Quick ref for images can be larger than monitor if the image has a higher resolution than monitor.
 - Native webview context menu pops up when right clicking on elements don't have `onContextMenu` defined.
+- `Library` section is able to access even though no library is loaded.
 
 # v0.0.2
 

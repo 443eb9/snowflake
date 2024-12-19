@@ -15,6 +15,7 @@ export default function Settings() {
     const [currentTab, setCurrentTab] = useState<Tab>("general")
     const [userSettings, setUserSettings] = useState<UserSettings | undefined>()
     const [defaultSettings, setDefaultSettings] = useState<DefaultSettings | undefined>()
+    const [libraryMeta, setLibraryMeta] = useState<LibraryMeta>()
 
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
 
@@ -35,6 +36,13 @@ export default function Settings() {
                     setDefaultSettings(defaultSettings)
                 }
             }
+
+            const libraryMeta = await GetLibraryMeta()
+                .catch(() => { })
+
+            if (libraryMeta) {
+                setLibraryMeta(libraryMeta)
+            }
         }
 
         fetch()
@@ -52,6 +60,14 @@ export default function Settings() {
         settingsChangeFlag?.setter(!settingsChangeFlag.data)
     }
 
+    const props = {
+        currentTab,
+        user: userSettings,
+        default: defaultSettings,
+        update,
+        dispatchToast,
+    }
+
     return (
         <div className="flex gap-4 h-full rounded-md">
             <div className="flex flex-col h-full gap-2 p-2 w-[25%]">
@@ -65,17 +81,20 @@ export default function Settings() {
                         style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
                     >
                         <Tab icon={<Box20Regular />} value="general">{t("settings.general")}</Tab>
-                        <Tab icon={<Book20Regular />} value="library">{t("settings.library")}</Tab>
+                        <Tab icon={<Book20Regular />} value="library" disabled={!libraryMeta}>{t("settings.library")}</Tab>
                         <Tab icon={<Diamond20Regular />} value="keyMapping">{t("settings.keyMapping")}</Tab>
                         <Tab icon={<Beaker20Regular />} value="experimental" disabled>{t("settings.experimental")}</Tab>
                     </TabList>
                 </div>
             </div>
             <div className="flex flex-col gap-2 flex-grow mr-8 overflow-y-scroll">
-                <GeneralTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
-                <LibraryTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
-                <KeyMappingTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
-                <ExperimentalTab currentTab={currentTab} user={userSettings} default={defaultSettings} update={update} dispatchToast={dispatchToast} />
+                <GeneralTab {...props} />
+                {
+                    libraryMeta &&
+                    <LibraryTab {...props} libraryMeta={libraryMeta} />
+                }
+                <KeyMappingTab {...props} />
+                <ExperimentalTab {...props} />
             </div>
         </div>
     )
@@ -138,19 +157,12 @@ function GeneralTab(props: TabProps) {
     )
 }
 
-function LibraryTab(props: TabProps) {
-    const [libraryMeta, setLibraryMeta] = useState<LibraryMeta>()
+function LibraryTab({ libraryMeta, ...props }: TabProps & { libraryMeta: LibraryMeta }) {
     const [updateFlag, setUpdateFlag] = useState(false)
     const nav = useNavigate()
 
     useEffect(() => {
         async function fetch() {
-            const libraryMeta = await GetLibraryMeta()
-                .catch(() => { })
-
-            if (libraryMeta) {
-                setLibraryMeta(libraryMeta)
-            }
         }
 
         fetch()
@@ -158,10 +170,6 @@ function LibraryTab(props: TabProps) {
 
     if (props.currentTab != "library") {
         return <></>
-    }
-
-    if (!libraryMeta) {
-        return <Text>{t("settings.library.void")}</Text>
     }
 
     const handleExport = async () => {
