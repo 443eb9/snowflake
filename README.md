@@ -64,3 +64,12 @@ If you are interested in contributing to the localization of this app, you can g
 
 - Go to `tools/localization_sync.py` and run it.
 - Go back to `translation.json` and start translation.
+
+## Building
+
+- Install [Rust toolchain](https://www.rust-lang.org/).
+- Install [Deno](https://deno.com/).
+- Clone this repository.
+- Open this repo in terminal.
+- Run `deno install`
+- Run `deno task tauri dev` or `deno task tauri build` if you want to get an executable application.

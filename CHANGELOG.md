@@ -28,6 +28,7 @@
 - Native webview context menu pops up when right clicking on elements don't have `onContextMenu` defined.
 - `Library` section is able to access even though no library is loaded.
 - Settings won't update unless refresh the app.
+- `svg` quick ref is not working.
 
 # v0.0.2
 
