@@ -3848,6 +3848,7 @@ name = "snowflake"
 version = "0.0.2"
 dependencies = [
  "base64 0.22.1",
+ "bytemuck",
  "chrono",
  "crc32fast",
  "file-format",

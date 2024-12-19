@@ -30,11 +30,27 @@ export type Folder = {
     tags: string[],
 }
 
+export type AssetProperty = {
+    width: number,
+    height: number,
+} | {
+    width: number,
+    height: number,
+    aspect: number,
+} | {
+    min: [number, number, number],
+    max: [number, number, number],
+    size: [number, number, number],
+    triangles: number,
+    vertices: number,
+}
+
 export type Asset = {
     parent: string,
     id: string,
     name: string,
     ty: AssetType,
+    props: AssetProperty,
     ext: string,
     meta: Metadata,
     tags: string[],

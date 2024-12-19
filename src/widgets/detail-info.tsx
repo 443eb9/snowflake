@@ -61,13 +61,14 @@ export default function DetailInfo() {
                 {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
             </Text>
         )
-    }if (selectedItems?.data && selectedItems?.data.length > 0 && selectedItems?.data[0].ty == "folder") {
+    } if (selectedItems?.data && selectedItems?.data.length > 0 && selectedItems?.data[0].ty == "folder") {
         return (
             <Text className="opacity-50" size={600} italic>
                 {t("detail.folderSelect")}
             </Text>
         )
     } else if (asset && assetAbsPath) {
+        console.log(asset)
         return (
             <>
                 <AssetImage className="w-full" asset={asset} />
@@ -126,6 +127,17 @@ export default function DetailInfo() {
                         <Text weight="semibold" font="monospace">{t("detail.id")}</Text>
                         <Text font="monospace">{asset.id}</Text>
                     </ListItem>
+                    {
+                        Object
+                            .entries(asset.props)
+                            .filter(([name, _]) => !["cacheCamera"].includes(name))
+                            .map(([name, value]) =>
+                                <ListItem className="flex flex-col">
+                                    <Text weight="semibold" font="monospace">{t(`detail.${name}`)}</Text>
+                                    <Text font="monospace">{value}</Text>
+                                </ListItem>
+                            )
+                    }
                 </List>
             </>
         )

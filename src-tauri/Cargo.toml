@@ -49,3 +49,4 @@ gltf = { version = "1.4", features = [
 ] }
 glam = "0.29"
 base64 = "0.22"
+bytemuck = "1"

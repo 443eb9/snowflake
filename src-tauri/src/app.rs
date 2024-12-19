@@ -9,6 +9,7 @@ use std::{
 use chrono::{DateTime, FixedOffset, Local};
 use filetime::FileTime;
 use glam::{Mat4, Vec3};
+use gltf::Gltf;
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
@@ -1159,6 +1160,8 @@ pub struct GltfModelProperty {
     pub min: [f32; 3],
     pub max: [f32; 3],
     pub size: [f32; 3],
+    pub triangles: u32,
+    pub vertices: u32,
     pub cache_camera: Option<GltfPreviewCamera>,
 }
 
@@ -1171,11 +1174,14 @@ pub struct GltfPreviewCamera {
 
 impl GltfModelProperty {
     pub fn new(content: &[u8]) -> Option<Self> {
-        let (document, ..) = gltf::import_slice(content).ok()?;
+        let model = Gltf::from_slice(content).ok()?;
+
         let mut min = [f32::MAX, f32::MAX, f32::MAX];
         let mut max = [f32::MIN, f32::MIN, f32::MIN];
+        let mut triangles = 0;
+        let mut vertex_buffers = Vec::new();
 
-        for mesh in document.meshes() {
+        for mesh in model.meshes() {
             for primitive in mesh.primitives() {
                 let bounding = primitive.bounding_box();
 
@@ -1186,12 +1192,37 @@ impl GltfModelProperty {
                 max[0] = max[0].max(bounding.max[0]);
                 max[1] = max[1].max(bounding.max[1]);
                 max[2] = max[2].max(bounding.max[2]);
+
+                triangles += primitive.indices()?.count() / 3;
+
+                let (_, acc) = primitive
+                    .attributes()
+                    .find(|(sem, _)| *sem == gltf::Semantic::Positions)?;
+                let view = acc.view()?;
+                vertex_buffers.push(view.offset()..view.length());
             }
         }
+
+        vertex_buffers.sort_by_key(|r| r.start);
+        let mut merged = vec![vertex_buffers[0].clone()];
+        for idx in 1..vertex_buffers.len() {
+            if vertex_buffers[idx].start <= vertex_buffers[idx - 1].end {
+                let last = merged.last_mut().unwrap();
+                last.end = vertex_buffers[idx].end;
+            } else {
+                merged.push(vertex_buffers[idx].clone());
+            }
+        }
+
+        let vertices = merged
+            .into_iter()
+            .fold(0, |acc, range| acc + dbg!(range).len() / size_of::<[f32; 3]>());
 
         Some(Self {
             max,
             min,
+            triangles: triangles as u32,
+            vertices: vertices as u32,
             size: [max[0] - min[0], max[1] - min[1], max[2] - min[2]],
             cache_camera: None,
         })
