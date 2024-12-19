@@ -12,6 +12,13 @@
                 "zh",
                 "en"
             ]
+        },
+        "dbClick": {
+            "default": "open",
+            "candidates": [
+                "open",
+                "ref"
+            ]
         }
     },
     "keyMapping": {

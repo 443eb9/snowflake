@@ -108,6 +108,10 @@ export function GetUserSettings(): Promise<UserSettings> {
     return invoke("get_user_settings")
 }
 
+export function GetUserSetting(params: { category: string, item: string }): Promise<SettingsValue | undefined> {
+    return invoke("get_user_setting", params)
+}
+
 export function GetLibraryMeta(): Promise<LibraryMeta> {
     return invoke("get_library_meta")
 }
@@ -120,7 +124,7 @@ export function GetDefaultSettings(): Promise<DefaultSettings> {
     return invoke("get_default_settings")
 }
 
-export function SetUserSetting(params: { tab: string, item: string, value: SettingsValue }): Promise<void> {
+export function SetUserSetting(params: { category: string, item: string, value: SettingsValue }): Promise<void> {
     return invoke("set_user_setting", params)
 }
 

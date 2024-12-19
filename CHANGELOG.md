@@ -9,6 +9,7 @@
   - View it with quick ref.
   - Caching preview image after first quick ref.
   - Taking screenshot.
+- Double click behavior: Open with default app or quick ref.
 
 # What's Fixed
 

@@ -31,6 +31,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             cmd::get_recent_libraries,
             cmd::get_user_settings,
+            cmd::get_user_setting,
             cmd::get_default_settings,
             cmd::get_library_meta,
             cmd::set_user_setting,

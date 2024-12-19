@@ -45,7 +45,7 @@ export default function Settings() {
     }
 
     const update = (title: string, value: SettingsValue) => {
-        SetUserSetting({ tab: currentTab, item: title, value })
+        SetUserSetting({ category: currentTab, item: title, value })
             .catch(err => {
                 dispatchToast(<ErrToast body={err} />)
             })
@@ -120,6 +120,18 @@ function GeneralTab(props: TabProps) {
                         props.update(title, value)
                     }}
                     value={props.user[tab]["lng"] as string}
+                />
+            </SettingsItem>
+            <SettingsItem title="dbClick" currentTab={props.currentTab}>
+                <SelectableCandidates
+                    currentTab={props.currentTab}
+                    title="dbClick"
+                    selectable={props.default[tab]["dbClick"] as Selectable}
+                    onSelect={(title, value) => {
+                        i18n.changeLanguage(value)
+                        props.update(title, value)
+                    }}
+                    value={props.user[tab]["dbClick"] as string}
                 />
             </SettingsItem>
         </>

@@ -40,6 +40,22 @@ pub fn get_user_settings(data: State<'_, Mutex<AppData>>) -> Result<UserSettings
 }
 
 #[tauri::command]
+pub fn get_user_setting(
+    category: String,
+    item: String,
+    data: State<'_, Mutex<AppData>>,
+) -> Result<Option<SettingsValue>, String> {
+    log::info!("Getting user setting. {} {}", category, item);
+
+    let data = data.lock().map_err(|e| e.to_string())?;
+    Ok(data
+        .settings
+        .get(&category)
+        .and_then(|cate| cate.get(&item))
+        .cloned())
+}
+
+#[tauri::command]
 pub fn get_library_meta(storage: State<'_, Mutex<Option<Storage>>>) -> Result<LibraryMeta, String> {
     log::info!("Getting library meta.");
 
@@ -60,7 +76,7 @@ pub fn get_default_settings(
 
 #[tauri::command]
 pub fn set_user_setting(
-    tab: String,
+    category: String,
     item: String,
     value: SettingsValue,
     data: State<'_, Mutex<AppData>>,
@@ -72,13 +88,13 @@ pub fn set_user_setting(
 
     let default = resource
         .settings
-        .get(&tab)
+        .get(&category)
         .and_then(|t| t.get(&item))
         .ok_or_else(|| "No settings found.".to_string())?;
 
     let original = data
         .settings
-        .entry(tab)
+        .entry(category)
         .or_default()
         .entry(item)
         .or_insert_with(|| default.clone().default_value());
