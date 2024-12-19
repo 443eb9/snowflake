@@ -1,6 +1,6 @@
 import { Button, Input, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
-import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
+import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
@@ -87,7 +87,7 @@ export default function Settings() {
                         <Tab icon={<Cube20Regular />} value="modelRendering">{t("settings.modelRendering")}</Tab>
                         <Tab icon={<Diamond20Regular />} value="keyMapping">{t("settings.keyMapping")}</Tab>
                         <Tab icon={<Beaker20Regular />} value="experimental" disabled>{t("settings.experimental")}</Tab>
-                        <Tab icon={<Beaker20Regular />} value="about">{t("settings.about")}</Tab>
+                        <Tab icon={<Triangle20Regular />} value="about">{t("settings.about")}</Tab>
                     </TabList>
                 </div>
             </div>
