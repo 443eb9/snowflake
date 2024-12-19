@@ -9,8 +9,7 @@ import AssetManipulation from "../widgets/asset-manipulation";
 import ContextMenu from "../widgets/context-menus/context-menu";
 import FileManipulator from "../helpers/file-manipulator";
 import OverlayPanel from "./overlay-panel";
-import { useContext, useEffect, useState } from "react";
-import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window";
+import { useContext } from "react";
 import { ArrowExit20Regular, Settings20Regular } from "@fluentui/react-icons";
 import { useNavigate } from "react-router-dom";
 import "../context.css"
@@ -21,22 +20,8 @@ import RecycleBin from "../widgets/recycle-bin";
 import RecycleBinContextMenu from "../widgets/context-menus/recycle-bin-context-menu";
 
 export default function MainApp() {
-    const [windowSize, setWindowSize] = useState<PhysicalSize | undefined>()
     const nav = useNavigate()
-
     const overlay = useContext(overlaysContext)
-
-    useEffect(() => {
-        async function set() {
-            const size = await getCurrentWindow().innerSize()
-            setWindowSize(size)
-        }
-        set()
-    })
-
-    if (!windowSize) {
-        return <></>
-    }
 
     return (
         <ShortcutKeyProvider className="w-full h-full">

@@ -68,7 +68,6 @@ export default function DetailInfo() {
             </Text>
         )
     } else if (asset && assetAbsPath) {
-        console.log(asset)
         return (
             <>
                 <AssetImage className="w-full" asset={asset} />
