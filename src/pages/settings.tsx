@@ -1,6 +1,6 @@
 import { Button, Input, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
-import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
+import { ArrowExport20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
 import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
@@ -52,11 +52,11 @@ export default function Settings() {
         return <></>
     }
 
-    const update = (title: string, value: SettingsValue) => {
-        SetUserSetting({ category: currentTab, item: title, value })
-            .catch(err => {
-                dispatchToast(<ErrToast body={err} />)
-            })
+    const update = async (title?: string, value?: SettingsValue) => {
+        if (title != undefined && value != undefined) {
+            await SetUserSetting({ category: currentTab, item: title, value })
+                .catch(err => dispatchToast(<ErrToast body={err} />))
+        }
         settingsChangeFlag?.setter(!settingsChangeFlag.data)
     }
 
@@ -82,6 +82,7 @@ export default function Settings() {
                     >
                         <Tab icon={<Box20Regular />} value="general">{t("settings.general")}</Tab>
                         <Tab icon={<Book20Regular />} value="library" disabled={!libraryMeta}>{t("settings.library")}</Tab>
+                        <Tab icon={<Cube20Regular />} value="modelRendering">{t("settings.modelRendering")}</Tab>
                         <Tab icon={<Diamond20Regular />} value="keyMapping">{t("settings.keyMapping")}</Tab>
                         <Tab icon={<Beaker20Regular />} value="experimental" disabled>{t("settings.experimental")}</Tab>
                     </TabList>
@@ -94,15 +95,16 @@ export default function Settings() {
                     <LibraryTab {...props} libraryMeta={libraryMeta} />
                 }
                 <KeyMappingTab {...props} />
+                <ModelRenderingTab {...props} />
                 <ExperimentalTab {...props} />
             </div>
         </div>
     )
 }
 
-type Tab = "general" | "library" | "keyMapping" | "experimental"
+type Tab = "general" | "library" | "modelRendering" | "keyMapping" | "experimental"
 
-type UpdateFn = (title: string, value: SettingsValue) => void
+type UpdateFn = (title?: string, value?: SettingsValue) => void
 
 type TabProps = {
     currentTab: Tab,
@@ -158,15 +160,7 @@ function GeneralTab(props: TabProps) {
 }
 
 function LibraryTab({ libraryMeta, ...props }: TabProps & { libraryMeta: LibraryMeta }) {
-    const [updateFlag, setUpdateFlag] = useState(false)
     const nav = useNavigate()
-
-    useEffect(() => {
-        async function fetch() {
-        }
-
-        fetch()
-    }, [updateFlag])
 
     if (props.currentTab != "library") {
         return <></>
@@ -203,13 +197,36 @@ function LibraryTab({ libraryMeta, ...props }: TabProps & { libraryMeta: Library
                             ev.currentTarget.blur()
                             await ChangeLibraryName({ name: ev.currentTarget.value })
                                 .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                            setUpdateFlag(!updateFlag)
+                            props.update()
                         }
                     }}
                 />
             </SettingsItem>
             <SettingsItem title="statistics" currentTab={props.currentTab}>
                 <Button icon={<ChartMultiple20Regular />} onClick={() => nav("/stat")} />
+            </SettingsItem>
+        </>
+    )
+}
+
+function ModelRenderingTab(props: TabProps) {
+    if (props.currentTab != "modelRendering") {
+        return
+    }
+
+    return (
+        <>
+            <SettingsItem title="fps" currentTab={props.currentTab}>
+                <Input
+                    defaultValue={props.user["modelRendering"]["fps"] as string}
+                    type="number"
+                    onKeyDown={async ev => {
+                        if (ev.key == "Enter") {
+                            ev.currentTarget.blur()
+                            props.update("fps", Number.parseFloat(ev.currentTarget.value))
+                        }
+                    }}
+                />
             </SettingsItem>
         </>
     )

@@ -134,7 +134,7 @@ export default function DetailInfo() {
                             .map(([name, value]) =>
                                 <ListItem className="flex flex-col">
                                     <Text weight="semibold" font="monospace">{t(`detail.${name}`)}</Text>
-                                    <Text font="monospace">{value}</Text>
+                                    <Text font="monospace">{value.toString()}</Text>
                                 </ListItem>
                             )
                     }

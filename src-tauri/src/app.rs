@@ -58,6 +58,7 @@ pub enum SettingsDefault {
     },
     Sequence(Vec<String>),
     Toggle(bool),
+    Float(f32),
 }
 
 impl SettingsDefault {
@@ -66,6 +67,7 @@ impl SettingsDefault {
             SettingsDefault::Selection { default, .. } => SettingsValue::Name(default),
             SettingsDefault::Sequence(vec) => SettingsValue::Sequence(vec),
             SettingsDefault::Toggle(enabled) => SettingsValue::Toggle(enabled),
+            SettingsDefault::Float(val) => SettingsValue::Float(val),
         }
     }
 }
@@ -76,6 +78,7 @@ pub enum SettingsValue {
     Name(String),
     Toggle(bool),
     Sequence(Vec<String>),
+    Float(f32),
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -1214,9 +1217,9 @@ impl GltfModelProperty {
             }
         }
 
-        let vertices = merged
-            .into_iter()
-            .fold(0, |acc, range| acc + dbg!(range).len() / size_of::<[f32; 3]>());
+        let vertices = merged.into_iter().fold(0, |acc, range| {
+            acc + dbg!(range).len() / size_of::<[f32; 3]>()
+        });
 
         Some(Self {
             max,

@@ -68,6 +68,8 @@
     "settings.library.export": "Export",
     "settings.library.name": "Name",
     "settings.library.statistics": "Statistics",
+    "settings.modelRendering": "Model Rendering",
+    "settings.modelRendering.fps": "Frame Rate",
     "settings.title": "Settings",
     "startup.btnInitLib": "Initialize Library",
     "startup.btnOpenLib": "Open Library",

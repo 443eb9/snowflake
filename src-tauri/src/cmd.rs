@@ -118,6 +118,10 @@ pub fn set_user_setting(
             SettingsValue::Toggle(new) => *original = SettingsValue::Toggle(new),
             _ => return Err("Incompatible value".into()),
         },
+        SettingsDefault::Float(_) => match value {
+            SettingsValue::Float(val) => *original = SettingsValue::Float(val),
+            _ => return Err("Incompatible value".into()),
+        },
     }
 
     Ok(())

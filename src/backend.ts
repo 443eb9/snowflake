@@ -2,7 +2,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 
 export type Selectable = { default: string, candidates: string[] }
 
-export type SettingsValue = string | string[] | boolean
+export type SettingsValue = string | string[] | boolean | number
 
 export type UserSettings = { [category: string]: { [item: string]: SettingsValue } }
 

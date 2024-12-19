@@ -21,6 +21,9 @@
             ]
         }
     },
+    "modelRendering": {
+        "fps": 60
+    },
     "keyMapping": {
         "save": [
             "ctrl",

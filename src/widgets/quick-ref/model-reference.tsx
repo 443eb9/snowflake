@@ -1,11 +1,11 @@
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
-import { OrbitControls, Stats } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { MouseEvent, Suspense, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Euler, Quaternion } from "three";
-import { GetRenderCache, GltfPreviewCamera, SaveRenderCache } from "../../backend";
+import { GetRenderCache, GetUserSetting, GltfPreviewCamera, SaveRenderCache } from "../../backend";
 import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../../main";
 import ErrToast from "../toasts/err-toast";
@@ -18,8 +18,10 @@ export default function ModelReference({ src, asset, onContextMenu }: { src: str
     const window = getCurrentWindow()
 
     const canvasRef = useRef<HTMLCanvasElement>(null)
+    const time = useRef(performance.now())
     const [changedFlag, setChangedFlag] = useState(false)
     const [camera, setCamera] = useState<GltfPreviewCamera>()
+    const [fps, setFps] = useState<number | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
@@ -53,6 +55,12 @@ export default function ModelReference({ src, asset, onContextMenu }: { src: str
                     rot: [0, 0, 0, 1],
                 })
             }
+
+            const fps = await GetUserSetting({ category: "modelRendering", item: "fps" })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+            if (typeof fps == "number") {
+                setFps(fps as number)
+            }
         }
 
         fetch()
@@ -71,7 +79,7 @@ export default function ModelReference({ src, asset, onContextMenu }: { src: str
         return <></>
     }
 
-    if (!camera) {
+    if (!camera || !fps) {
         return
     }
 
@@ -88,9 +96,20 @@ export default function ModelReference({ src, asset, onContextMenu }: { src: str
                 shadows
                 onCreated={st => {
                     st.gl.setClearColor("#2b2c2f")
+                    const original = st.gl.render.bind(st.gl)
+
+                    st.gl.render = (scene, camera) => {
+                        console.log(fps, performance.now() - time.current)
+                        if (performance.now() - time.current >= 1000 / fps) {
+                            time.current = performance.now()
+                            original(scene, camera)
+                        }
+                    }
                 }}
                 ref={canvasRef}
-                gl={{ preserveDrawingBuffer: true }}
+                gl={{
+                    preserveDrawingBuffer: true,
+                }}
             >
                 <OrbitControls
                     // TODO enable after figure about how to set initial rotation
@@ -99,7 +118,6 @@ export default function ModelReference({ src, asset, onContextMenu }: { src: str
                 />
                 <ambientLight />
                 <primitive object={gltf.scene} />
-                <Stats />
                 <CameraRetriever />
             </Canvas>
         </Suspense>
