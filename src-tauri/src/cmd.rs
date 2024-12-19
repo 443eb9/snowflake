@@ -1055,14 +1055,16 @@ pub async fn quick_ref(
 
             WebviewWindowBuilder::new(
                 &app,
-                format!("quickref-{}", asset.id.0.to_string()),
+                format!("quickref-{}", asset.id.0),
                 WebviewUrl::App(format!("quickref/{}", asset.id.0).into()),
             )
+            .title(format!("Quick Ref {}", asset.id.0))
             .inner_size(size[0] as f64, size[1] as f64)
             .skip_taskbar(true)
             .always_on_top(true)
             .decorations(!image_like)
             .resizable(!image_like)
+            .minimizable(false)
             .parent(&main_window)
             .map_err(|e| e.to_string())?
             .build()
