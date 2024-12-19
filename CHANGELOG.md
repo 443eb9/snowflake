@@ -1,4 +1,6 @@
-# v0.0.3 [main branch, haven't released]
+# v0.1.0 [main branch, haven't released]
+
+***First beta version.***
 
 # What's New
 
@@ -12,6 +14,7 @@
   - Custom framerate.
 - Display properties of assets: width, height etc.
 - Double click behavior: Open with default app or quick ref.
+- Press esc to close quick ref.
 - About page
   - Check for update.
   - App version and repository.

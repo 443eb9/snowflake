@@ -9,11 +9,47 @@ An asset management tool for designers and artists, free and open-source forever
 Build for creativity, not for profit.
 
 > [!WARNING]
-> This application is still at pre-alpha stage, and under heavy development. Think twice before storing anything important.
+> This application is still at beta stage. Think twice before storing anything important.
 >
 > Backward compatibility is only available for the previous version.
 
-![](readme-media/image.png)
+## Features
+
+- Quick ref, open an asset in a separate window which is always on top of other windows.
+- Tagging assets, quick ref them at once.
+- Support for 3d models. Previewing it and taking screenshots.
+- Recycle bin for removed assets, rather than delete them permanently from file system.
+- Import assets from local drive or from web urls.
+
+## Screenshots
+
+![](readme-media/startup.png)
+![](readme-media/main-page.png)
+![](readme-media/quick-ref.png)
+![](readme-media/settings.png)
+
+## Supported Asset Formats
+
+- Raster Graphics
+  - apng
+  - png
+  - avif
+  - gif
+  - jpg
+  - jpeg
+  - jfif
+  - pjpeg
+  - pjp
+  - webp
+  - bmp
+  - ico
+  - cur
+  - tif
+  - tiff
+- Vector Graphics
+  - svg
+- Models
+  - glb
 
 ## Localization
 

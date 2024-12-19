@@ -25,16 +25,13 @@ export default function QuickRef() {
         async function fetch() {
             if (id) {
                 const path = await GetAssetAbsPath({ asset: id })
-                    .catch(err => {
-                        // TODO error handling
-                        console.error(err)
-                    })
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 if (path) {
                     setAbsPath(path)
                 }
 
                 const asset = await GetAsset({ asset: id })
-                    .catch(err => dispatchToast(<ErrToast body={err} />))
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 if (asset) {
                     setAsset(asset)
                 }
@@ -43,6 +40,19 @@ export default function QuickRef() {
 
         fetch()
     }, [id])
+
+    useEffect(() => {
+        const handleExit = (ev: KeyboardEvent) => {
+            if (ev.key == "Escape") {
+                appWindow.close()
+            }
+        }
+        document.addEventListener("keydown", handleExit)
+
+        return () => {
+            document.removeEventListener("keydown", handleExit)
+        }
+    }, [])
 
     if (!absPath || !asset) {
         return <></>
@@ -61,15 +71,13 @@ export default function QuickRef() {
             const newScale = scaleFactor * (1 - ev.deltaY * 0.01 * 0.05)
             setScaleFactor(newScale)
 
-            // TODO not working, wait for next release
+            // TODO not working, wait for next tauri release
             const scaled = {
                 width: Math.round(size.width * newScale),
                 height: Math.round(size.height * newScale),
             }
             await appWindow.setSize(new PhysicalSize(scaled))
-                .catch(err => {
-                    console.error(err)
-                })
+                .catch(err => dispatchToast(<ErrToast body={err} />))
         },
         onContextMenu: (ev: MouseEvent) => showContextMenu({ event: ev }),
     }
