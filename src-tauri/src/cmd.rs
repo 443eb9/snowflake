@@ -16,10 +16,10 @@ use uuid::Uuid;
 
 use crate::{
     app::{
-        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, DuplicateAssets, Folder,
-        FolderId, GltfPreviewCamera, Item, ItemId, LibraryMeta, LibraryStatistics, RawAsset,
-        RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage, Tag, TagId,
-        UserSettings, CACHE,
+        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId,
+        Color, DuplicateAssets, Folder, FolderId, GltfPreviewCamera, IdType, Item, ItemId,
+        LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault,
+        SettingsValue, Storage, Tag, TagId, UserSettings, CACHE,
     },
     err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -244,7 +244,7 @@ pub fn export_library(
     log::info!("Exporting library to {:?}", root_folder);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        export_recursion(&storage, &storage.root_id, &root_folder).map_err(|e| e.to_string())
+        export_recursion(&storage, &storage.root_folder, &root_folder).map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }
@@ -474,7 +474,7 @@ pub fn get_recycle_bin(
     log::info!("Getting recycle bin.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        Ok(storage.recycle_bin.clone())
+        Ok(storage.recycle_bin.items.clone())
     } else {
         Err(storage_not_initialized())
     }
@@ -566,11 +566,42 @@ pub fn get_folder_tree(
 }
 
 #[tauri::command]
+pub fn get_collection_tree(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<HashMap<CollectionId, Collection>, String> {
+    log::info!("Getting collection tree.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage
+            .collections
+            .clone()
+            .into_iter()
+            .filter(|(_, c)| !c.is_deleted)
+            .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_root_folder_id(storage: State<'_, Mutex<Option<Storage>>>) -> Result<FolderId, String> {
     log::info!("Getting root folder id.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage.root_id)
+        Ok(storage.root_folder)
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_root_collection_id(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<CollectionId, String> {
+    log::info!("Getting root collection id.");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage.root_collection)
     } else {
         Err(storage_not_initialized())
     }
@@ -883,6 +914,66 @@ pub fn delete_folders(
 }
 
 #[tauri::command]
+pub fn delete_tags(
+    tags: Vec<TagId>,
+    permanently: bool,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Deleting tags {:?}, permanently: {}", tags, permanently);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        if permanently {
+            for tag in tags {
+                storage.delete_tag(tag).map_err(|e| e.to_string())?;
+            }
+        } else {
+            for tag in tags {
+                storage
+                    .move_tag_to_recycle_bin(tag)
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn delete_collections(
+    collections: Vec<CollectionId>,
+    permanently: bool,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!(
+        "Deleting collections {:?}, permanently: {}",
+        collections,
+        permanently
+    );
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        if permanently {
+            for collection in collections {
+                storage
+                    .delete_collection(collection)
+                    .map_err(|e| e.to_string())?;
+            }
+        } else {
+            for collection in collections {
+                storage
+                    .move_collection_to_recycle_bin(collection)
+                    .map_err(|e| e.to_string())?;
+            }
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn create_folders(
     folder_names: Vec<String>,
     parent: FolderId,
@@ -904,17 +995,51 @@ pub fn create_folders(
 }
 
 #[tauri::command]
-pub fn rename_asset(
-    asset: AssetId,
-    name: String,
+pub fn create_tags(
+    tag_names: Vec<String>,
+    parent: CollectionId,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Renaming asset {:?}", asset);
+    log::info!("Creating tags {:?} in {:?}", tag_names, parent);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage
-            .rename_asset(asset, name)
-            .map_err(|e| e.to_string())?;
+        for name in tag_names {
+            storage
+                .create_tag(name, parent)
+                .map_err(|e| e.to_string())?;
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CollectionDesc {
+    pub name: String,
+    pub color: Color,
+}
+
+#[tauri::command]
+pub fn create_collections(
+    collection_descs: Vec<CollectionDesc>,
+    parent: CollectionId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!(
+        "Creating collections {:?} in {:?}",
+        collection_descs,
+        parent
+    );
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        for CollectionDesc { name, color } in collection_descs {
+            storage
+                .create_collection(name, color, parent)
+                .map_err(|e| e.to_string())?;
+        }
+
         storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
@@ -922,17 +1047,21 @@ pub fn rename_asset(
 }
 
 #[tauri::command]
-pub fn rename_folder(
-    folder: FolderId,
+pub fn rename_item(
+    item: ItemId,
     name: String,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Renaming folder {:?} -> {}", folder, name);
+    log::info!("Renaming item {:?}", item);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage
-            .rename_folder(folder, name)
-            .map_err(|e| e.to_string())?;
+        match item.ty {
+            IdType::Asset => storage.rename_asset(item.asset(), name),
+            IdType::Folder => storage.rename_folder(item.folder(), name),
+            IdType::Collection => storage.rename_collection(item.collection(), name),
+            IdType::Tag => storage.rename_tag(item.tag(), name),
+        }
+        .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
@@ -971,6 +1100,31 @@ pub fn move_folders_to(
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for folder in src_folders {
             if let Err(e) = storage.move_folder_to(folder, dst_folder) {
+                return Err(e.to_string());
+            }
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn move_tags_to(
+    src_collections: Vec<CollectionId>,
+    dst_collection: CollectionId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!(
+        "Moving collections {:?} to {:?}",
+        src_collections,
+        dst_collection
+    );
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        for collection in src_collections {
+            if let Err(e) = storage.move_collection_to(collection, dst_collection) {
                 return Err(e.to_string());
             }
         }

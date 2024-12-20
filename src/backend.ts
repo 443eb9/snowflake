@@ -30,6 +30,15 @@ export type Folder = {
     tags: string[],
 }
 
+export type Collection = {
+    parent: string | undefined,
+    id: string,
+    name: string,
+    children: string[],
+    content: string[],
+    meta: Metadata,
+}
+
 export type AssetProperty = {
     width: number,
     height: number,
@@ -62,6 +71,8 @@ export type Tag = {
     name: string,
     color: string,
     meta: Metadata,
+    content: string[],
+    parent: string,
 }
 
 export type Metadata = {
@@ -99,7 +110,7 @@ export type Item = {
     folder: Folder,
 }
 
-export type ItemTy = "asset" | "folder"
+export type ItemTy = "asset" | "folder" | "collection" | "tag"
 
 export type ItemId = {
     id: string,
@@ -114,6 +125,11 @@ export type GltfPreviewCamera = {
 export type GltfPreviewCache = {
     path: string,
     camera: GltfPreviewCamera,
+}
+
+export type CollectionDesc = {
+    name: string,
+    color: string,
 }
 
 export function GetRecentLibs(): Promise<RecentLib[]> {
@@ -213,8 +229,17 @@ export async function GetFolderTree(): Promise<Map<string, Folder>> {
         .then(map => new Map(Object.entries(map as { [s: string]: Folder; })))
 }
 
+export async function GetCollectionTree(): Promise<Map<string, Collection>> {
+    return invoke("get_collection_tree")
+        .then(map => new Map(Object.entries(map as { [s: string]: Collection; })))
+}
+
 export function GetRootFolderId(): Promise<string> {
     return invoke("get_root_folder_id")
+}
+
+export function GetRootCollectionId(): Promise<string> {
+    return invoke("get_root_collection_id")
 }
 
 export function GetAllTags(): Promise<Tag[]> {
@@ -277,12 +302,16 @@ export function CreateFolders(params: { folderNames: string[], parent: string })
     return invoke("create_folders", params)
 }
 
-export function RenameAsset(params: { asset: string, name: string }): Promise<void> {
-    return invoke("rename_asset", params)
+export function CreateTags(params: { tagNames: string[], parent: string }): Promise<void> {
+    return invoke("create_tags", params)
 }
 
-export function RenameFolder(params: { folder: string, name: string }): Promise<void> {
-    return invoke("rename_folder", params)
+export function CreateCollections(params: { collectionDescs: CollectionDesc[], parent: string }): Promise<void> {
+    return invoke("create_tags", params)
+}
+
+export function RenameItem(params: { item: ItemId, name: string }): Promise<void> {
+    return invoke("rename_item", params)
 }
 
 export function MoveAssetsTo(params: { assets: string[], folder: string }): Promise<void> {

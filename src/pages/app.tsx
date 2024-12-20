@@ -18,6 +18,7 @@ import { overlaysContext } from "../helpers/context-provider";
 import ShortcutKeyProvider from "../helpers/shortcut-key-provider";
 import RecycleBin from "../widgets/recycle-bin";
 import RecycleBinContextMenu from "../widgets/context-menus/recycle-bin-context-menu";
+import CollectionTagContextMenu from "../widgets/context-menus/collection-tag-context-menu";
 
 export default function MainApp() {
     const nav = useNavigate()
@@ -60,6 +61,7 @@ export default function MainApp() {
                 </div>
                 <ContextMenu />
                 <RecycleBinContextMenu />
+                <CollectionTagContextMenu />
                 <FileManipulator />
             </div>
         </ShortcutKeyProvider>

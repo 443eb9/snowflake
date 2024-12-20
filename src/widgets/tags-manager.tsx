@@ -109,21 +109,22 @@ export default function TagsManager() {
                     }
                     <Button
                         onClick={() => {
-                            setAllTagsEditable([
-                                ...allTagsEditable,
-                                {
-                                    id: v4(),
-                                    name: "",
-                                    color: randomColor().substring(1) + "ff",
-                                    meta: {
-                                        byteSize: 0,
-                                        createdAt: new Date().toISOString(),
-                                        lastModified: new Date().toISOString(),
-                                    },
-                                    isEditingName: true,
-                                    isEditingColor: false,
-                                }
-                            ])
+                            // TODO new tags
+                            // setAllTagsEditable([
+                            //     ...allTagsEditable,
+                            //     {
+                            //         id: v4(),
+                            //         name: "",
+                            //         color: randomColor().substring(1) + "ff",
+                            //         meta: {
+                            //             byteSize: 0,
+                            //             createdAt: new Date().toISOString(),
+                            //             lastModified: new Date().toISOString(),
+                            //         },
+                            //         isEditingName: true,
+                            //         isEditingColor: false,
+                            //     }
+                            // ])
                         }}
                     >
                         {t("tagsMgr.add")}

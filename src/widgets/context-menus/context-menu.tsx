@@ -182,7 +182,6 @@ export default function ContextMenu() {
                     className={buttonStyle.root}
                     icon={<Delete20Regular />}
                     appearance="subtle"
-                    disabled={contextMenuProp?.data?.target == "collection"}
                 >
                     <Text>{t("ctxMenu.del")}</Text>
                 </Button>
@@ -192,7 +191,6 @@ export default function ContextMenu() {
                     className={buttonStyle.root}
                     icon={<Edit20Regular />}
                     appearance="subtle"
-                    disabled={contextMenuProp?.data?.target == "collection"}
                 >
                     <Text>{t("ctxMenu.rename")}</Text>
                 </Button>
@@ -204,7 +202,6 @@ export default function ContextMenu() {
                         icon={<ArrowForward20Regular />}
                         appearance="subtle"
                         onClick={() => setFocused(0)}
-                        disabled={contextMenuProp?.data?.target == "collection"}
                     >
                         <Text>{t("ctxMenu.moveTo")}</Text>
                     </Button>

@@ -10,7 +10,7 @@ export type VirtualFolder = {
     id: string | undefined,
     name: string,
     content: ItemId[],
-    subTy: "collection" | "recycleBin" | "folder",
+    subTy: "collection" | "recycleBin" | "folder" | "tag",
 }
 
 export type FileManipulation = {
@@ -20,7 +20,7 @@ export type FileManipulation = {
 }
 
 export type ContextMenuProp = {
-    target: "folder" | "assets" | "collection",
+    target: "folder" | "assets" | "collection" | "tag",
     extra: string | undefined,
 }
 
