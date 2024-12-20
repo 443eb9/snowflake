@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext } from "../helpers/context-provider"
-import { Folder, GetFolderTree, GetFolderVirtualPath } from "../backend"
+import { Folder, GetFolderTree, GetFolderVirtualPath, GetTagVirtualPath } from "../backend"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, useToastController } from "@fluentui/react-components"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
@@ -42,15 +42,22 @@ export function BrowsingPath() {
             }
 
             switch (browsingFolder.data.subTy) {
-                case "collection":
-                    setVirtualPath([`Tag collection ${browsingFolder.data.name}`])
-                    break
                 case "recycleBin":
                     setVirtualPath([browsingFolder.data.name])
                     break
                 case "folder":
                     if (browsingFolder.data.id) {
                         const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
+                        if (path) {
+                            setVirtualPath(path)
+                        }
+                    }
+                    break
+                case "tag":
+                    if (browsingFolder.data.id) {
+                        const path = await GetTagVirtualPath({ tag: browsingFolder.data.id })
                             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
                         if (path) {

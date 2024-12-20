@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
 import { HeadlessFlatTreeItemProps, Input, makeStyles, Text, useToastController } from "@fluentui/react-components"
-import { Collection, GetAllTags, GetCollectionTree, GetRootCollectionId, Tag } from "../backend"
+import { Collection, GetAllTags, GetAssetsContainingTag, GetCollectionTree, GetRootCollectionId, Tag } from "../backend"
 import { GlobalToasterId } from "../main"
 import ErrToast from "./toasts/err-toast"
 import { SelectedClassTag } from "./items-grid"
@@ -51,6 +51,7 @@ export default function CollectionTree() {
 
                 allCollections.forEach(collection => data.set(collection.id, { type: "collection", ...collection }))
                 allTags.forEach(tag => data.set(tag.id, { type: "tag", ...tag }))
+                console.log(allCollections, allTags)
 
                 setCollectionOrTags({ map: new Map(data), root: rootCollectionId })
             } else {
@@ -63,20 +64,23 @@ export default function CollectionTree() {
         fetch()
     }, [fileManipulation?.data])
 
-    const updateBrowsingFolder = (item: CollectionOrTag) => {
+    const updateBrowsingFolder = async (item: CollectionOrTag) => {
         if (item.id == browsingFolder?.data?.id) {
             return
         }
 
-        const collectionOrTag = collectionOrTags?.map.get(item.id)
-        if (collectionOrTag?.type == "tag") {
+        if (item.type == "tag") {
+            const assets = await GetAssetsContainingTag({ tag: item.id })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+            if (!assets) { return }
+
             selectedItems?.setter([])
             document.querySelectorAll(`.${SelectedClassTag}`)
                 .forEach(elem => elem.classList.remove(SelectedClassTag))
             browsingFolder?.setter({
                 id: item.id,
                 name: item.name,
-                content: item.content.map(a => { return { id: a, ty: "asset" } }),
+                content: assets.map(a => { return { id: a, ty: "asset" } }),
                 subTy: item.type,
             })
         }
@@ -129,7 +133,7 @@ export default function CollectionTree() {
             onItemContextMenu={(_, item) => {
                 contextMenuProp?.setter({
                     extra: item.id,
-                    target: "collection",
+                    target: item.type,
                 })
                 fileManipulation?.setter({
                     id: [{ id: item.id, ty: item.type }],

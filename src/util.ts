@@ -28,3 +28,16 @@ export function decodeItem(item: Item): { ty: ItemTy, id: string } {
     const obj = Object.entries(item)[0]
     return { ty: obj[0] as ItemTy, id: obj[1] }
 }
+
+export function GetNodeId(node: HTMLElement) {
+    if (!node) { return null }
+    let cur = node
+    while (cur.id.length == 0) {
+        if (cur.parentElement) {
+            cur = cur.parentElement
+        } else {
+            return null
+        }
+    }
+    return cur.id
+}

@@ -738,56 +738,6 @@ impl Storage {
         Ok(())
     }
 
-    pub fn move_tag_to_recycle_bin(&mut self, id: TagId) -> AppResult<()> {
-        let Some(tag) = self.tags.get(&id).cloned() else {
-            return Err(AppError::TagNotFound(id));
-        };
-
-        if let Some(parent) = self.collections.get_mut(&tag.parent) {
-            parent.content.remove(&id);
-        }
-
-        self.recycle_bin
-            .items
-            .insert(ItemId::new(IdType::Tag, id.0));
-        self.recycle_bin.tag_associated_assets.insert(
-            id,
-            self.assets
-                .values()
-                .filter(|a| a.tags.contains(&id))
-                .map(|a| a.id)
-                .collect(),
-        );
-
-        Ok(())
-    }
-
-    pub fn move_collection_to_recycle_bin(&mut self, id: CollectionId) -> AppResult<()> {
-        if self.root_collection == id {
-            return Err(AppError::IllegalCollectionDeletion(id));
-        }
-
-        let Some(collection) = self.collections.get(&id).cloned() else {
-            return Err(AppError::CollectionNotFound(id));
-        };
-
-        for tag in collection.content.clone() {
-            self.move_tag_to_recycle_bin(tag)?;
-        }
-
-        if let Some(parent) = collection.parent.and_then(|p| self.collections.get_mut(&p)) {
-            parent.children.remove(&id);
-        }
-
-        self.recycle_bin
-            .items
-            .insert(ItemId::new(IdType::Collection, id.0));
-
-        self.collections.get_mut(&id).unwrap().is_deleted = true;
-
-        Ok(())
-    }
-
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
             if let Some(parent) = self.folders.get_mut(&asset.parent) {
@@ -1076,30 +1026,21 @@ impl Storage {
         Ok(())
     }
 
-    pub fn move_tag_to(&mut self, src_id: CollectionId, dst_id: CollectionId) -> AppResult<()> {
-        let Some(src_collection) = self.collections.get(&src_id).cloned() else {
-            return Err(AppError::CollectionNotFound(src_id));
+    pub fn move_tag_to(&mut self, src_id: TagId, dst_id: CollectionId) -> AppResult<()> {
+        let Some(src_tag) = self.tags.get_mut(&src_id) else {
+            return Err(AppError::TagNotFound(src_id));
         };
 
-        if let Some(parent) = src_collection
-            .parent
-            .and_then(|p| self.collections.get_mut(&p))
-        {
-            parent.children.remove(&src_id);
+        if let Some(parent) = self.collections.get_mut(&src_tag.parent) {
+            parent.content.remove(&src_id);
         }
 
         let Some(new_parent) = self.collections.get_mut(&dst_id) else {
             return Err(AppError::CollectionNotFound(dst_id));
         };
 
-        new_parent.children.insert(src_id);
-        self.collections.insert(
-            src_id,
-            Collection {
-                parent: Some(dst_id),
-                ..src_collection
-            },
-        );
+        new_parent.content.insert(src_id);
+        src_tag.parent = new_parent.id;
 
         Ok(())
     }
@@ -1131,6 +1072,27 @@ impl Storage {
                 cur_id = folder.parent;
             } else {
                 return Err(AppError::FolderNotFound(id));
+            }
+        }
+
+        res.reverse();
+
+        Ok(res)
+    }
+
+    pub fn get_tag_virtual_path(&self, id: TagId) -> AppResult<Vec<String>> {
+        let Some(tag) = self.tags.get(&id) else {
+            return Err(AppError::TagNotFound(id));
+        };
+
+        let mut res = vec![tag.name.clone()];
+        let mut cur_id = Some(tag.parent);
+        while let Some(id) = cur_id {
+            if let Some(collection) = self.collections.get(&id) {
+                res.push(collection.name.clone());
+                cur_id = collection.parent;
+            } else {
+                return Err(AppError::CollectionNotFound(id));
             }
         }
 
@@ -1200,6 +1162,7 @@ pub struct Tag {
     #[serde(default)]
     pub parent: CollectionId,
     pub id: TagId,
+    pub color_override: Option<Color>,
     pub name: String,
     pub meta: Metadata,
 }
@@ -1209,6 +1172,7 @@ impl Tag {
         Self {
             parent,
             id: TagId(Uuid::new_v4()),
+            color_override: None,
             name,
             meta: Metadata::now(0),
         }
@@ -1298,7 +1262,7 @@ pub struct Folder {
     pub children: HashSet<FolderId>,
     pub content: HashSet<AssetId>,
     pub meta: Metadata,
-    pub tags: Vec<TagId>,
+    pub tags: HashSet<TagId>,
 }
 
 impl Folder {
@@ -1326,7 +1290,7 @@ pub struct Asset {
     pub ext: Arc<str>,
     pub props: AssetProperty,
     pub meta: Metadata,
-    pub tags: Vec<TagId>,
+    pub tags: HashSet<TagId>,
     pub src: String,
 }
 

@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
-import { CreateFolders, DeleteAssets, DeleteFolders, GetFolder, GetRecycleBin, ImportAssets, ItemId, MoveAssetsTo, MoveFoldersTo, RecoverItem, RenameItem } from "../backend"
+import { CreateCollections, CreateFolders, CreateTags, DeleteAssets, DeleteCollections, DeleteFolders, DeleteTags, GetFolder, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveAssetsTo, MoveCollectionsTo, MoveFoldersTo, MoveTagsTo, RecoverItem, RenameItem } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
@@ -144,12 +144,25 @@ export default function FileManipulator() {
         }
     }
 
-    async function handleFoldersMove(
+    async function handleFolderAlikeMove(
         moved: string[],
         target: string,
+        ty: ItemTy,
     ) {
-        await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        switch (ty) {
+            case "folder":
+                await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                break
+            case "collection":
+                await MoveCollectionsTo({ srcCollections: moved, dstCollection: target })
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                break
+            case "tag":
+                await MoveTagsTo({ srcTags: moved, dstCollection: target })
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                break
+        }
 
         selectedItems?.setter(selectedItems.data?.filter(a => !moved.includes(a.id)))
     }
@@ -158,9 +171,8 @@ export default function FileManipulator() {
 
     async function handleCollectionDeletion(
         targetIds: string[],
-        permanently: boolean,
     ) {
-        await DeleteFolders({ folders: targetIds, permanently })
+        await DeleteCollections({ collections: targetIds })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data?.id && targetIds.includes(browsingFolder.data?.id)) {
@@ -173,35 +185,30 @@ export default function FileManipulator() {
         newNames: string[],
         parent: string,
     ) {
-        await CreateFolders({ folderNames: newNames, parent })
+        await CreateCollections({ collectionNames: newNames, parent })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
     }
 
-    async function handleCollectionsImport(
-        items: string[],
+    // Tags
+
+    async function handleTagCreation(
+        newNames: string[],
         parent: string,
     ) {
-        const dup = await ImportAssets({ parent, path: items })
+        await CreateTags({ tagNames: newNames, parent })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-        if (dup) {
-            dispatchToast(<MsgToast
-                title={t("toast.assetDuplication.title")}
-                body={<DuplicationList list={dup} />}
-            />,
-                { intent: "warning" }
-            )
-        }
     }
 
-    async function handleCollectionsMove(
-        moved: string[],
-        target: string,
+    async function handleTagDeletion(
+        targetIds: string[],
     ) {
-        await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
+        await DeleteTags({ tags: targetIds })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        selectedItems?.setter(selectedItems.data?.filter(a => !moved.includes(a.id)))
+        if (browsingFolder?.data?.id && targetIds.includes(browsingFolder.data?.id)) {
+            browsingFolder.setter(undefined)
+            selectedItems?.setter([])
+        }
     }
 
     async function handleObjectsRecover() {
@@ -261,7 +268,7 @@ export default function FileManipulator() {
                 case "deletionPermanent": handleFolderDeletion(folder, true); break
                 case "create": handleFolderCreation(data.submit, folder[0]); break
                 case "import": handleFoldersImport(data.submit, folder[0]); break
-                case "move": handleFoldersMove(folder, data.submit[0]); break
+                case "move": handleFolderAlikeMove(folder, data.submit[0], "folder"); break
             }
         }
 
@@ -279,21 +286,26 @@ export default function FileManipulator() {
         if (collections.length > 0) {
             switch (data.op) {
                 case "rename": handleFolderAlikeRename({ id: collections[0], ty: "collection" }, data.submit[0]); break
-                // case "deletion": handleAssetDeletion(assets, false); break
-                // case "deletionPermanent": handleAssetDeletion(assets, true); break
-                // case "create": console.error("Creating an asset is invalid."); break
-                // case "move": handleAssetsMove(assets, data.submit[0]); break
+                case "deletion":
+                case "deletionPermanent": handleCollectionDeletion(collections); break
+                case "create":
+                    if (data.submit.length < 2) { break }
+                    if (data.submit[1] == "collection") {
+                        handleCollectionCreation([data.submit[0]], collections[0]);
+                    } else if (data.submit[1] == "tag") {
+                        handleTagCreation([data.submit[0]], collections[0]);
+                    }
+                    break
+                case "move": handleFolderAlikeMove(collections, data.submit[0], "collection"); break
             }
         }
 
         if (tags.length > 0) {
             switch (data.op) {
                 case "rename": handleFolderAlikeRename({ id: tags[0], ty: "tag" }, data.submit[0]); break
-                // case "deletion": handleAssetDeletion(assets, false); break
-                // case "deletionPermanent": handleAssetDeletion(assets, true); break
-                // case "create": console.error("Creating an asset is invalid."); break
-                // case "import": handleAssetsImport(data.submit, assets[0]); break
-                // case "move": handleAssetsMove(assets, data.submit[0]); break
+                case "deletion":
+                case "deletionPermanent": handleTagDeletion(tags); break
+                case "move": handleFolderAlikeMove(tags, data.submit[0], "tag"); break
             }
         }
 

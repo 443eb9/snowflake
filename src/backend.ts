@@ -71,7 +71,6 @@ export type Tag = {
     name: string,
     color: string,
     meta: Metadata,
-    content: string[],
     parent: string,
 }
 
@@ -224,6 +223,10 @@ export function GetFolderVirtualPath(params: { folder: string }): Promise<string
     return invoke("get_folder_virtual_path", params)
 }
 
+export function GetTagVirtualPath(params: { tag: string }): Promise<string[]> {
+    return invoke("get_tag_virtual_path", params)
+}
+
 export async function GetFolderTree(): Promise<Map<string, Folder>> {
     return invoke("get_folder_tree")
         .then(map => new Map(Object.entries(map as { [s: string]: Folder; })))
@@ -298,6 +301,14 @@ export function DeleteFolders(params: { folders: string[], permanently: boolean 
     return invoke("delete_folders", params)
 }
 
+export function DeleteCollections(params: { collections: string[] }): Promise<void> {
+    return invoke("delete_collections", params)
+}
+
+export function DeleteTags(params: { tags: string[] }): Promise<void> {
+    return invoke("delete_tags", params)
+}
+
 export function CreateFolders(params: { folderNames: string[], parent: string }): Promise<void> {
     return invoke("create_folders", params)
 }
@@ -306,8 +317,8 @@ export function CreateTags(params: { tagNames: string[], parent: string }): Prom
     return invoke("create_tags", params)
 }
 
-export function CreateCollections(params: { collectionDescs: CollectionDesc[], parent: string }): Promise<void> {
-    return invoke("create_tags", params)
+export function CreateCollections(params: { collectionNames: string[], parent: string }): Promise<void> {
+    return invoke("create_collections", params)
 }
 
 export function RenameItem(params: { item: ItemId, name: string }): Promise<void> {
@@ -320,6 +331,14 @@ export function MoveAssetsTo(params: { assets: string[], folder: string }): Prom
 
 export function MoveFoldersTo(params: { srcFolders: string[], dstFolder: string }): Promise<void> {
     return invoke("move_folders_to", params)
+}
+
+export function MoveCollectionsTo(params: { srcCollections: string[], dstCollection: string }): Promise<void> {
+    return invoke("move_collections_to", params)
+}
+
+export function MoveTagsTo(params: { srcTags: string[], dstCollection: string }): Promise<void> {
+    return invoke("move_tags_to", params)
 }
 
 export function OpenWithDefaultApp(params: { asset: string }): Promise<void> {

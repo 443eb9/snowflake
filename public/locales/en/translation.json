@@ -110,5 +110,7 @@
     "update.body": "You are now using {{current}}, while the latest is {{latest}}",
     "update.body.already": "You are using the latest version of Snowflake! 🥳",
     "update.title": "Update Available",
-    "update.title.already": "You are up to date"
+    "update.title.already": "You are up to date",
+    "ctxMenu.createCollection": "Create Collection",
+    "ctxMenu.createTag": "Create Tag"
 }

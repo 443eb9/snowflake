@@ -548,6 +548,20 @@ pub fn get_folder_virtual_path(
 }
 
 #[tauri::command]
+pub fn get_tag_virtual_path(
+    tag: TagId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<String>, String> {
+    log::info!("Getting virtual path of tag {:?}.", tag);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage.get_tag_virtual_path(tag).map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_folder_tree(
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<HashMap<FolderId, Folder>, String> {
@@ -767,7 +781,7 @@ pub fn modify_tags_of(
                 .assets
                 .get_mut(&asset)
                 .ok_or_else(|| asset_doesnt_exist(asset))?;
-            asset.tags = new_tags.clone();
+            asset.tags = new_tags.clone().into_iter().collect();
         }
 
         storage.save().map_err(|e| e.to_string())
@@ -916,22 +930,13 @@ pub fn delete_folders(
 #[tauri::command]
 pub fn delete_tags(
     tags: Vec<TagId>,
-    permanently: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Deleting tags {:?}, permanently: {}", tags, permanently);
+    log::info!("Deleting tags {:?}", tags);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        if permanently {
-            for tag in tags {
-                storage.delete_tag(tag).map_err(|e| e.to_string())?;
-            }
-        } else {
-            for tag in tags {
-                storage
-                    .move_tag_to_recycle_bin(tag)
-                    .map_err(|e| e.to_string())?;
-            }
+        for tag in tags {
+            storage.delete_tag(tag).map_err(|e| e.to_string())?;
         }
 
         storage.save().map_err(|e| e.to_string())
@@ -943,28 +948,15 @@ pub fn delete_tags(
 #[tauri::command]
 pub fn delete_collections(
     collections: Vec<CollectionId>,
-    permanently: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!(
-        "Deleting collections {:?}, permanently: {}",
-        collections,
-        permanently
-    );
+    log::info!("Deleting collections {:?}", collections);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        if permanently {
-            for collection in collections {
-                storage
-                    .delete_collection(collection)
-                    .map_err(|e| e.to_string())?;
-            }
-        } else {
-            for collection in collections {
-                storage
-                    .move_collection_to_recycle_bin(collection)
-                    .map_err(|e| e.to_string())?;
-            }
+        for collection in collections {
+            storage
+                .delete_collection(collection)
+                .map_err(|e| e.to_string())?;
         }
 
         storage.save().map_err(|e| e.to_string())
@@ -1015,28 +1007,22 @@ pub fn create_tags(
     }
 }
 
-#[derive(Deserialize, Debug)]
-pub struct CollectionDesc {
-    pub name: String,
-    pub color: Color,
-}
-
 #[tauri::command]
 pub fn create_collections(
-    collection_descs: Vec<CollectionDesc>,
+    collection_names: Vec<String>,
     parent: CollectionId,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!(
         "Creating collections {:?} in {:?}",
-        collection_descs,
+        collection_names,
         parent
     );
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for CollectionDesc { name, color } in collection_descs {
+        for name in collection_names {
             storage
-                .create_collection(name, color, parent)
+                .create_collection(name, Color::from_hex_str("FFFFFF").unwrap(), parent)
                 .map_err(|e| e.to_string())?;
         }
 
@@ -1112,6 +1098,31 @@ pub fn move_folders_to(
 
 #[tauri::command]
 pub fn move_tags_to(
+    src_tags: Vec<TagId>,
+    dst_collection: CollectionId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!(
+        "Moving tags {:?} to {:?}",
+        src_tags,
+        dst_collection
+    );
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        for tag in src_tags {
+            if let Err(e) = storage.move_tag_to(tag, dst_collection) {
+                return Err(e.to_string());
+            }
+        }
+
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn move_collections_to(
     src_collections: Vec<CollectionId>,
     dst_collection: CollectionId,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -1192,7 +1203,7 @@ pub async fn quick_ref(
             QuickRefSrcTy::Tag(id) => storage
                 .assets
                 .values()
-                .filter_map(|a| a.tags.contains(&id).then_some(&a.id))
+                .filter_map(|a| a.tags.contains(id).then_some(&a.id))
                 .collect(),
         };
 

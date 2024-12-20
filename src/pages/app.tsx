@@ -2,7 +2,6 @@ import ItemsGrid from "../widgets/items-grid";
 import Browser from "../widgets/browser";
 import DetailInfo from "../widgets/detail-info";
 import WindowControls from "../widgets/window-controls";
-import TagsManager from "../widgets/tags-manager";
 import { Button, Subtitle1, Title3 } from "@fluentui/react-components";
 import { BrowsingPath } from "../widgets/browsing-path";
 import AssetManipulation from "../widgets/asset-manipulation";
@@ -40,7 +39,6 @@ export default function MainApp() {
                         <Browser />
                     </div>
                     <div className="flex gap-2">
-                        <TagsManager />
                         <Button icon={<Settings20Regular />} onClick={() => overlay?.setter({ ty: "settings" })} appearance="outline" />
                         <RecycleBin />
                     </div>

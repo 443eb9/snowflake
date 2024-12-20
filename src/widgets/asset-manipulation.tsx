@@ -178,8 +178,6 @@ export default function AssetManipulation() {
                         </Menu>
                     </>
                 )
-            case "collection":
-                return <></>
         }
     }
 

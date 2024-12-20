@@ -1,13 +1,14 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../../helpers/context-provider"
 import { Item, ItemParams, Menu, Submenu } from "react-contexify"
-import { Collection, CreateTags, GetCollectionTree, OpenWithDefaultApp, QuickRef } from "../../backend"
+import { Collection, GetCollectionTree, OpenWithDefaultApp, QuickRef } from "../../backend"
 import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../../main"
 import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Collections20Regular, CollectionsAdd20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { t } from "../../i18n"
 import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
+import { GetNodeId } from "../../util"
 
 export const CollectionTagCtxMenuId = "collectiontagctxmenu"
 
@@ -48,16 +49,13 @@ export default function CollectionTagContextMenu() {
     }
 
     const handleDelete = (ev: ItemParams) => {
-        const folderId = (ev.triggerEvent.target as HTMLElement).id
-        if (folderId.length > 0) {
+        if (!ev.triggerEvent.target) { return }
+        const item = GetNodeId(ev.triggerEvent.target as HTMLElement)
+        const ty = fileManipulation?.data?.id[0].ty
+
+        if (ty && item) {
             fileManipulation?.setter({
-                id: [{ id: folderId, ty: "folder" }],
-                op: "deletion",
-                submit: [],
-            })
-        } else if (selectedItems?.data && browsingFolder && selectedItems && fileManipulation) {
-            fileManipulation.setter({
-                id: selectedItems.data,
+                id: [{ id: item, ty }],
                 op: "deletion",
                 submit: [],
             })
@@ -82,21 +80,30 @@ export default function CollectionTagContextMenu() {
         }
     }
 
-    const handleTagCreation = async (ev: ItemParams) => {
+    const handleTagCreation = (ev: ItemParams) => {
         if (!ev.triggerEvent.target) { return }
-        let parent = ev.triggerEvent.target as HTMLElement
-        while (parent.id.length == 0 && parent.parentNode) {
-            parent = parent.parentNode as HTMLElement
-        }
+        const parent = GetNodeId(ev.triggerEvent.target as HTMLElement)
 
-        if (parent.id.length > 0) {
-            await CreateTags({ tagNames: ["New Tag"], parent: parent.id })
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        if (parent) {
+            fileManipulation?.setter({
+                id: [{ id: parent, ty: "collection" }],
+                op: "create",
+                submit: ["New Tag", "tag"],
+            })
         }
     }
 
-    const handleCollectionCreation = () => {
+    const handleCollectionCreation = (ev: ItemParams) => {
+        if (!ev.triggerEvent.target) { return }
+        const parent = GetNodeId(ev.triggerEvent.target as HTMLElement)
 
+        if (parent) {
+            fileManipulation?.setter({
+                id: [{ id: parent, ty: "collection" }],
+                op: "create",
+                submit: ["New Collection", "collection"],
+            })
+        }
     }
 
     const handleMove = (dst: Collection) => {
@@ -104,10 +111,11 @@ export default function CollectionTagContextMenu() {
         if (!target) { return }
 
         switch (target) {
-            case "assets":
-                if (selectedItems?.data) {
+            case "collection":
+                if (contextMenuProp.data?.extra) {
+                    console.log("AAA")
                     fileManipulation?.setter({
-                        id: selectedItems?.data,
+                        id: [{ id: contextMenuProp.data?.extra, ty: "collection" }],
                         op: "move",
                         submit: [dst.id],
                     })
@@ -130,9 +138,9 @@ export default function CollectionTagContextMenu() {
         if (!target) { return }
 
         switch (target) {
-            case "folder":
+            case "tag":
                 if (contextMenuProp.data?.extra) {
-                    await QuickRef({ ty: { folder: contextMenuProp.data?.extra } })
+                    await QuickRef({ ty: { tag: contextMenuProp.data?.extra } })
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
@@ -142,26 +150,21 @@ export default function CollectionTagContextMenu() {
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
-            case "collection":
-                if (contextMenuProp.data?.extra) {
-                    await QuickRef({ ty: { tag: contextMenuProp.data.extra } })
-                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                }
-                break
         }
     }
 
-    const handleOpen = async () => {
-        const target = contextMenuProp?.data?.target
-        if (target != "assets") { return }
-
-        if (selectedItems?.data && selectedItems.data.length == 1) {
-            await OpenWithDefaultApp({ asset: selectedItems.data[0].id })
+    const handleOpen = () => {
+        if (browsingFolder?.data?.content) {
+            browsingFolder.data.content.forEach(async asset => {
+                await OpenWithDefaultApp({ asset: asset.id })
+                    .catch(err => dispatchToast(<ErrToast body={err} />))
+            })
         }
     }
 
     const multipleSelected = contextMenuProp?.data?.target == "assets" &&
         selectedItems?.data?.length != undefined && selectedItems.data.length > 1
+    const onTag = fileManipulation?.data?.id.length != 0 && fileManipulation?.data?.id[0].ty == "tag"
 
     if (!allCollections) {
         return <></>
@@ -196,7 +199,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.rename")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleCollectionCreation}>
+            <Item onClick={handleCollectionCreation} disabled={onTag}>
                 <Button
                     className={buttonStyle.root}
                     icon={<CollectionsAdd20Regular />}
@@ -205,7 +208,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.createCollection")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleTagCreation}>
+            <Item onClick={handleTagCreation} disabled={onTag}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Tag20Regular />}
@@ -260,7 +263,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.quickRef")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleOpen} disabled={selectedItems?.data?.length != 1}>
+            <Item onClick={handleOpen} disabled={!onTag}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Open20Regular />}

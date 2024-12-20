@@ -10,7 +10,7 @@ export type VirtualFolder = {
     id: string | undefined,
     name: string,
     content: ItemId[],
-    subTy: "collection" | "recycleBin" | "folder" | "tag",
+    subTy: "recycleBin" | "folder" | "tag",
 }
 
 export type FileManipulation = {
@@ -39,7 +39,7 @@ export const settingsChangeFlagContext = createContext<StateContext<boolean> | u
 export default function ContextProvider({ children }: { children?: ReactNode }) {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [browsingFolder, setBrowsingFolder] = useState<VirtualFolder | undefined>()
-    const [selectedItems, setselectedItems] = useState<ItemId[] | undefined>([])
+    const [selectedItems, setSelectedItems] = useState<ItemId[] | undefined>([])
     const [fileManipulation, setFileManipulation] = useState<FileManipulation | undefined>()
     const [contextMenuProp, setContextMenuProp] = useState<ContextMenuProp | undefined>()
     const [overlays, setOverlays] = useState<Overlays | undefined>(undefined)
@@ -48,7 +48,7 @@ export default function ContextProvider({ children }: { children?: ReactNode }) 
     return (
         <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
             <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
-                <selectedItemsContext.Provider value={{ data: selectedItems, setter: setselectedItems }}>
+                <selectedItemsContext.Provider value={{ data: selectedItems, setter: setSelectedItems }}>
                     <fileManipulationContext.Provider value={{ data: fileManipulation, setter: setFileManipulation }}>
                         <contextMenuPropContext.Provider value={{ data: contextMenuProp, setter: setContextMenuProp }}>
                             <overlaysContext.Provider value={{ data: overlays, setter: setOverlays }}>
