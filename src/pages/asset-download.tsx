@@ -2,7 +2,7 @@ import { Button, Input, makeStyles, Text, Title2, useToastController } from "@fl
 import { Add20Regular, ArrowDownload20Regular } from "@fluentui/react-icons";
 import { List, ListItem } from "@fluentui/react-list-preview";
 import { useContext, useEffect, useState } from "react";
-import { DownloadEvent, GetFolder, ImportWebAssets } from "../backend";
+import { DownloadEvent, ImportWebAssets } from "../backend";
 import { browsingFolderContext } from "../helpers/context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import { formatFileSize } from "../util";
@@ -94,16 +94,13 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
 
     useEffect(() => {
         async function update() {
+            // TODO update
             if (browsingFolder?.data?.id) {
-                const folder = await GetFolder({ folder: browsingFolder?.data?.id })
-                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                if (folder) {
-                    browsingFolder.setter({
-                        ...folder,
-                        content: folder.content.map(asset => { return { id: asset, ty: "asset" } }),
-                        subTy: "folder",
-                    })
-                }
+                // browsingFolder.setter({
+                //     ...folder,
+                //     content: folder.content.map(asset => { return { id: asset, ty: "asset" } }),
+                //     subTy: "folder",
+                // })
             }
         }
 

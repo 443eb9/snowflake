@@ -1,5 +1,5 @@
 import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
-import { Add20Regular, ArrowCounterclockwise20Regular, ArrowDownload20Regular, Checkmark20Regular, Delete20Regular, Edit20Regular, FolderAdd20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
+import { Add20Regular, ArrowCounterclockwise20Regular, ArrowDownload20Regular, Checkmark20Regular, Delete20Regular, Edit20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedItemsContext } from "../helpers/context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
@@ -51,7 +51,7 @@ export default function AssetManipulation() {
         }
     }
 
-    async function handleAdd(folder: boolean) {
+    async function handleImport(folder: boolean) {
         const parent = browsingFolder?.data?.id
         if (!parent) { return }
 
@@ -63,22 +63,11 @@ export default function AssetManipulation() {
 
         if (items) {
             fileManipulation?.setter({
-                id: [{ id: parent, ty: folder ? "folder" : "asset" }],
+                id: [{ id: parent, ty: "tag" }],
                 op: "import",
                 submit: items,
             })
         }
-    }
-
-    function handleCreate() {
-        const parent = browsingFolder?.data?.id
-        if (!parent) { return }
-
-        fileManipulation?.setter({
-            id: [{ id: parent, ty: "folder" }],
-            op: "create",
-            submit: ["New Folder"],
-        })
     }
 
     function handleRecover() {
@@ -190,9 +179,8 @@ export default function AssetManipulation() {
                 {
                     browsingFolder?.data?.subTy == "folder" &&
                     <>
-                        <Button icon={<Add20Regular />} onClick={() => handleAdd(false)} appearance="outline" />
-                        <Button icon={<FolderOpen20Regular />} onClick={() => handleAdd(true)} appearance="outline" />
-                        <Button icon={<FolderAdd20Regular />} onClick={() => handleCreate()} appearance="outline" />
+                        <Button icon={<Add20Regular />} onClick={() => handleImport(false)} appearance="outline" />
+                        <Button icon={<FolderOpen20Regular />} onClick={() => handleImport(true)} appearance="outline" />
                         <Button icon={<ArrowDownload20Regular />} onClick={() => overlays?.setter({ ty: "assetDownload" })} appearance="outline" />
                     </>
                 }

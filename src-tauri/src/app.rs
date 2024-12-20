@@ -185,11 +185,9 @@ pub struct RecentLib {
 fn collect_path(
     root: &Path,
     path: PathBuf,
-    parent: Option<FolderId>,
-    folders: &mut HashMap<FolderId, Folder>,
     assets: &mut HashMap<AssetId, Asset>,
     asset_crc: &mut HashMap<AssetId, u32>,
-) -> AppResult<Option<FolderId>> {
+) -> AppResult<()> {
     let std_meta = metadata(&path)?;
     let meta = Metadata::from_std_meta(&std_meta);
     let name = path
@@ -199,29 +197,12 @@ fn collect_path(
         .to_string();
 
     if path.is_dir() {
-        let folder = Folder::new(parent, name, meta);
-        let folder_id = folder.id;
-
-        if let Some(parent) = parent.and_then(|p| folders.get_mut(&p)) {
-            parent.children.insert(folder_id);
-        }
-
-        folders.insert(folder_id, folder);
-
         for entry in read_dir(path)? {
-            collect_path(
-                root,
-                entry?.path(),
-                Some(folder_id),
-                folders,
-                assets,
-                asset_crc,
-            )?;
+            collect_path(root, entry?.path(), assets, asset_crc)?;
         }
 
-        Ok(Some(folder_id))
+        Ok(())
     } else if path.is_file() {
-        let parent = folders.get_mut(&parent.unwrap()).unwrap();
         let ext = path
             .extension()
             .unwrap_or_default()
@@ -232,7 +213,7 @@ fn collect_path(
         let crc = crc32fast::hash(&file_content);
 
         let Some(ty) = AssetType::from_ext(&ext) else {
-            return Ok(None);
+            return Ok(());
         };
 
         let props = match ty {
@@ -244,35 +225,26 @@ fn collect_path(
                 if let Some(prop) = VectorGraphicsProperty::new(file_content) {
                     AssetProperty::VectorGraphics(prop)
                 } else {
-                    return Ok(None);
+                    return Ok(());
                 }
             }
             AssetType::GltfModel => {
                 if let Some(props) = GltfModelProperty::new(&file_content) {
                     AssetProperty::GltfModel(props)
                 } else {
-                    return Ok(None);
+                    return Ok(());
                 }
             }
         };
 
-        let asset = Asset::new(
-            parent.id,
-            name,
-            ext.into(),
-            meta,
-            ty,
-            props,
-            Default::default(),
-        );
+        let asset = Asset::new(name, ext.into(), meta, ty, props, Default::default());
 
         // Copy to preserve metadata
         copy(&path, asset.get_file_path(root))?;
         asset_crc.insert(asset.id, crc);
-        parent.content.insert(asset.id);
         assets.insert(asset.id, asset);
 
-        Ok(None)
+        Ok(())
     } else {
         unreachable!()
     }
@@ -304,7 +276,6 @@ pub struct CollectionId(pub Uuid);
 #[serde(rename_all = "camelCase")]
 pub enum IdType {
     Asset,
-    Folder,
     Collection,
     Tag,
 }
@@ -326,11 +297,6 @@ impl ItemId {
         AssetId(self.id)
     }
 
-    pub fn folder(self) -> FolderId {
-        assert_eq!(self.ty, IdType::Folder);
-        FolderId(self.id)
-    }
-
     pub fn collection(self) -> CollectionId {
         assert_eq!(self.ty, IdType::Collection);
         CollectionId(self.id)
@@ -346,7 +312,8 @@ impl ItemId {
 #[serde(rename_all = "camelCase")]
 pub enum Item {
     Asset(Asset),
-    Folder(Folder),
+    Collection(Collection),
+    Tag(Tag),
 }
 
 #[derive(Serialize, Default)]
@@ -496,11 +463,9 @@ pub struct RecycleBin {
 pub struct Storage {
     #[serde(skip)]
     pub cache: StorageCache,
-    pub root_folder: FolderId,
     pub root_collection: CollectionId,
     pub tags: HashMap<TagId, Tag>,
     pub collections: HashMap<CollectionId, Collection>,
-    pub folders: HashMap<FolderId, Folder>,
     pub assets: HashMap<AssetId, Asset>,
     pub recycle_bin: RecycleBin,
     pub lib_meta: LibraryMeta,
@@ -520,19 +485,15 @@ impl Storage {
 
         validate_library(root_path, true);
 
-        let mut folders = HashMap::default();
         let mut assets = HashMap::default();
         let mut duplication = HashMap::default();
 
-        let root_id = collect_path(
+        collect_path(
             root_path,
             src_root_folder.to_path_buf(),
-            None,
-            &mut folders,
             &mut assets,
             &mut duplication,
-        )?
-        .unwrap();
+        )?;
 
         let root_collection = Collection::new(
             None,
@@ -543,11 +504,9 @@ impl Storage {
 
         let mut result = Self {
             cache: Default::default(),
-            root_folder: root_id,
             root_collection: root_collection.id,
             tags: Default::default(),
             collections,
-            folders,
             assets,
             recycle_bin: Default::default(),
             lib_meta: LibraryMeta::new(
@@ -603,19 +562,13 @@ impl Storage {
     pub fn add_assets(
         &mut self,
         path: Vec<PathBuf>,
-        parent: FolderId,
+        // parent: FolderId,
     ) -> AppResult<DuplicateAssets> {
-        if !self.folders.contains_key(&parent) {
-            return Err(AppError::FolderNotFound(parent));
-        }
-
         let mut asset_crc = HashMap::default();
         for path in path {
             collect_path(
                 &self.cache.root.clone(),
                 path,
-                Some(parent),
-                &mut self.folders,
                 &mut self.assets,
                 &mut asset_crc,
             )?;
@@ -629,15 +582,8 @@ impl Storage {
         Ok(DuplicateAssets(duplication))
     }
 
-    pub fn add_raw_assets(
-        &mut self,
-        data: Vec<RawAsset>,
-        parent: FolderId,
-    ) -> AppResult<DuplicateAssets> {
+    pub fn add_raw_assets(&mut self, data: Vec<RawAsset>) -> AppResult<DuplicateAssets> {
         let root = self.cache.root.clone();
-        let Some(parent) = self.folders.get_mut(&parent) else {
-            return Err(AppError::FolderNotFound(parent).into());
-        };
 
         let mut added_crc = HashSet::<u32>::default();
         for RawAsset { bytes, ext, src } in data {
@@ -683,10 +629,9 @@ impl Storage {
 
             let asset = Asset {
                 id: AssetId(id),
-                ..Asset::new(parent.id, id.to_string(), ext.into(), meta, ty, props, src)
+                ..Asset::new(id.to_string(), ext.into(), meta, ty, props, src)
             };
 
-            parent.content.insert(asset.id);
             self.assets.insert(asset.id, asset);
         }
 
@@ -697,9 +642,9 @@ impl Storage {
 
     pub fn move_asset_to_recycle_bin(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.get(&id).cloned() {
-            if let Some(parent) = self.folders.get_mut(&asset.parent) {
-                parent.content.remove(&id);
-            }
+            // if let Some(parent) = self.folders.get_mut(&asset.parent) {
+            //     parent.content.remove(&id);
+            // }
 
             self.cache.remove_asset(asset.id);
             self.recycle_bin
@@ -712,37 +657,11 @@ impl Storage {
         }
     }
 
-    pub fn move_folder_to_recycle_bin(&mut self, id: FolderId) -> AppResult<()> {
-        if self.root_folder == id {
-            return Err(AppError::IllegalFolderDeletion(id));
-        }
-
-        if let Some(folder) = self.folders.get(&id).cloned() {
-            for asset in folder.content.clone() {
-                self.cache.remove_asset(asset);
-            }
-
-            if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
-                parent.children.remove(&id);
-            }
-
-            self.recycle_bin
-                .items
-                .insert(ItemId::new(IdType::Folder, id.0));
-        } else {
-            return Err(AppError::FolderNotFound(id));
-        }
-
-        self.folders.get_mut(&id).unwrap().is_deleted = true;
-
-        Ok(())
-    }
-
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
-            if let Some(parent) = self.folders.get_mut(&asset.parent) {
-                parent.content.remove(&id);
-            }
+            // if let Some(parent) = self.folders.get_mut(&asset.parent) {
+            //     parent.content.remove(&id);
+            // }
 
             self.cache.remove_asset(asset.id);
             remove_file(asset.get_file_path(&self.cache.root))?;
@@ -750,31 +669,6 @@ impl Storage {
             Ok(())
         } else {
             Err(AppError::AssetNotFound(id))
-        }
-    }
-
-    pub fn delete_folder(&mut self, id: FolderId) -> AppResult<()> {
-        if self.root_folder == id {
-            return Err(AppError::IllegalFolderDeletion(id));
-        }
-
-        if let Some(folder) = self.folders.remove(&id) {
-            for asset in folder.content.clone() {
-                self.cache.remove_asset(asset);
-                self.delete_asset(asset)?;
-            }
-
-            for child in folder.children {
-                self.delete_folder(child)?;
-            }
-
-            if let Some(parent) = folder.parent.and_then(|p| self.folders.get_mut(&p)) {
-                parent.children.remove(&id);
-            }
-
-            Ok(())
-        } else {
-            Err(AppError::FolderNotFound(id))
         }
     }
 
@@ -824,46 +718,7 @@ impl Storage {
             let ItemId { ty, id } = item;
 
             match ty {
-                IdType::Asset => {
-                    let Some(asset) = self.assets.get(&AssetId(id)) else {
-                        return Err(AppError::AssetNotFound(AssetId(id)));
-                    };
-
-                    if let Some(parent) = self.folders.get_mut(&asset.parent) {
-                        parent.content.insert(asset.id);
-                    } else if let Some(parent) = self.folders.get_mut(&asset.parent) {
-                        recover_recursion.push(ItemId::new(IdType::Folder, asset.parent.0));
-                        parent.content.insert(asset.id);
-                    }
-
-                    self.cache
-                        .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
-                }
-                IdType::Folder => {
-                    let Some(folder) = self.folders.get_mut(&FolderId(id)) else {
-                        return Err(AppError::FolderNotFound(FolderId(id)));
-                    };
-                    folder.is_deleted = false;
-                    let folder = folder.clone();
-
-                    if let Some(parent) = folder.parent {
-                        if let Some(parent) = self.folders.get_mut(&parent) {
-                            parent.children.insert(folder.id);
-                        } else {
-                            recover_recursion.push(ItemId::new(IdType::Folder, parent.0));
-                        }
-                    }
-
-                    if recover_folder_content {
-                        recover_recursion.extend(
-                            folder
-                                .content
-                                .clone()
-                                .into_iter()
-                                .map(|id| ItemId::new(IdType::Asset, id.0)),
-                        );
-                    }
-                }
+                IdType::Asset => todo!(),
                 IdType::Collection => todo!(),
                 IdType::Tag => todo!(),
             }
@@ -876,16 +731,6 @@ impl Storage {
         }
 
         Ok(DuplicateAssets::default())
-    }
-
-    pub fn create_folder(&mut self, name: String, parent: FolderId) -> AppResult<()> {
-        let folder = Folder::new(Some(parent), name, Metadata::now(0));
-        let Some(parent) = self.folders.get_mut(&parent) else {
-            return Err(AppError::FolderNotFound(parent));
-        };
-        parent.children.insert(folder.id);
-        self.folders.insert(folder.id, folder);
-        Ok(())
     }
 
     pub fn create_tag(&mut self, name: String, parent: CollectionId) -> AppResult<()> {
@@ -923,15 +768,6 @@ impl Storage {
         }
     }
 
-    pub fn rename_folder(&mut self, id: FolderId, new_name: String) -> AppResult<()> {
-        if let Some(folder) = self.folders.get_mut(&id) {
-            folder.name = new_name;
-            Ok(())
-        } else {
-            Err(AppError::FolderNotFound(id))
-        }
-    }
-
     pub fn rename_collection(&mut self, id: CollectionId, new_name: String) -> AppResult<()> {
         if let Some(collection) = self.collections.get_mut(&id) {
             collection.name = new_name;
@@ -948,50 +784,6 @@ impl Storage {
         } else {
             Err(AppError::TagNotFound(id))
         }
-    }
-
-    pub fn move_asset_to(&mut self, asset_id: AssetId, folder_id: FolderId) -> AppResult<()> {
-        let Some(asset) = self.assets.get_mut(&asset_id) else {
-            return Err(AppError::AssetNotFound(asset_id));
-        };
-
-        if let Some(parent) = self.folders.get_mut(&asset.parent) {
-            parent.content.remove(&asset_id);
-        }
-
-        let Some(new_parent) = self.folders.get_mut(&folder_id) else {
-            return Err(AppError::FolderNotFound(folder_id));
-        };
-
-        new_parent.content.insert(asset_id);
-        asset.parent = folder_id;
-
-        Ok(())
-    }
-
-    pub fn move_folder_to(&mut self, src_id: FolderId, dst_id: FolderId) -> AppResult<()> {
-        let Some(src_folder) = self.folders.get(&src_id).cloned() else {
-            return Err(AppError::FolderNotFound(src_id));
-        };
-
-        if let Some(parent) = src_folder.parent.and_then(|p| self.folders.get_mut(&p)) {
-            parent.children.remove(&src_id);
-        }
-
-        let Some(new_parent) = self.folders.get_mut(&dst_id) else {
-            return Err(AppError::FolderNotFound(dst_id));
-        };
-
-        new_parent.children.insert(src_id);
-        self.folders.insert(
-            src_id,
-            Folder {
-                parent: Some(dst_id),
-                ..src_folder
-            },
-        );
-
-        Ok(())
     }
 
     pub fn move_collection_to(
@@ -1050,34 +842,6 @@ impl Storage {
             .get(&id)
             .map(|a| a.get_file_path(&self.cache.root))
             .ok_or_else(|| AppError::AssetNotFound(id))
-    }
-
-    pub fn get_asset_virtual_path(&self, id: AssetId) -> AppResult<Vec<String>> {
-        if let Some(asset) = self.assets.get(&id) {
-            self.get_folder_virtual_path(asset.parent).map(|mut p| {
-                p.push(asset.get_file_name());
-                p
-            })
-        } else {
-            Err(AppError::AssetNotFound(id))
-        }
-    }
-
-    pub fn get_folder_virtual_path(&self, id: FolderId) -> AppResult<Vec<String>> {
-        let mut res = Vec::new();
-        let mut cur_id = Some(id);
-        while let Some(id) = cur_id {
-            if let Some(folder) = self.folders.get(&id) {
-                res.push(folder.name.clone());
-                cur_id = folder.parent;
-            } else {
-                return Err(AppError::FolderNotFound(id));
-            }
-        }
-
-        res.reverse();
-
-        Ok(res)
     }
 
     pub fn get_tag_virtual_path(&self, id: TagId) -> AppResult<Vec<String>> {
@@ -1283,7 +1047,6 @@ impl Folder {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Asset {
-    pub parent: FolderId,
     pub id: AssetId,
     pub name: String,
     pub ty: AssetType,
@@ -1296,7 +1059,6 @@ pub struct Asset {
 
 impl Asset {
     pub fn new(
-        parent: FolderId,
         name: String,
         ext: Arc<str>,
         meta: Metadata,
@@ -1305,7 +1067,6 @@ impl Asset {
         src: String,
     ) -> Self {
         Self {
-            parent,
             id: AssetId(Uuid::new_v4()),
             ty,
             name,

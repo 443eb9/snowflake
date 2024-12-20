@@ -4,14 +4,13 @@ import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/toasts/err-toast";
 import { useContext, useEffect, useState } from "react";
-import { browsingFolderContext, fileManipulationContext, settingsChangeFlagContext, selectedItemsContext } from "./context-provider";
+import { fileManipulationContext, settingsChangeFlagContext, selectedItemsContext } from "./context-provider";
 import SuccessToast from "../widgets/toasts/success-toast";
 import { t } from "../i18n";
 
 
 export default function ShortcutKeyProvider(props: HotKeysProps) {
     const selectedItems = useContext(selectedItemsContext)
-    const browsingFolder = useContext(browsingFolderContext)
     const fileManipulation = useContext(fileManipulationContext)
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
     const [keyMap, setKeyMap] = useState<{ [key: string]: string } | undefined>()
@@ -65,15 +64,6 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
                 })
             }
         },
-        newFolder: () => {
-            if (browsingFolder?.data?.id && !browsingFolder.data.subTy) {
-                fileManipulation?.setter({
-                    id: [{ id: browsingFolder.data.id, ty: "folder" }],
-                    op: "create",
-                    submit: ["New Folder"],
-                })
-            }
-        }
     }
 
     return (

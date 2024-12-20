@@ -16,6 +16,7 @@ export default function ItemTree<T, I>(
         itemChildrenIds: (item: I) => string[],
         icon: (item: T) => Slot<"div">,
         relatedContextMenu: MenuId,
+        itemId: (item: I) => string,
     }
 ) {
     const { show: showContextMenu } = useContextMenu()
@@ -44,7 +45,7 @@ export default function ItemTree<T, I>(
             {
                 Array.from(flatTree.items(), (flatTreeItem, index) => {
                     const treeItemProps = flatTreeItem.getTreeItemProps()
-                    const id = treeItemProps.value as string
+                    const id = props.itemId(treeItemProps as I)
 
                     return (
                         // @ts-ignore

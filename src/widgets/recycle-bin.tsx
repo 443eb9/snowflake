@@ -20,12 +20,12 @@ export default function RecycleBin() {
                     .catch(err => dispatchToast(<ErrToast body={err} />))
 
                 if (recycleBin) {
+                    console.log(recycleBin)
                     browsingFolder?.setter({
                         id: undefined,
                         name: t("recycleBin.title"),
                         content: recycleBin.map(obj => {
                             const decoded = decodeItem(obj)
-                            console.log(obj, { id: decoded.id, ty: decoded.ty })
                             return { id: decoded.id, ty: decoded.ty }
                         }),
                         subTy: "recycleBin",

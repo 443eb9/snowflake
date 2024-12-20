@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext } from "../helpers/context-provider"
-import { Folder, GetFolderTree, GetFolderVirtualPath, GetTagVirtualPath } from "../backend"
+import { GetTagVirtualPath } from "../backend"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, useToastController } from "@fluentui/react-components"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
@@ -17,22 +17,22 @@ export function BrowsingPath() {
             return
         }
 
-        const folderTree = await GetFolderTree()
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        // const folderTree = await GetFolderTree()
+        //     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        if (folderTree) {
-            let currentFolder = folderTree.get(browsingFolder.data.id) as Folder
-            while (pop-- && currentFolder.parent) {
-                currentFolder = folderTree.get(currentFolder.parent) as Folder
-            }
+        // if (folderTree) {
+        //     let currentFolder = folderTree.get(browsingFolder.data.id) as Folder
+        //     while (pop-- && currentFolder.parent) {
+        //         currentFolder = folderTree.get(currentFolder.parent) as Folder
+        //     }
 
-            browsingFolder.setter({
-                id: currentFolder.id,
-                name: currentFolder.name,
-                content: currentFolder.content.map(a => { return { id: a, ty: "asset" } }),
-                subTy: "folder",
-            })
-        }
+        //     browsingFolder.setter({
+        //         id: currentFolder.id,
+        //         name: currentFolder.name,
+        //         content: currentFolder.content.map(a => { return { id: a, ty: "asset" } }),
+        //         subTy: "folder",
+        //     })
+        // }
     }
 
     useEffect(() => {
@@ -46,14 +46,14 @@ export function BrowsingPath() {
                     setVirtualPath([browsingFolder.data.name])
                     break
                 case "folder":
-                    if (browsingFolder.data.id) {
-                        const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
-                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                    // if (browsingFolder.data.id) {
+                    //     const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
+                    //         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-                        if (path) {
-                            setVirtualPath(path)
-                        }
-                    }
+                    //     if (path) {
+                    //         setVirtualPath(path)
+                    //     }
+                    // }
                     break
                 case "tag":
                     if (browsingFolder.data.id) {

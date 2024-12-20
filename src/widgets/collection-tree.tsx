@@ -9,6 +9,7 @@ import { SelectedClassTag } from "./items-grid"
 import ItemTree from "../components/item-tree"
 import { Collections20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-menu"
+import { encodeId } from "../util"
 
 const inputStyleHook = makeStyles({
     root: {
@@ -59,7 +60,7 @@ export default function CollectionTree() {
             }
         }
 
-        if (fileManipulation?.data?.id.length == 1 && fileManipulation?.data?.id[0].ty == "folder") { return }
+        if (fileManipulation?.data?.id.length == 1 && fileManipulation?.data?.id[0].ty == "collection") { return }
 
         fetch()
     }, [fileManipulation?.data])
@@ -161,6 +162,7 @@ export default function CollectionTree() {
                 }
             }}
             relatedContextMenu={CollectionTagCtxMenuId}
+            itemId={item => encodeId(item.id, item.type)}
         />
     )
 }

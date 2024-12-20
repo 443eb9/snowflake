@@ -6,12 +6,11 @@ import Selecto from "react-selecto";
 import { darkenContentStyleHook } from "../helpers/styling";
 import { mergeClasses, useToastController } from "@fluentui/react-components";
 import { TriggerEvent, useContextMenu } from "react-contexify";
-import { CtxMenuId } from "./context-menus/context-menu";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import { RecycleBinCtxMenuId } from "./context-menus/recycle-bin-context-menu";
-import FolderPreview from "./folder-preview";
 import { decodeId } from "../util";
+import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-menu";
 
 export const SelectableClassTag = "selectable-asset"
 export const SelectedClassTag = "selected-asset"
@@ -55,7 +54,7 @@ export default function ItemsGrid() {
         if (browsingFolder.data.subTy == "recycleBin") {
             showCtxMenu({ event: ev, id: RecycleBinCtxMenuId })
         } else {
-            showCtxMenu({ event: ev, id: CtxMenuId })
+            showCtxMenu({ event: ev, id: CollectionTagCtxMenuId })
         }
     }
 
@@ -66,7 +65,7 @@ export default function ItemsGrid() {
                 return
             }
 
-            const objects = await GetItems({ items: browsingFolder.data.content.map(c => c.id) })
+            const objects = await GetItems({ items: browsingFolder.data.content })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (objects) {
@@ -130,14 +129,6 @@ export default function ItemsGrid() {
                                         <AssetPreview
                                             key={index}
                                             asset={data}
-                                            onContextMenu={handleContextMenu}
-                                        />
-                                    )
-                                case "folder":
-                                    return (
-                                        <FolderPreview
-                                            key={index}
-                                            folder={data}
                                             onContextMenu={handleContextMenu}
                                         />
                                     )

@@ -8,7 +8,7 @@ import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Collections20Reg
 import { t } from "../../i18n"
 import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
-import { GetNodeId } from "../../util"
+import { decodeId, GetNodeId } from "../../util"
 
 export const CollectionTagCtxMenuId = "collectiontagctxmenu"
 
@@ -50,16 +50,14 @@ export default function CollectionTagContextMenu() {
 
     const handleDelete = (ev: ItemParams) => {
         if (!ev.triggerEvent.target) { return }
-        const item = GetNodeId(ev.triggerEvent.target as HTMLElement)
-        const ty = fileManipulation?.data?.id[0].ty
+        const id = GetNodeId(ev.triggerEvent.target as HTMLElement)
+        if (!id) { return }
 
-        if (ty && item) {
-            fileManipulation?.setter({
-                id: [{ id: item, ty }],
-                op: "deletion",
-                submit: [],
-            })
-        }
+        fileManipulation?.setter({
+            id: [decodeId(id)],
+            op: "deletion",
+            submit: [],
+        })
     }
 
     const handleRename = () => {
@@ -83,10 +81,11 @@ export default function CollectionTagContextMenu() {
     const handleTagCreation = (ev: ItemParams) => {
         if (!ev.triggerEvent.target) { return }
         const parent = GetNodeId(ev.triggerEvent.target as HTMLElement)
+        if (!parent) { return }
 
         if (parent) {
             fileManipulation?.setter({
-                id: [{ id: parent, ty: "collection" }],
+                id: [decodeId(parent)],
                 op: "create",
                 submit: ["New Tag", "tag"],
             })
@@ -96,10 +95,11 @@ export default function CollectionTagContextMenu() {
     const handleCollectionCreation = (ev: ItemParams) => {
         if (!ev.triggerEvent.target) { return }
         const parent = GetNodeId(ev.triggerEvent.target as HTMLElement)
+        if (!parent) { return }
 
         if (parent) {
             fileManipulation?.setter({
-                id: [{ id: parent, ty: "collection" }],
+                id: [decodeId(parent)],
                 op: "create",
                 submit: ["New Collection", "collection"],
             })
@@ -113,7 +113,6 @@ export default function CollectionTagContextMenu() {
         switch (target) {
             case "collection":
                 if (contextMenuProp.data?.extra) {
-                    console.log("AAA")
                     fileManipulation?.setter({
                         id: [{ id: contextMenuProp.data?.extra, ty: "collection" }],
                         op: "move",
@@ -164,7 +163,7 @@ export default function CollectionTagContextMenu() {
 
     const multipleSelected = contextMenuProp?.data?.target == "assets" &&
         selectedItems?.data?.length != undefined && selectedItems.data.length > 1
-    const onTag = fileManipulation?.data?.id.length != 0 && fileManipulation?.data?.id[0].ty == "tag"
+    const ty = fileManipulation?.data?.id.length != 0 ? fileManipulation?.data?.id[0].ty : undefined
 
     if (!allCollections) {
         return <></>
@@ -199,7 +198,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.rename")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleCollectionCreation} disabled={onTag}>
+            <Item onClick={handleCollectionCreation} disabled={ty == "tag"}>
                 <Button
                     className={buttonStyle.root}
                     icon={<CollectionsAdd20Regular />}
@@ -208,7 +207,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.createCollection")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleTagCreation} disabled={onTag}>
+            <Item onClick={handleTagCreation} disabled={ty == "tag"}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Tag20Regular />}
@@ -228,6 +227,7 @@ export default function CollectionTagContextMenu() {
                         <Text>{t("ctxMenu.moveTo")}</Text>
                     </Button>
                 }
+                disabled={ty == undefined}
             >
                 <FilterableSearch
                     range={allCollections}
@@ -263,7 +263,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.quickRef")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleOpen} disabled={!onTag}>
+            <Item onClick={handleOpen} disabled={ty == "tag"}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Open20Regular />}

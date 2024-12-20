@@ -1,8 +1,4 @@
-use std::{
-    fs::{copy, create_dir_all, write},
-    path::{Path, PathBuf},
-    sync::Mutex,
-};
+use std::{fs::write, path::PathBuf, sync::Mutex};
 
 use base64::Engine;
 use chrono::Local;
@@ -12,16 +8,15 @@ use hashbrown::{HashMap, HashSet};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
-use uuid::Uuid;
 
 use crate::{
     app::{
-        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId,
-        Color, DuplicateAssets, Folder, FolderId, GltfPreviewCamera, IdType, Item, ItemId,
-        LibraryMeta, LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault,
-        SettingsValue, Storage, Tag, TagId, UserSettings, CACHE,
+        AppData, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId, Color,
+        DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, LibraryMeta, LibraryStatistics,
+        RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage, Tag, TagId,
+        UserSettings, CACHE,
     },
-    err::{asset_doesnt_exist, folder_doesnt_exist, storage_not_initialized},
+    err::{asset_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
 };
 
@@ -214,41 +209,41 @@ pub fn unload_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), 
     Ok(())
 }
 
-fn export_recursion(storage: &Storage, folder: &FolderId, path: &Path) -> Result<(), AppError> {
-    if let Some(folder) = storage.folders.get(folder) {
-        let folder_path = path.join(&folder.name);
-        let _ = create_dir_all(&folder_path);
+// fn export_recursion(storage: &Storage, folder: &FolderId, path: &Path) -> Result<(), AppError> {
+//     if let Some(folder) = storage.folders.get(folder) {
+//         let folder_path = path.join(&folder.name);
+//         let _ = create_dir_all(&folder_path);
 
-        for asset in &folder.content {
-            if let Some(asset) = storage.assets.get(asset) {
-                copy(
-                    asset.get_file_path(&storage.cache.root),
-                    folder_path.join(asset.gen_file_name()),
-                )?;
-            }
-        }
+//         for asset in &folder.content {
+//             if let Some(asset) = storage.assets.get(asset) {
+//                 copy(
+//                     asset.get_file_path(&storage.cache.root),
+//                     folder_path.join(asset.gen_file_name()),
+//                 )?;
+//             }
+//         }
 
-        for child in &folder.children {
-            export_recursion(storage, child, &folder_path)?;
-        }
-    }
+//         for child in &folder.children {
+//             export_recursion(storage, child, &folder_path)?;
+//         }
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
 
-#[tauri::command]
-pub fn export_library(
-    root_folder: PathBuf,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<(), String> {
-    log::info!("Exporting library to {:?}", root_folder);
+// #[tauri::command]
+// pub fn export_library(
+//     root_folder: PathBuf,
+//     storage: State<'_, Mutex<Option<Storage>>>,
+// ) -> Result<(), String> {
+//     log::info!("Exporting library to {:?}", root_folder);
 
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        export_recursion(&storage, &storage.root_folder, &root_folder).map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
+//     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+//         export_recursion(&storage, &storage.root_folder, &root_folder).map_err(|e| e.to_string())
+//     } else {
+//         Err(storage_not_initialized())
+//     }
+// }
 
 #[tauri::command]
 pub fn gen_statistics(
@@ -266,15 +261,12 @@ pub fn gen_statistics(
 #[tauri::command]
 pub fn import_assets(
     path: Vec<PathBuf>,
-    parent: FolderId,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Importing assets {:?} into folder {:?}.", path, parent);
+    log::info!("Importing assets {:?}.", path);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage
-            .add_assets(path, parent)
-            .map_err(|e| e.to_string())?;
+        storage.add_assets(path).map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
@@ -310,21 +302,17 @@ pub fn change_library_name(
 pub fn import_memory_asset(
     data: Vec<u8>,
     format: String,
-    parent: FolderId,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Option<DuplicateAssets>, String> {
     log::info!("Importing memory asset");
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         let duplication = storage
-            .add_raw_assets(
-                vec![RawAsset {
-                    bytes: data,
-                    ext: format.into(),
-                    src: Default::default(),
-                }],
-                parent,
-            )
+            .add_raw_assets(vec![RawAsset {
+                bytes: data,
+                ext: format.into(),
+                src: Default::default(),
+            }])
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
 
@@ -337,15 +325,10 @@ pub fn import_memory_asset(
 #[tauri::command]
 pub async fn import_web_assets(
     urls: Vec<String>,
-    parent: FolderId,
     storage: State<'_, Mutex<Option<Storage>>>,
     progress: Channel<DownloadEvent>,
 ) -> Result<Option<DuplicateAssets>, String> {
-    log::info!(
-        "Importing assets from web {:?} into folder {:?}.",
-        urls,
-        parent
-    );
+    log::info!("Importing assets from web {:?}.", urls,);
 
     let client = Client::new();
     let mut results = Vec::with_capacity(urls.len());
@@ -439,9 +422,7 @@ pub async fn import_web_assets(
     }
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let duplication = storage
-            .add_raw_assets(results, parent)
-            .map_err(|e| e.to_string())?;
+        let duplication = storage.add_raw_assets(results).map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
@@ -516,38 +497,6 @@ pub fn get_asset_abs_path(
 }
 
 #[tauri::command]
-pub fn get_asset_virtual_path(
-    asset: AssetId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<String>, String> {
-    log::info!("Getting virtual path of asset {:?}.", asset);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        storage
-            .get_asset_virtual_path(asset)
-            .map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn get_folder_virtual_path(
-    folder: FolderId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<String>, String> {
-    log::info!("Getting virtual path of folder {:?}.", folder);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        storage
-            .get_folder_virtual_path(folder)
-            .map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
 pub fn get_tag_virtual_path(
     tag: TagId,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -556,24 +505,6 @@ pub fn get_tag_virtual_path(
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         storage.get_tag_virtual_path(tag).map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn get_folder_tree(
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<HashMap<FolderId, Folder>, String> {
-    log::info!("Getting folder tree.");
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage
-            .folders
-            .clone()
-            .into_iter()
-            .filter(|(_, f)| !f.is_deleted)
-            .collect())
     } else {
         Err(storage_not_initialized())
     }
@@ -592,17 +523,6 @@ pub fn get_collection_tree(
             .into_iter()
             .filter(|(_, c)| !c.is_deleted)
             .collect())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn get_root_folder_id(storage: State<'_, Mutex<Option<Storage>>>) -> Result<FolderId, String> {
-    log::info!("Getting root folder id.");
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage.root_folder)
     } else {
         Err(storage_not_initialized())
     }
@@ -639,47 +559,6 @@ pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> R
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         storage.tags.insert(new_tag.id, new_tag);
         storage.save().map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn get_assets_at(
-    folder: FolderId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Vec<Asset>, String> {
-    log::info!("Getting assets at {:?}", folder);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        let folder = storage
-            .folders
-            .get(&folder)
-            .ok_or_else(|| folder_doesnt_exist(folder))?;
-        Ok(folder
-            .content
-            .iter()
-            .filter_map(|a| storage.assets.get(a))
-            .cloned()
-            .collect())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn get_folder(
-    folder: FolderId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Folder, String> {
-    log::info!("Getting folder {:?}", folder);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        storage
-            .folders
-            .get(&folder)
-            .ok_or_else(|| folder_doesnt_exist(folder))
-            .cloned()
     } else {
         Err(storage_not_initialized())
     }
@@ -723,7 +602,7 @@ pub fn get_assets(
 
 #[tauri::command]
 pub fn get_items(
-    items: Vec<Uuid>,
+    items: Vec<ItemId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Item>, String> {
     log::info!("Getting items {:?}", items);
@@ -731,23 +610,52 @@ pub fn get_items(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(items
             .into_iter()
-            .filter_map(|item| {
-                let asset = storage.assets.get(&AssetId(item));
-                let folder = storage.folders.get(&FolderId(item));
-
-                if asset.is_some() && folder.is_none() {
-                    Some(Item::Asset(asset.unwrap().clone()))
-                } else if asset.is_none() && folder.is_some() {
-                    Some(Item::Folder(folder.unwrap().clone()))
-                } else {
-                    None
-                }
+            .filter_map(|id| match id.ty {
+                IdType::Asset => storage
+                    .assets
+                    .get(&id.asset())
+                    .cloned()
+                    .map(|a| Item::Asset(a)),
+                IdType::Collection => storage
+                    .collections
+                    .get(&id.collection())
+                    .cloned()
+                    .map(|c| Item::Collection(c)),
+                IdType::Tag => storage.tags.get(&id.tag()).cloned().map(|a| Item::Tag(a)),
             })
             .collect())
     } else {
         Err(storage_not_initialized())
     }
 }
+
+// #[tauri::command]
+// pub fn get_items(
+//     items: Vec<Uuid>,
+//     storage: State<'_, Mutex<Option<Storage>>>,
+// ) -> Result<Vec<Item>, String> {
+//     log::info!("Getting items {:?}", items);
+
+//     if let Ok(Some(storage)) = storage.lock().as_deref() {
+//         Ok(items
+//             .into_iter()
+//             .filter_map(|item| {
+//                 let asset = storage.assets.get(&AssetId(item));
+//                 let folder = storage.folders.get(&FolderId(item));
+
+//                 if asset.is_some() && folder.is_none() {
+//                     Some(Item::Asset(asset.unwrap().clone()))
+//                 } else if asset.is_none() && folder.is_some() {
+//                     Some(Item::Folder(folder.unwrap().clone()))
+//                 } else {
+//                     None
+//                 }
+//             })
+//             .collect())
+//     } else {
+//         Err(storage_not_initialized())
+//     }
+// }
 
 #[tauri::command]
 pub fn get_tags(
@@ -897,37 +805,6 @@ pub fn delete_assets(
 }
 
 #[tauri::command]
-pub fn delete_folders(
-    folders: Vec<FolderId>,
-    permanently: bool,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<(), String> {
-    log::info!(
-        "Deleting folders {:?}, permanently: {}",
-        folders,
-        permanently
-    );
-
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        if permanently {
-            for folder in folders {
-                storage.delete_folder(folder).map_err(|e| e.to_string())?;
-            }
-        } else {
-            for folder in folders {
-                storage
-                    .move_folder_to_recycle_bin(folder)
-                    .map_err(|e| e.to_string())?;
-            }
-        }
-
-        storage.save().map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
 pub fn delete_tags(
     tags: Vec<TagId>,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -956,27 +833,6 @@ pub fn delete_collections(
         for collection in collections {
             storage
                 .delete_collection(collection)
-                .map_err(|e| e.to_string())?;
-        }
-
-        storage.save().map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn create_folders(
-    folder_names: Vec<String>,
-    parent: FolderId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<(), String> {
-    log::info!("Creating folders {:?} in {:?}", folder_names, parent);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for folder in folder_names {
-            storage
-                .create_folder(folder, parent)
                 .map_err(|e| e.to_string())?;
         }
 
@@ -1043,53 +899,10 @@ pub fn rename_item(
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         match item.ty {
             IdType::Asset => storage.rename_asset(item.asset(), name),
-            IdType::Folder => storage.rename_folder(item.folder(), name),
             IdType::Collection => storage.rename_collection(item.collection(), name),
             IdType::Tag => storage.rename_tag(item.tag(), name),
         }
         .map_err(|e| e.to_string())?;
-        storage.save().map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn move_assets_to(
-    assets: Vec<AssetId>,
-    folder: FolderId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<(), String> {
-    log::info!("Moving assets {:?} to {:?}", assets, folder);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for asset in assets {
-            if let Err(e) = storage.move_asset_to(asset, folder) {
-                return Err(e.to_string());
-            }
-        }
-
-        storage.save().map_err(|e| e.to_string())
-    } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn move_folders_to(
-    src_folders: Vec<FolderId>,
-    dst_folder: FolderId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<(), String> {
-    log::info!("Moving folders {:?} to {:?}", src_folders, dst_folder);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for folder in src_folders {
-            if let Err(e) = storage.move_folder_to(folder, dst_folder) {
-                return Err(e.to_string());
-            }
-        }
-
         storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
@@ -1102,11 +915,7 @@ pub fn move_tags_to(
     dst_collection: CollectionId,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!(
-        "Moving tags {:?} to {:?}",
-        src_tags,
-        dst_collection
-    );
+    log::info!("Moving tags {:?} to {:?}", src_tags, dst_collection);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for tag in src_tags {
@@ -1169,7 +978,6 @@ pub fn open_with_default_app(
 #[serde(rename_all = "camelCase")]
 pub enum QuickRefSrcTy {
     Asset(Vec<AssetId>),
-    Folder(FolderId),
     Tag(TagId),
 }
 
@@ -1193,13 +1001,6 @@ pub async fn quick_ref(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         let ids: Vec<_> = match &ty {
             QuickRefSrcTy::Asset(ids) => ids.iter().collect(),
-            QuickRefSrcTy::Folder(id) => storage
-                .folders
-                .get(id)
-                .ok_or_else(|| folder_doesnt_exist(*id))?
-                .content
-                .iter()
-                .collect(),
             QuickRefSrcTy::Tag(id) => storage
                 .assets
                 .values()

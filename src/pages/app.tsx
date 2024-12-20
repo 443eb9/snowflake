@@ -5,7 +5,6 @@ import WindowControls from "../widgets/window-controls";
 import { Button, Subtitle1, Title3 } from "@fluentui/react-components";
 import { BrowsingPath } from "../widgets/browsing-path";
 import AssetManipulation from "../widgets/asset-manipulation";
-import ContextMenu from "../widgets/context-menus/context-menu";
 import FileManipulator from "../helpers/file-manipulator";
 import OverlayPanel from "./overlay-panel";
 import { useContext } from "react";
@@ -57,7 +56,6 @@ export default function MainApp() {
                         <DetailInfo />
                     </div>
                 </div>
-                <ContextMenu />
                 <RecycleBinContextMenu />
                 <CollectionTagContextMenu />
                 <FileManipulator />

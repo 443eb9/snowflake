@@ -13,14 +13,12 @@
     "npm:@tauri-apps/plugin-dialog@~2.0.1": "2.0.1",
     "npm:@tauri-apps/plugin-log@2.0": "2.0.0",
     "npm:@tauri-apps/plugin-shell@2.2": "2.2.0",
-    "npm:@types/randomcolor@~0.5.9": "0.5.9",
     "npm:@types/react-dom@^18.2.7": "18.3.1",
     "npm:@types/react@^18.2.15": "18.3.12",
     "npm:@types/three@0.171": "0.171.0",
     "npm:@vitejs/plugin-react@^4.2.1": "4.3.4_vite@5.4.11_@babel+core@7.26.0",
     "npm:i18next-http-backend@^3.0.1": "3.0.1",
     "npm:i18next@^24.0.5": "24.0.5_typescript@5.7.2",
-    "npm:randomcolor@~0.6.2": "0.6.2",
     "npm:react-contexify@6": "6.0.0_react@18.3.1_react-dom@18.3.1__react@18.3.1",
     "npm:react-dom@^18.2.0": "18.3.1_react@18.3.1",
     "npm:react-hotkeys@2": "2.0.0_react@18.3.1",
@@ -31,7 +29,6 @@
     "npm:tailwindcss@^3.4.15": "3.4.15_postcss@8.4.49",
     "npm:three@0.171": "0.171.0",
     "npm:typescript@^5.2.2": "5.7.2",
-    "npm:uuid@^11.0.3": "11.0.3",
     "npm:vite@^5.3.1": "5.4.11"
   },
   "npm": {
@@ -1709,7 +1706,7 @@
         "troika-three-text",
         "tunnel-rat",
         "utility-types",
-        "uuid@9.0.1",
+        "uuid",
         "zustand@5.0.2_@types+react@18.3.12_react@18.3.1"
       ]
     },
@@ -1927,9 +1924,6 @@
     },
     "@types/prop-types@15.7.13": {
       "integrity": "sha512-hCZTSvwbzWGvhqxp/RqVqwU999pBf2vp7hzIjiYOsl8wqOmUxkQ6ddw1cV3l8811+kdUFus/q4d1Y3E3SyEifA=="
-    },
-    "@types/randomcolor@0.5.9": {
-      "integrity": "sha512-k58cfpkK15AKn1m+oRd9nh5BnuiowhbyvBBdAzcddtARMr3xRzP0VlFaAKovSG6N6Knx08EicjPlOMzDejerrQ=="
     },
     "@types/react-dom@18.3.1": {
       "integrity": "sha512-qW1Mfv8taImTthu4KoXgDfLuk4bydU6Q/TkADnDWWHwi4NX4BR+LWfTp2sVmTqRrsHvyDDTelgelxJ+SsejKKQ==",
@@ -2634,9 +2628,6 @@
     "queue-microtask@1.2.3": {
       "integrity": "sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A=="
     },
-    "randomcolor@0.6.2": {
-      "integrity": "sha512-Mn6TbyYpFgwFuQ8KJKqf3bqqY9O1y37/0jgSK/61PUxV4QfIMv0+K2ioq8DfOjkBslcjwSzRfIDEXfzA9aCx7A=="
-    },
     "react-composer@5.0.3_react@18.3.1": {
       "integrity": "sha512-1uWd07EME6XZvMfapwZmc7NgCZqDemcvicRi3wMJzXsQLvZ3L7fTHVyPy1bZdnWXM4iPjYuNE+uJ41MLKeTtnA==",
       "dependencies": [
@@ -3059,9 +3050,6 @@
     "utility-types@3.11.0": {
       "integrity": "sha512-6Z7Ma2aVEWisaL6TvBCy7P8rm2LQoPv6dJ7ecIaIixHcwfbJ0x7mWdbcwlIM5IGQxPZSFYeqRCqlOOeKoJYMkw=="
     },
-    "uuid@11.0.3": {
-      "integrity": "sha512-d0z310fCWv5dJwnX1Y/MncBAqGMKEzlBb1AOf7z9K8ALnd0utBX/msg/fA0+sbyN1ihbMsLhrBlnl1ak7Wa0rg=="
-    },
     "uuid@9.0.1": {
       "integrity": "sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA=="
     },
@@ -3158,14 +3146,12 @@
         "npm:@tauri-apps/plugin-dialog@~2.0.1",
         "npm:@tauri-apps/plugin-log@2.0",
         "npm:@tauri-apps/plugin-shell@2.2",
-        "npm:@types/randomcolor@~0.5.9",
         "npm:@types/react-dom@^18.2.7",
         "npm:@types/react@^18.2.15",
         "npm:@types/three@0.171",
         "npm:@vitejs/plugin-react@^4.2.1",
         "npm:i18next-http-backend@^3.0.1",
         "npm:i18next@^24.0.5",
-        "npm:randomcolor@~0.6.2",
         "npm:react-contexify@6",
         "npm:react-dom@^18.2.0",
         "npm:react-hotkeys@2",
@@ -3176,7 +3162,6 @@
         "npm:tailwindcss@^3.4.15",
         "npm:three@0.171",
         "npm:typescript@^5.2.2",
-        "npm:uuid@^11.0.3",
         "npm:vite@^5.3.1"
       ]
     }

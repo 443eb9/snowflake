@@ -61,12 +61,6 @@ export default function DetailInfo() {
                 {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
             </Text>
         )
-    } if (selectedItems?.data && selectedItems?.data.length > 0 && selectedItems?.data[0].ty == "folder") {
-        return (
-            <Text className="opacity-50" size={600} italic>
-                {t("detail.folderSelect")}
-            </Text>
-        )
     } else if (asset && assetAbsPath) {
         return (
             <>

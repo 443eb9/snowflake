@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
-import { CreateCollections, CreateFolders, CreateTags, DeleteAssets, DeleteCollections, DeleteFolders, DeleteTags, GetFolder, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveAssetsTo, MoveCollectionsTo, MoveFoldersTo, MoveTagsTo, RecoverItem, RenameItem } from "../backend"
+import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecoverItem, RenameItem } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
@@ -57,61 +57,25 @@ export default function FileManipulator() {
     ) {
         const dup = await ImportAssets({ parent, path: items })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-        const folder = await GetFolder({ folder: parent })
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-        if (folder) {
-            browsingFolder?.setter({
-                ...folder,
-                content: folder.content.map(a => { return { id: a, ty: "asset" } }),
-                subTy: "folder",
-            })
+        // TODO update
+        // const folder = await GetFolder({ folder: parent })
+        //     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        // if (folder) {
+        //     browsingFolder?.setter({
+        //         ...folder,
+        //         content: folder.content.map(a => { return { id: a, ty: "asset" } }),
+        //         subTy: "folder",
+        //     })
 
-            if (dup) {
-                dispatchToast(<MsgToast
-                    title={t("toast.assetDuplication.title")}
-                    body={<DuplicationList list={dup} />}
-                />,
-                    { intent: "warning" }
-                )
-            }
-        }
-    }
-
-    async function handleAssetsMove(
-        moved: string[],
-        target: string,
-    ) {
-        await MoveAssetsTo({ assets: moved, folder: target })
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-        selectedItems?.setter(selectedItems.data?.filter(a => !moved.includes(a.id)))
-        if (browsingFolder?.data) {
-            browsingFolder.setter({
-                ...browsingFolder.data,
-                content: browsingFolder.data.content.filter(c => !moved.includes(c.id))
-            })
-        }
-    }
-
-    async function handleFolderDeletion(
-        targetIds: string[],
-        permanently: boolean,
-    ) {
-        await DeleteFolders({ folders: targetIds, permanently })
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-        if (browsingFolder?.data?.id && targetIds.includes(browsingFolder.data?.id)) {
-            browsingFolder.setter(undefined)
-            selectedItems?.setter([])
-        }
-    }
-
-    async function handleFolderCreation(
-        newNames: string[],
-        parent: string,
-    ) {
-        await CreateFolders({ folderNames: newNames, parent })
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        //     if (dup) {
+        //         dispatchToast(<MsgToast
+        //             title={t("toast.assetDuplication.title")}
+        //             body={<DuplicationList list={dup} />}
+        //         />,
+        //             { intent: "warning" }
+        //         )
+        //     }
+        // }
     }
 
     async function handleFolderAlikeRename(
@@ -127,33 +91,12 @@ export default function FileManipulator() {
         }
     }
 
-    async function handleFoldersImport(
-        items: string[],
-        parent: string,
-    ) {
-        const dup = await ImportAssets({ parent, path: items })
-            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-        if (dup) {
-            dispatchToast(<MsgToast
-                title={t("toast.assetDuplication.title")}
-                body={<DuplicationList list={dup} />}
-            />,
-                { intent: "warning" }
-            )
-        }
-    }
-
     async function handleFolderAlikeMove(
         moved: string[],
         target: string,
         ty: ItemTy,
     ) {
         switch (ty) {
-            case "folder":
-                await MoveFoldersTo({ srcFolders: moved, dstFolder: target })
-                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                break
             case "collection":
                 await MoveCollectionsTo({ srcCollections: moved, dstCollection: target })
                     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -217,8 +160,6 @@ export default function FileManipulator() {
                 switch (item.ty) {
                     case "asset":
                         return { asset: item.id }
-                    case "folder":
-                        return { folder: item.id }
                     // TODO collection and tag
                 }
             }).filter(id => id != undefined)
@@ -257,20 +198,8 @@ export default function FileManipulator() {
         }
 
         const assets = data.id.filter(id => id.ty == "asset").map(id => id.id)
-        const folder = data.id.filter(id => id.ty == "folder").map(id => id.id)
         const collections = data.id.filter(id => id.ty == "collection").map(id => id.id)
         const tags = data.id.filter(id => id.ty == "tag").map(id => id.id)
-
-        if (folder.length > 0) {
-            switch (data.op) {
-                case "rename": handleFolderAlikeRename({ id: folder[0], ty: "folder" }, data.submit[0]); break
-                case "deletion": handleFolderDeletion(folder, false); break
-                case "deletionPermanent": handleFolderDeletion(folder, true); break
-                case "create": handleFolderCreation(data.submit, folder[0]); break
-                case "import": handleFoldersImport(data.submit, folder[0]); break
-                case "move": handleFolderAlikeMove(folder, data.submit[0], "folder"); break
-            }
-        }
 
         if (assets.length > 0) {
             switch (data.op) {
@@ -279,7 +208,6 @@ export default function FileManipulator() {
                 case "deletionPermanent": handleAssetDeletion(assets, true); break
                 case "create": console.error("Creating an asset is invalid."); break
                 case "import": handleAssetsImport(data.submit, assets[0]); break
-                case "move": handleAssetsMove(assets, data.submit[0]); break
             }
         }
 
