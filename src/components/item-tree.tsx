@@ -12,7 +12,7 @@ export default function ItemTree<T, I>(
         itemTree: Map<string, I>,
         onItemClick: (ev: MouseEvent, id: I) => void,
         onItemContextMenu: (ev: MouseEvent, id: I) => void,
-        renderNode: (node: ItemTreeNode<T>, item: I) => ReactNode,
+        renderNode: (item: I) => ReactNode,
         isNodeExpandable: (id: string) => boolean,
         itemToNode: (item: I) => ItemTreeNode<T>,
         itemChildrenIds: (item: I) => string[],
@@ -32,7 +32,7 @@ export default function ItemTree<T, I>(
         function collectTree(id: string) {
             const item = props.itemTree.get(id) as I
             if (item == undefined) {
-                dispatchToast(<ErrToast body="Broken tree." />)
+                dispatchToast(<ErrToast body="Broken tree." />, { intent: "error" })
                 return
             }
             result.push({ ...props.itemToNode(item), ...item })
@@ -77,7 +77,7 @@ export default function ItemTree<T, I>(
                                 }}
                             >
                                 {
-                                    props.renderNode(treeItemProps, treeItemProps)
+                                    props.renderNode(treeItemProps)
                                 }
                             </TreeItemLayout>
                         </FlatTreeItem>

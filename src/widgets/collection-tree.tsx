@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
-import { Button, HeadlessFlatTreeItemProps, Input, makeStyles, Text, useToastController } from "@fluentui/react-components"
+import { Button, Input, makeStyles, Text, useToastController } from "@fluentui/react-components"
 import { Collection, GetAllAssets, GetAllTags, GetAllUncategorizedAssets, GetAssetsContainingTag, GetCollectionTree, GetSpecialCollections, SpecialCollections, Tag } from "../backend"
 import { GlobalToasterId } from "../main"
 import ErrToast from "./toasts/err-toast"
@@ -23,8 +23,6 @@ type CollectionOrTag = {
 } & Collection | {
     ty: "tag",
 } & Tag
-
-type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
 export default function CollectionTree() {
     const nav = useNavigate()
@@ -104,49 +102,43 @@ export default function CollectionTree() {
         return fileManipulation?.data?.id.find(i => i.id == id) != undefined
     }
 
-    function CollectionNode({ node, item }: { node: FlatTreeNode & { type: "collection" | "tag" }, item: CollectionOrTag }) {
+    function CollectionNode({ item }: { item: CollectionOrTag }) {
         if (!fileManipulation) { return }
 
-        const id = node.value as string
+        console.log(item)
 
-        return (
-            <>
-                {
-                    isEditing(id) && fileManipulation.data?.op == "rename"
-                        ? <Input
-                            className={inputStyle.root}
-                            defaultValue={item.name}
-                            autoFocus
-                            onKeyDown={ev => {
-                                if (ev.key == "Enter") {
-                                    if (fileManipulation.data) {
-                                        fileManipulation.setter({
-                                            ...fileManipulation.data,
-                                            submit: [ev.currentTarget.value],
-                                        })
-                                    }
-                                } else if (ev.key == "Escape") {
-                                    fileManipulation.setter(undefined)
-                                }
-                            }}
-                            onBlur={ev => {
-                                if (fileManipulation.data) {
-                                    fileManipulation.setter({
-                                        ...fileManipulation.data,
-                                        submit: [ev.currentTarget.value],
-                                    })
-                                }
-                            }}
-                        />
-                        : <Text
-                            id={encodeId(id, node.type)}
-                        // style={{ color: `#${item.color}` }}
-                        >
-                            {item.name}
-                        </Text>
-                }
-            </>
-        )
+        return isEditing(item.id) && fileManipulation.data?.op == "rename"
+            ? <Input
+                className={inputStyle.root}
+                defaultValue={item.name}
+                autoFocus
+                onKeyDown={ev => {
+                    if (ev.key == "Enter") {
+                        if (fileManipulation.data) {
+                            fileManipulation.setter({
+                                ...fileManipulation.data,
+                                submit: [ev.currentTarget.value],
+                            })
+                        }
+                    } else if (ev.key == "Escape") {
+                        fileManipulation.setter(undefined)
+                    }
+                }}
+                onBlur={ev => {
+                    if (fileManipulation.data) {
+                        fileManipulation.setter({
+                            ...fileManipulation.data,
+                            submit: [ev.currentTarget.value],
+                        })
+                    }
+                }}
+            />
+            : <Text
+                id={encodeId(item.id, item.ty)}
+                style={item.color ? { color: `#${item.color}` } : undefined}
+            >
+                {item.name}
+            </Text>
     }
 
     if (!treeContext) {
@@ -205,7 +197,7 @@ export default function CollectionTree() {
                 onItemClick={(_, item) => updateBrowsingFolder(item)}
                 onItemContextMenu={(_, item) => contextMenuProp?.setter(item)}
                 isNodeExpandable={id => !isEditing(id)}
-                renderNode={(node, item) => <CollectionNode node={node} item={item} />}
+                renderNode={item => <CollectionNode item={item} />}
                 itemToNode={item => {
                     return {
                         value: item.id,

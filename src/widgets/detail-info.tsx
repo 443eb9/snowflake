@@ -85,9 +85,11 @@ export default function DetailInfo() {
                             onKeyDown={async ev => {
                                 if (ev.key == "Enter") {
                                     ev.currentTarget.blur()
-                                    await ModifySrcOf({ asset: asset.id, src: newSrc })
-                                        .catch(err => <ErrToast body={err} />)
                                 }
+                            }}
+                            onBlur={async () => {
+                                await ModifySrcOf({ asset: asset.id, src: newSrc })
+                                    .catch(err => <ErrToast body={err} />)
                             }}
                             readOnly={atRecycleBin}
                         />
