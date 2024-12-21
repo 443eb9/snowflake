@@ -8,20 +8,20 @@ import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 
 export default function TagsContainer({
-    associatedItem, tags, readonly
+    associatedItem, tags, readonly,
 }: {
     associatedItem?: string, tags: string[], readonly?: boolean
 }) {
     const [currentItem, setCurrentItem] = useState<string | null>()
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [selected, setSelected] = useState<Tag[]>([])
+    const [selectedIds, setSelectedIds] = useState(tags)
     const browsingFolder = useContext(browsingFolderContext)
     const selectedItems = useContext(selectedItemsContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const update = async (tag: Tag | undefined, isDismiss: boolean) => {
-        console.log(tag, allTags)
         if (!browsingFolder || !associatedItem || !tag) {
             return
         }
@@ -35,7 +35,6 @@ export default function TagsContainer({
                 content: currentFolder.content.filter(itemId => itemId.id != associatedItem)
             })
             selectedItems?.setter([])
-            setSelected([...selected, tag])
         }
 
         if ((currentFolder?.subTy == "uncategoriezed" && isDismiss)
@@ -45,12 +44,15 @@ export default function TagsContainer({
                 content: [...currentFolder.content, { id: associatedItem, ty: "asset" }],
             })
             setSelected(selected.filter(t => t.id == tag.id))
+            selectedItems?.setter([])
         }
 
         if (isDismiss) {
+            setSelectedIds(selectedIds.filter(id => id != tag.id))
             await RemoveTagFromAssets({ assets: [associatedItem], tag: tag.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         } else {
+            setSelectedIds([...selectedIds, tag.id])
             await AddTagToAssets({ assets: [associatedItem], tag: tag.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
@@ -67,7 +69,7 @@ export default function TagsContainer({
 
     useEffect(() => {
         async function fetchTags() {
-            const selected = await GetTags({ tags: tags })
+            const selected = await GetTags({ tags: selectedIds })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (selected) {
@@ -75,9 +77,12 @@ export default function TagsContainer({
             }
         }
 
+        fetchTags()
+    }, [selectedIds])
+
+    useEffect(() => {
         if (associatedItem != currentItem) {
             setCurrentItem(associatedItem)
-            fetchTags()
         }
         fetchAllTags()
     }, [associatedItem])
