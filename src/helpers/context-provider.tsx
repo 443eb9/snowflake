@@ -15,7 +15,7 @@ export type VirtualFolder = {
 
 export type FileManipulation = {
     id: ItemId[],
-    op: "rename" | "deletion" | "deletionPermanent" | "create" | "import" | "move" | "recover" | "recolor" | undefined,
+    op: "rename" | "deletion" | "deletionPermanent" | "create" | "import" | "move" | "recover" | "recolor" | "regroup" | undefined,
     submit: string[] | undefined,
 }
 

@@ -1,5 +1,5 @@
 import { Input, makeStyles } from "@fluentui/react-components";
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useRef, useState } from "react";
 import { Item, ItemProps } from "react-contexify";
 
 const inputStyleHook = makeStyles({
@@ -10,31 +10,24 @@ const inputStyleHook = makeStyles({
 })
 
 export default function FilterableSearch<T>({
-    range, searchKey, component, noMatch, itemProps, focused
+    range, searchKey, component, noMatch, itemProps
 }: {
     range: T[],
     searchKey: (item: T) => string,
     component: (item: T) => ReactNode,
     noMatch: ReactNode,
     itemProps?: (item: T) => Omit<ItemProps, "children">,
-    focused: () => boolean,
 }) {
     const [filter, setFilter] = useState("")
     const inputRef = useRef<HTMLInputElement>(null)
 
     const inputStyle = inputStyleHook()
 
-    useEffect(() => {
-        if (focused()) {
-            inputRef.current?.focus()
-        }
-    }, [focused()])
-
     const standardizedFilter = filter.toLowerCase()
     const filteredResults = range.filter(x => searchKey(x).toLowerCase().includes(standardizedFilter))
 
     return (
-        <>
+        <div>
             <Input
                 className={inputStyle.root}
                 appearance="underline"
@@ -54,6 +47,6 @@ export default function FilterableSearch<T>({
                         )
                 }
             </div>
-        </>
+        </div>
     )
 }

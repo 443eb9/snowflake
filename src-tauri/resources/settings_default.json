@@ -19,6 +19,13 @@
                 "open",
                 "ref"
             ]
+        },
+        "tagGroupConflictResolve": {
+            "default": "remove",
+            "candidates": [
+                "override",
+                "remove"
+            ]
         }
     },
     "modelRendering": {

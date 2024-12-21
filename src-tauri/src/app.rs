@@ -11,7 +11,7 @@ use filetime::FileTime;
 use glam::{Mat4, Vec3};
 use gltf::Gltf;
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use thiserror::Error;
 use uuid::Uuid;
@@ -79,6 +79,17 @@ pub enum SettingsValue {
     Toggle(bool),
     Sequence(Vec<String>),
     Float(f32),
+}
+
+impl SettingsValue {
+    pub fn to_object<T: DeserializeOwned>(&self) -> Option<T> {
+        match self {
+            SettingsValue::Name(name) => {
+                T::deserialize(&serde_json::Value::String(name.clone())).ok()
+            }
+            _ => None,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
@@ -453,6 +464,13 @@ impl SpecialCollections {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub enum TagGroupConflictResolve {
+    Override,
+    Remove,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Storage {
@@ -564,9 +582,9 @@ impl Storage {
             collect_path(&self.cache.root.clone(), path, &mut assets, &mut asset_crc)?;
         }
 
-        if let Some(initial_tag) = initial_tag {
+        if let Some(initial_tag) = initial_tag.and_then(|i| self.tags.get(&i)) {
             for asset in assets.values_mut() {
-                asset.tags.insert(initial_tag);
+                asset.tags.insert_unchecked(initial_tag);
             }
         }
 
@@ -633,8 +651,8 @@ impl Storage {
                 ..Asset::new(id.to_string(), ext.into(), meta, ty, props, src)
             };
 
-            if let Some(initial_tag) = initial_tag {
-                asset.tags.insert(initial_tag);
+            if let Some(initial_tag) = initial_tag.and_then(|i| self.tags.get(&i)) {
+                asset.tags.insert_unchecked(initial_tag);
             }
 
             self.assets.insert(asset.id, asset);
@@ -777,18 +795,23 @@ impl Storage {
 
     pub fn recolor_collection(
         &mut self,
-        id: CollectionId,
+        collection: CollectionId,
         new_color: Option<Color>,
     ) -> AppResult<()> {
-        if self.sp_collections.is_special(id) {
-            return Err(AppError::IllegalCollectionModification(id));
+        if self.sp_collections.is_special(collection) {
+            return Err(AppError::IllegalCollectionModification(collection));
         }
 
-        let Some(collection) = self.collections.get_mut(&id) else {
-            return Err(AppError::CollectionNotFound(id));
+        let Some(collection) = self.collections.get_mut(&collection) else {
+            return Err(AppError::CollectionNotFound(collection));
         };
 
         collection.color = new_color;
+        for tag in self.tags.values_mut() {
+            if tag.group.is_some_and(|g| g == collection.id) {
+                tag.color = new_color;
+            }
+        }
         Ok(())
     }
 
@@ -838,6 +861,68 @@ impl Storage {
         new_parent.content.insert(src_id);
         src_tag.parent = new_parent.id;
 
+        Ok(())
+    }
+
+    pub fn regroup_tag(
+        &mut self,
+        id: TagId,
+        group: Option<CollectionId>,
+        resolve: TagGroupConflictResolve,
+    ) -> AppResult<()> {
+        let Some(tag) = self.tags.get_mut(&id) else {
+            return Err(AppError::TagNotFound(id));
+        };
+
+        let old_group = tag.group;
+        tag.group = group;
+
+        if let Some(group) = group {
+            if let Some(group) = self.collections.get(&group) {
+                tag.color = group.color;
+                for asset in self.assets.values_mut() {
+                    asset.tags.resolve(old_group, group.id, tag.id, resolve);
+                }
+            } else {
+                return Err(AppError::CollectionNotFound(group));
+            }
+        } else {
+            tag.color = None;
+        }
+
+        if group.is_none() || old_group.is_none() {
+            return Ok(());
+        }
+
+        Ok(())
+    }
+
+    pub fn add_tag_to_asset(
+        &mut self,
+        asset: AssetId,
+        tag: TagId,
+        resolve: TagGroupConflictResolve,
+    ) -> AppResult<()> {
+        let Some(asset) = self.assets.get_mut(&asset) else {
+            return Err(AppError::AssetNotFound(asset));
+        };
+        let Some(tag) = self.tags.get(&tag) else {
+            return Err(AppError::TagNotFound(tag));
+        };
+
+        asset.tags.insert(tag, resolve);
+        Ok(())
+    }
+
+    pub fn remove_tag_from_asset(&mut self, asset: AssetId, tag: TagId) -> AppResult<()> {
+        let Some(asset) = self.assets.get_mut(&asset) else {
+            return Err(AppError::AssetNotFound(asset));
+        };
+        let Some(tag) = self.tags.get(&tag) else {
+            return Err(AppError::TagNotFound(tag));
+        };
+
+        asset.tags.remove(tag);
         Ok(())
     }
 
@@ -926,11 +1011,12 @@ impl Collection {
 #[serde(rename_all = "camelCase")]
 pub struct Tag {
     // Backward compatibility 0.1.0
-    // TODO change this into root collection
     #[serde(default)]
     pub parent: CollectionId,
+    pub group: Option<CollectionId>,
     pub id: TagId,
     pub name: String,
+    pub color: Option<Color>,
     pub meta: Metadata,
 }
 
@@ -938,6 +1024,8 @@ impl Tag {
     pub fn new(name: String, parent: CollectionId) -> Self {
         Self {
             parent,
+            group: None,
+            color: None,
             id: TagId(Uuid::new_v4()),
             name,
             meta: Metadata::now(0),
@@ -1046,6 +1134,102 @@ impl Folder {
     }
 }
 
+#[derive(Serialize, Deserialize, Default, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct TagContainer {
+    pub grouped: HashMap<CollectionId, TagId>,
+    pub ungrouped: HashSet<TagId>,
+}
+
+impl TagContainer {
+    pub fn insert_unchecked(&mut self, tag: &Tag) {
+        match tag.group {
+            Some(group) => {
+                self.grouped.insert(group, tag.id);
+            }
+            None => {
+                self.ungrouped.insert(tag.id);
+            }
+        }
+    }
+
+    pub fn insert(&mut self, tag: &Tag, resolve: TagGroupConflictResolve) {
+        match tag.group {
+            Some(group) => match self.grouped.entry(group) {
+                Entry::Occupied(mut e) => match resolve {
+                    TagGroupConflictResolve::Override => {
+                        e.insert(tag.id);
+                    }
+                    TagGroupConflictResolve::Remove => {}
+                },
+                Entry::Vacant(e) => {
+                    e.insert(tag.id);
+                }
+            },
+            None => {
+                self.ungrouped.insert(tag.id);
+            }
+        }
+    }
+
+    pub fn remove(&mut self, tag: &Tag) {
+        match tag.group {
+            Some(group) => {
+                self.grouped.remove(&group);
+            }
+            None => {
+                self.ungrouped.remove(&tag.id);
+            }
+        }
+    }
+
+    pub fn contains_id(&self, id: TagId) -> bool {
+        self.ungrouped.contains(&id) || self.grouped.values().find(|t| t == &&id).is_some()
+    }
+
+    pub fn contains(&self, tag: Tag) -> bool {
+        match tag.group {
+            Some(group) => self.grouped.contains_key(&group),
+            None => self.ungrouped.contains(&tag.id),
+        }
+    }
+
+    pub fn resolve(
+        &mut self,
+        old_group: Option<CollectionId>,
+        new_group: CollectionId,
+        id: TagId,
+        resolve: TagGroupConflictResolve,
+    ) {
+        if let Some(old_group) = old_group {
+            self.grouped.remove(&old_group);
+        } else {
+            self.ungrouped.remove(&id);
+        }
+
+        if let Some(conflict) = self.grouped.get_mut(&new_group) {
+            match resolve {
+                TagGroupConflictResolve::Override => *conflict = id,
+                TagGroupConflictResolve::Remove => {}
+            }
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.grouped.is_empty() && self.ungrouped.is_empty()
+    }
+}
+
+impl Into<Vec<TagId>> for TagContainer {
+    fn into(self) -> Vec<TagId> {
+        self.grouped
+            .into_iter()
+            .map(|(_, tag)| tag)
+            .chain(self.ungrouped)
+            .collect()
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Asset {
@@ -1056,7 +1240,7 @@ pub struct Asset {
     pub ext: Arc<str>,
     pub props: AssetProperty,
     pub meta: Metadata,
-    pub tags: HashSet<TagId>,
+    pub tags: TagContainer,
     pub src: String,
 }
 

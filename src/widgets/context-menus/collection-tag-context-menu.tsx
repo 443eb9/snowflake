@@ -4,7 +4,7 @@ import { Item, Menu, Submenu, useContextMenu } from "react-contexify"
 import { Collection, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef } from "../../backend"
 import { Button, CompoundButton, makeStyles, Popover, PopoverSurface, PopoverTrigger, Text, useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../../main"
-import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Eraser20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
+import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Eraser20Regular, Group20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { t } from "../../i18n"
 import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
@@ -27,7 +27,6 @@ export default function CollectionTagContextMenu() {
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const [allCollections, setAllCollections] = useState<Collection[] | undefined>()
-    const [focused, setFocused] = useState(-1)
     const [color, setColor] = useState<TinyColor | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -37,7 +36,7 @@ export default function CollectionTagContextMenu() {
 
     useEffect(() => {
         async function fetch() {
-            const allCollections = await GetCollectionTree()
+            const allCollections = await GetCollectionTree({ noSpecial: true })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (allCollections) {
                 setAllCollections(Array.from(allCollections.values()))
@@ -129,6 +128,17 @@ export default function CollectionTagContextMenu() {
         }
     }
 
+    const handleTagRegroup = (group: string) => {
+        if (contextMenuProp?.data && contextMenuProp.data.ty == "tag") {
+            fileManipulation?.setter({
+                id: [contextMenuProp.data],
+                op: "regroup",
+                submit: [group],
+            })
+        }
+        hideAll()
+    }
+
     const handleMove = (dst: Collection) => {
         const ty = contextMenuProp?.data?.ty
         if (!contextMenuProp?.data) { return }
@@ -143,6 +153,7 @@ export default function CollectionTagContextMenu() {
                 })
                 break
         }
+        hideAll()
     }
 
     const handleQuickRef = async () => {
@@ -274,6 +285,56 @@ export default function CollectionTagContextMenu() {
                     </PopoverSurface>
                 </Popover>
             </Item>
+            <Item closeOnClick={false}>
+                <Submenu
+                    label={
+                        <Button
+                            className={buttonStyle.root}
+                            icon={<Group20Regular />}
+                            appearance="subtle"
+                        >
+                            <Text>{t("ctxMenu.regroupTag")}</Text>
+                        </Button>
+                    }
+                    disabled={ty != "tag"}
+                    className="w-full"
+                >
+                    <div className="flex flex-col gap-2">
+                        <FilterableSearch
+                            range={allCollections}
+                            searchKey={collection => collection.name}
+                            component={collection =>
+                                <CompoundButton
+                                    className={buttonStyle.root}
+                                    icon={<Collections20Regular />}
+                                    secondaryContent={collection.id}
+                                    appearance="subtle"
+                                    size="small"
+                                >
+                                    <Text>{collection.name}</Text>
+                                </CompoundButton>
+                            }
+                            noMatch={
+                                <CompoundButton appearance="transparent" size="small">
+                                    <Text>{t("ctxMenu.noFolderFallback")}</Text>
+                                </CompoundButton>
+                            }
+                            itemProps={collection => {
+                                return { onClick: () => handleTagRegroup(collection.id) }
+                            }}
+                        />
+                    </div>
+                    <Button
+                        icon={<Eraser20Regular />}
+                        className={buttonStyle.root}
+                        size="large"
+                        appearance="subtle"
+                        onClick={() => handleTagRegroup("")}
+                    >
+                        <Text>{t("ctxMenu.regroupTag.clear")}</Text>
+                    </Button>
+                </Submenu>
+            </Item>
             <Item onClick={handleCollectionCreation} disabled={ty != "collection"}>
                 <Button
                     className={buttonStyle.root}
@@ -292,44 +353,45 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.createTag")}</Text>
                 </Button>
             </Item>
-            <Submenu
-                label={
-                    <Button
-                        className={buttonStyle.root}
-                        icon={<ArrowForward20Regular />}
-                        appearance="subtle"
-                        onClick={() => setFocused(0)}
-                    >
-                        <Text>{t("ctxMenu.moveTo")}</Text>
-                    </Button>
-                }
-                disabled={ty == "assets"}
-            >
-                <FilterableSearch
-                    range={allCollections}
-                    searchKey={collection => collection.name}
-                    component={collection =>
-                        <CompoundButton
+            <Item closeOnClick={false}>
+                <Submenu
+                    label={
+                        <Button
                             className={buttonStyle.root}
-                            icon={<Collections20Regular />}
-                            secondaryContent={collection.id}
+                            icon={<ArrowForward20Regular />}
                             appearance="subtle"
-                            size="small"
                         >
-                            <Text>{collection.name}</Text>
-                        </CompoundButton>
+                            <Text>{t("ctxMenu.moveTo")}</Text>
+                        </Button>
                     }
-                    noMatch={
-                        <CompoundButton appearance="transparent" size="small">
-                            <Text>{t("ctxMenu.noFolderFallback")}</Text>
-                        </CompoundButton>
-                    }
-                    itemProps={folder => {
-                        return { onClick: () => handleMove(folder) }
-                    }}
-                    focused={() => focused == 0}
-                />
-            </Submenu>
+                    disabled={ty == "assets"}
+                    className="w-full"
+                >
+                    <FilterableSearch
+                        range={allCollections}
+                        searchKey={collection => collection.name}
+                        component={collection =>
+                            <CompoundButton
+                                className={buttonStyle.root}
+                                icon={<Collections20Regular />}
+                                secondaryContent={collection.id}
+                                appearance="subtle"
+                                size="small"
+                            >
+                                <Text>{collection.name}</Text>
+                            </CompoundButton>
+                        }
+                        noMatch={
+                            <CompoundButton appearance="transparent" size="small">
+                                <Text>{t("ctxMenu.noFolderFallback")}</Text>
+                            </CompoundButton>
+                        }
+                        itemProps={folder => {
+                            return { onClick: () => handleMove(folder) }
+                        }}
+                    />
+                </Submenu>
+            </Item>
             <Item onClick={handleQuickRef}>
                 <Button
                     className={buttonStyle.root}

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { Input, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
-import { Asset, GetAsset, GetAssetAbsPath, GetRemovedAsset, ModifySrcOf } from "../backend"
+import { Asset, GetAsset, GetAssetAbsPath, GetRemovedAsset, GetTagsOnAsset, ModifySrcOf } from "../backend"
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
@@ -12,7 +12,7 @@ import { GlobalToasterId } from "../main"
 import AssetImage from "./asset-image"
 
 export default function DetailInfo() {
-    const [asset, setAsset] = useState<Asset | undefined>()
+    const [asset, setAsset] = useState<Asset & { tags: string[] } | undefined>()
     const [selectedCount, setSelectedCount] = useState(0)
     const [assetAbsPath, setAssetAbsPath] = useState<string | undefined>()
     const darkenContentStyle = darkenContentStyleHook()
@@ -45,9 +45,11 @@ export default function DetailInfo() {
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             const absPath = await GetAssetAbsPath({ asset: selected.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+            const tags = await GetTagsOnAsset({ asset: selected.id })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-            if (asset && absPath) {
-                setAsset(asset)
+            if (asset && absPath && tags) {
+                setAsset({ ...asset, tags })
                 setNewSrc(asset.src)
                 setAssetAbsPath(absPath)
             }

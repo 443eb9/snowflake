@@ -521,17 +521,27 @@ pub fn get_tag_virtual_path(
 
 #[tauri::command]
 pub fn get_collection_tree(
+    no_special: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<HashMap<CollectionId, Collection>, String> {
     log::info!("Getting collection tree.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage
-            .collections
-            .clone()
-            .into_iter()
-            .filter(|(_, c)| !c.is_deleted)
-            .collect())
+        if no_special {
+            let mut collections = storage.collections.clone();
+            collections.remove(&storage.sp_collections.root);
+            Ok(collections
+                .into_iter()
+                .filter(|(_, c)| !c.is_deleted)
+                .collect())
+        } else {
+            Ok(storage
+                .collections
+                .clone()
+                .into_iter()
+                .filter(|(_, c)| !c.is_deleted)
+                .collect())
+        }
     } else {
         Err(storage_not_initialized())
     }
@@ -664,6 +674,24 @@ pub fn get_assets(
 }
 
 #[tauri::command]
+pub fn get_tags_on_asset(
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<TagId>, String> {
+    log::info!("Getting tags on asset {:?}", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        if let Some(asset) = storage.assets.get(&asset) {
+            Ok(asset.tags.clone().into())
+        } else {
+            Err(AppError::AssetNotFound(asset).to_string())
+        }
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn get_items(
     items: Vec<ItemId>,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -739,20 +767,23 @@ pub fn get_tags(
 }
 
 #[tauri::command]
-pub fn modify_tags_of(
+pub fn add_tag_to_assets(
     assets: Vec<AssetId>,
-    new_tags: Vec<TagId>,
+    tag: TagId,
     storage: State<'_, Mutex<Option<Storage>>>,
+    data: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
-    log::info!("Modifying tags of {:?}, new tags: {:?}", assets, new_tags);
+    log::info!("Adding tag to assets {:?} -> {:?}", tag, assets);
 
+    let data = data.lock().map_err(|e| e.to_string())?;
+    let resolve = data.settings["general"]["tagGroupConflictResolve"]
+        .to_object()
+        .unwrap();
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for asset in assets {
-            let asset = storage
-                .assets
-                .get_mut(&asset)
-                .ok_or_else(|| asset_doesnt_exist(asset))?;
-            asset.tags = new_tags.clone().into_iter().collect();
+            storage
+                .add_tag_to_asset(asset, tag, resolve)
+                .map_err(|e| e.to_string())?;
         }
 
         storage.save().map_err(|e| e.to_string())
@@ -761,39 +792,19 @@ pub fn modify_tags_of(
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
-pub enum DeltaMode {
-    Add,
-    Remove,
-}
-
 #[tauri::command]
-pub fn delta_tags_of(
+pub fn remove_tag_from_assets(
     assets: Vec<AssetId>,
-    tags: HashSet<TagId>,
-    mode: DeltaMode,
+    tag: TagId,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
-    log::info!("Delating tags of {:?}, {:?} tags: {:?}", assets, mode, tags);
+    log::info!("Removing tag from assets {:?} <- {:?}", tag, assets);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for asset in assets {
-            let asset = storage
-                .assets
-                .get_mut(&asset)
-                .ok_or_else(|| asset_doesnt_exist(asset))?;
-
-            let unique_tags = asset
-                .tags
-                .clone()
-                .into_iter()
-                .filter(|t| !tags.contains(t))
-                .collect();
-
-            asset.tags = match mode {
-                DeltaMode::Add => tags.clone().into_iter().chain(unique_tags).collect(),
-                DeltaMode::Remove => unique_tags,
-            }
+            storage
+                .remove_tag_from_asset(asset, tag)
+                .map_err(|e| e.to_string())?;
         }
 
         storage.save().map_err(|e| e.to_string())
@@ -814,7 +825,7 @@ pub fn get_assets_containing_tag(
             .assets
             .values()
             .filter_map(|asset| {
-                (!asset.is_deleted).then(|| asset.tags.contains(&tag).then_some(asset.id))
+                (!asset.is_deleted).then(|| asset.tags.contains_id(tag).then_some(asset.id))
             })
             .flatten()
             .collect())
@@ -1019,6 +1030,32 @@ pub fn move_tags_to(
 }
 
 #[tauri::command]
+pub fn regroup_tag(
+    tag: TagId,
+    group: Option<CollectionId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+    data: State<'_, Mutex<AppData>>,
+) -> Result<(), String> {
+    log::info!("Regrouping tag {:?} to {:?}", tag, group);
+
+    let data = data.lock().map_err(|e| e.to_string())?;
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        storage
+            .regroup_tag(
+                tag,
+                group,
+                data.settings["general"]["tagGroupConflictResolve"]
+                    .to_object()
+                    .unwrap(),
+            )
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
 pub fn move_collections_to(
     src_collections: Vec<CollectionId>,
     dst_collection: CollectionId,
@@ -1092,7 +1129,7 @@ pub async fn quick_ref(
             QuickRefSrcTy::Tag(id) => storage
                 .assets
                 .values()
-                .filter_map(|a| a.tags.contains(id).then_some(&a.id))
+                .filter_map(|a| a.tags.contains_id(*id).then_some(&a.id))
                 .collect(),
         };
 

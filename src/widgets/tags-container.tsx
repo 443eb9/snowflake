@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
+import { AddTagToAssets, GetAllTags, GetTags, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
@@ -20,35 +20,39 @@ export default function TagsContainer({
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
-    const update = (newTags: Tag[], isDismiss: boolean) => {
-        if (associatedItem) {
-            ModifyTagsOf({ assets: [associatedItem], newTags: newTags.map(t => t.id) })
+    const update = async (tag: Tag | undefined, isDismiss: boolean) => {
+        console.log(tag, allTags)
+        if (!browsingFolder || !associatedItem || !tag) {
+            return
+        }
+
+        const currentFolder = browsingFolder.data
+
+        if ((currentFolder?.subTy == "uncategoriezed" && !isDismiss)
+            || (isDismiss && tag.id == currentFolder?.id)) {
+            browsingFolder.setter({
+                ...currentFolder,
+                content: currentFolder.content.filter(itemId => itemId.id != associatedItem)
+            })
+            selectedItems?.setter([])
+            setSelected([...selected, tag])
+        }
+
+        if ((currentFolder?.subTy == "uncategoriezed" && isDismiss)
+            || (!isDismiss && tag.id == currentFolder?.id)) {
+            browsingFolder.setter({
+                ...currentFolder,
+                content: [...currentFolder.content, { id: associatedItem, ty: "asset" }],
+            })
+            setSelected(selected.filter(t => t.id == tag.id))
+        }
+
+        if (isDismiss) {
+            await RemoveTagFromAssets({ assets: [associatedItem], tag: tag.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-            if (!browsingFolder) {
-                return
-            }
-
-            const currentFolder = browsingFolder.data
-
-            if ((currentFolder?.subTy == "uncategoriezed" && !isDismiss)
-                || (isDismiss && currentFolder?.id && newTags.find(t => t.id == currentFolder.id) == undefined)) {
-                browsingFolder.setter({
-                    ...currentFolder,
-                    content: currentFolder.content.filter(itemId => itemId.id != associatedItem)
-                })
-                selectedItems?.setter([])
-            }
-
-            if ((currentFolder?.subTy == "uncategoriezed" && isDismiss)
-                || (!isDismiss && currentFolder?.id && selected.find(t => t.id == currentFolder.id) == undefined)) {
-                browsingFolder.setter({
-                    ...currentFolder,
-                    content: [...currentFolder.content, { id: associatedItem, ty: "asset" }],
-                })
-            }
-
-            setSelected(newTags)
+        } else {
+            await AddTagToAssets({ assets: [associatedItem], tag: tag.id })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
     }
 
@@ -62,7 +66,6 @@ export default function TagsContainer({
     }
 
     useEffect(() => {
-
         async function fetchTags() {
             const selected = await GetTags({ tags: tags })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -76,6 +79,7 @@ export default function TagsContainer({
             setCurrentItem(associatedItem)
             fetchTags()
         }
+        fetchAllTags()
     }, [associatedItem])
 
     const available = allTags?.filter(tag => selected.find(t => t.id == tag.id) == undefined)
@@ -84,7 +88,7 @@ export default function TagsContainer({
         <div className="flex flex-col gap-2 overflow-hidden">
             <TagGroup
                 className="flex-wrap gap-1"
-                onDismiss={(_, data) => update([...selected].filter(tag => tag.id != data.value), true)}
+                onDismiss={(_, data) => update(allTags?.find(t => t.id == data.value), true)}
             >
                 {
                     selected.length == 0
@@ -118,7 +122,7 @@ export default function TagsContainer({
                                         <MenuItem
                                             key={index}
                                             style={{ color: `#${tag.color}` }}
-                                            onClick={() => update([...selected, tag], false)}
+                                            onClick={() => update(tag, false)}
                                         >
                                             <TagName name={tag.name} />
                                         </MenuItem>

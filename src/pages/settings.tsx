@@ -152,11 +152,17 @@ function GeneralTab(props: TabProps) {
                     currentTab={props.currentTab}
                     title="dbClick"
                     selectable={props.default[tab]["dbClick"] as Selectable}
-                    onSelect={(title, value) => {
-                        i18n.changeLanguage(value)
-                        props.update(title, value)
-                    }}
+                    onSelect={props.update}
                     value={props.user[tab]["dbClick"] as string}
+                />
+            </SettingsItem>
+            <SettingsItem title="tagGroupConflictResolve" currentTab={props.currentTab}>
+                <SelectableCandidates
+                    currentTab={props.currentTab}
+                    title="tagGroupConflictResolve"
+                    selectable={props.default[tab]["tagGroupConflictResolve"] as Selectable}
+                    onSelect={props.update}
+                    value={props.user[tab]["tagGroupConflictResolve"] as string}
                 />
             </SettingsItem>
         </>

@@ -55,6 +55,10 @@
     "settings.experimental": "Experimental",
     "settings.experimental.aigcDetect": "AIGC Detection",
     "settings.general": "General",
+    "settings.general.tagGroupConflictResolve": "Tag Group Conflict Resolve",
+    "settings.general.tagGroupConflictResolve.ignore": "Ignore",
+    "settings.general.tagGroupConflictResolve.override": "Override",
+    "settings.general.tagGroupConflictResolve.remove": "Remove",
     "settings.general.dbClick": "Double Click Behavior",
     "settings.general.dbClick.open": "Open File",
     "settings.general.dbClick.ref": "Quick Ref",
@@ -116,5 +120,7 @@
     "collection.all": "All",
     "collection.uncategorized": "Uncategorized",
     "collection.root": "User Defined",
-    "ctxMenu.recolorCollection": "Recolor Collection"
+    "ctxMenu.recolorCollection": "Recolor Collection",
+    "ctxMenu.regroupTag": "Regroup Tag",
+    "ctxMenu.regroupTag.clear": "Clear Tag Group"
 }

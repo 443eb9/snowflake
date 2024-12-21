@@ -53,7 +53,6 @@ export type Asset = {
     props: AssetProperty,
     ext: string,
     meta: Metadata,
-    tags: string[],
     src: string,
 }
 
@@ -115,7 +114,7 @@ export type ItemId = {
 
 export type GltfPreviewCamera = {
     pos: [number, number, number],
-    rot: [number, number, number, number]
+    rot: [number, number, number, number],
 }
 
 export type GltfPreviewCache = {
@@ -216,8 +215,8 @@ export function GetTagVirtualPath(params: { tag: string }): Promise<string[]> {
     return invoke("get_tag_virtual_path", params)
 }
 
-export async function GetCollectionTree(): Promise<Map<string, Collection>> {
-    return invoke("get_collection_tree")
+export async function GetCollectionTree(params: { noSpecial: boolean }): Promise<Map<string, Collection>> {
+    return invoke("get_collection_tree", params)
         .then(map => new Map(Object.entries(map as { [s: string]: Collection; })))
 }
 
@@ -237,10 +236,6 @@ export function GetAllUncategorizedAssets(): Promise<string[]> {
     return invoke("get_all_uncategorized_assets")
 }
 
-export function ModifyTag(params: { newTag: Tag }): Promise<void> {
-    return invoke("modify_tag", params)
-}
-
 export function GetAsset(params: { asset: string }): Promise<Asset> {
     return invoke("get_asset", params)
 }
@@ -253,6 +248,14 @@ export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
     return invoke("get_assets", params)
 }
 
+export function GetTagsOnAsset(params: { asset: string }): Promise<string[]> {
+    return invoke("get_tags_on_asset", params)
+}
+
+export function ModifySrcOf(params: { asset: string, src: string }): Promise<void> {
+    return invoke("modify_src_of", params)
+}
+
 export function GetTags(params: { tags: string[] }): Promise<Tag[]> {
     return invoke("get_tags", params)
 }
@@ -261,16 +264,12 @@ export function GetItems(params: { items: ItemId[] }): Promise<Item[]> {
     return invoke("get_items", params)
 }
 
-export function DeltaTagsOf(params: { assets: string[], tags: string[], mode: "Add" | "Remove" }): Promise<void> {
-    return invoke("delta_tags_of", params)
+export function AddTagToAssets(params: { assets: string[], tag: string }): Promise<void> {
+    return invoke("add_tag_to_assets", params)
 }
 
-export function ModifyTagsOf(params: { assets: string[], newTags: string[] }): Promise<void> {
-    return invoke("modify_tags_of", params)
-}
-
-export function ModifySrcOf(params: { asset: string, src: string }): Promise<void> {
-    return invoke("modify_src_of", params)
+export function RemoveTagFromAssets(params: { assets: string[], tag: string }): Promise<void> {
+    return invoke("remove_tag_from_assets", params)
 }
 
 export function GetAssetsContainingTag(params: { tag: string }): Promise<string[]> {
@@ -311,6 +310,10 @@ export function MoveCollectionsTo(params: { srcCollections: string[], dstCollect
 
 export function MoveTagsTo(params: { srcTags: string[], dstCollection: string }): Promise<void> {
     return invoke("move_tags_to", params)
+}
+
+export function RegroupTag(params: { tag: string, group: string | null }): Promise<void> {
+    return invoke("regroup_tag", params)
 }
 
 export function OpenWithDefaultApp(params: { asset: string }): Promise<void> {

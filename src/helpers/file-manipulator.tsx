@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
-import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverItems, RenameItem } from "../backend"
+import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverItems, RegroupTag, RenameItem } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
@@ -177,6 +177,14 @@ export default function FileManipulator() {
         }
     }
 
+    async function handleTagRegroup(
+        targetId: string,
+        group: string,
+    ) {
+        await RegroupTag({ tag: targetId, group: group.length == 0 ? null : group })
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+    }
+
     async function handleObjectsRecover() {
         if (selectedItems?.data && browsingFolder?.data) {
             await RecoverItems({ items: selectedItems.data })
@@ -247,6 +255,7 @@ export default function FileManipulator() {
                 case "deletionPermanent": handleTagDeletion(tags); break
                 case "move": handleFolderAlikeMove(tags, data.submit[0], "tag"); break
                 case "import": handleAssetsImport(data.submit, tags[0].length == 0 ? null : tags[0]); break
+                case "regroup": handleTagRegroup(tags[0], data.submit[0]); break
             }
         }
 

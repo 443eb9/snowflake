@@ -44,7 +44,7 @@ export default function CollectionTree() {
 
     useEffect(() => {
         async function fetch() {
-            const allCollections = await GetCollectionTree()
+            const allCollections = await GetCollectionTree({ noSpecial: false })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             const allTags = await GetAllTags()
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -67,7 +67,7 @@ export default function CollectionTree() {
                     spCollections: specialCollections,
                 })
             } else {
-                nav("/startup")
+                nav("/")
             }
         }
 

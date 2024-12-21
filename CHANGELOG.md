@@ -1,4 +1,20 @@
-# v0.1.0 [main branch, haven't released]
+# v0.2.0 [main branch, haven't released]
+
+# What's New
+
+- Removed folder structure.
+- Total refactor of tag collections
+  - Creating and modifying tags using context menu.
+  - Grouping tags.
+    - Tags will inherit the color of their groups.
+    - Only one tag from the same group can exist on same asset.
+    - Tags in same group can visually in different collections.
+    - There can be multiple ungrouped tags exist on same asset.
+    - When regrouping tags, you can choose to override or skip this incoming tag in settings.
+
+# What's Fixed
+
+# v0.1.0
 
 ***First beta version.***
 
