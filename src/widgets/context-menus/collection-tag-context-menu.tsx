@@ -164,8 +164,6 @@ export default function CollectionTagContextMenu() {
 
     const handleTagRegroup = (group: string) => {
         if (contextMenuProp?.data && contextMenuProp.data.ty == "tag") {
-            browsingFolder?.setter(undefined)
-            selectedItems?.setter([])
             fileManipulation?.setter({
                 id: [contextMenuProp.data],
                 op: "regroup",

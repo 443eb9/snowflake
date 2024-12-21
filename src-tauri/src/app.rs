@@ -312,7 +312,10 @@ fn collect_path<'a>(
                             .to_string(),
                         parent,
                     );
-                    tag.group = Some(parent);
+                    if parent != folder_as_tag.root_collection {
+                        tag.group = Some(parent);
+                    }
+
                     tag.color = folder_as_tag.collections[&parent].color;
                     folder_as_tag
                         .folder_tags
@@ -975,9 +978,6 @@ impl Storage {
         if let Some(group) = group {
             if let Some(group) = self.collections.get(&group) {
                 tag.color = group.color;
-                for asset in self.assets.values_mut() {
-                    asset.tags.resolve(old_group, group.id, tag.id, resolve);
-                }
             } else {
                 return Err(AppError::CollectionNotFound(group));
             }
@@ -985,8 +985,8 @@ impl Storage {
             tag.color = None;
         }
 
-        if group.is_none() || old_group.is_none() {
-            return Ok(());
+        for asset in self.assets.values_mut() {
+            asset.tags.regroup(old_group, group, tag.id, resolve);
         }
 
         Ok(())
@@ -1272,24 +1272,33 @@ impl TagContainer {
         }
     }
 
-    pub fn resolve(
+    pub fn regroup(
         &mut self,
         old_group: Option<CollectionId>,
-        new_group: CollectionId,
+        new_group: Option<CollectionId>,
         id: TagId,
         resolve: TagGroupConflictResolve,
     ) {
         if let Some(old_group) = old_group {
-            self.grouped.remove(&old_group);
-        } else {
-            self.ungrouped.remove(&id);
+            if self.grouped.remove(&old_group).is_none() {
+                return;
+            }
+        } else if !self.ungrouped.remove(&id) {
+            return;
         }
 
-        if let Some(conflict) = self.grouped.get_mut(&new_group) {
-            match resolve {
-                TagGroupConflictResolve::Override => *conflict = id,
-                TagGroupConflictResolve::Remove => {}
+        if let Some(new_group) = new_group {
+            match self.grouped.entry(new_group) {
+                Entry::Occupied(mut e) => match resolve {
+                    TagGroupConflictResolve::Override => *e.get_mut() = id,
+                    TagGroupConflictResolve::Remove => {}
+                },
+                Entry::Vacant(e) => {
+                    e.insert(id);
+                }
             }
+        } else {
+            self.ungrouped.insert(id);
         }
     }
 

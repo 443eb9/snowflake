@@ -183,6 +183,19 @@ export default function FileManipulator() {
     ) {
         await RegroupTag({ tag: targetId, group: group.length == 0 ? null : group })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        if (targetId == browsingFolder?.data?.id) {
+            const assets = await GetAssetsContainingTag({ tag: targetId })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+            if (assets) {
+                browsingFolder.setter({
+                    id: targetId,
+                    name: "",
+                    content: assets.map(a => { return { id: a, ty: "asset" } }),
+                    subTy: "tag",
+                })
+                selectedItems?.setter([])
+            }
+        }
     }
 
     async function handleAssetsRecover(assets: string[]) {

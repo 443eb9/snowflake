@@ -14,6 +14,7 @@ export function BrowsingPath() {
     useEffect(() => {
         async function fetch() {
             if (!browsingFolder?.data) {
+                setVirtualPath(undefined)
                 return
             }
 
