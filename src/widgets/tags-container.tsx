@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { AddTagToAssets, GetAllTags, GetTags, RemoveTagFromAssets, Tag } from "../backend";
+import { AddTagToAssets, GetAllTags, GetAllUncategorizedAssets, GetAssetsContainingTag, GetTags, GetTagsOnAsset, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
@@ -12,7 +12,6 @@ export default function TagsContainer({
 }: {
     associatedItem?: string, tags: string[], readonly?: boolean
 }) {
-    const [currentItem, setCurrentItem] = useState<string | null>()
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [selected, setSelected] = useState<Tag[]>([])
     const [selectedIds, setSelectedIds] = useState(tags)
@@ -22,39 +21,49 @@ export default function TagsContainer({
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const update = async (tag: Tag | undefined, isDismiss: boolean) => {
-        if (!browsingFolder || !associatedItem || !tag) {
+        if (!browsingFolder?.data?.subTy || !associatedItem || !tag) {
             return
         }
 
-        const currentFolder = browsingFolder.data
-
-        if ((currentFolder?.subTy == "uncategorized" && !isDismiss)
-            || (isDismiss && tag.id == currentFolder?.id)) {
-            browsingFolder.setter({
-                ...currentFolder,
-                content: currentFolder.content.filter(itemId => itemId.id != associatedItem)
-            })
-            selectedItems?.setter([])
-        }
-
-        if ((currentFolder?.subTy == "uncategorized" && isDismiss)
-            || (!isDismiss && tag.id == currentFolder?.id)) {
-            browsingFolder.setter({
-                ...currentFolder,
-                content: [...currentFolder.content, { id: associatedItem, ty: "asset" }],
-            })
-            setSelected(selected.filter(t => t.id == tag.id))
-            selectedItems?.setter([])
-        }
-
         if (isDismiss) {
-            setSelectedIds(selectedIds.filter(id => id != tag.id))
             await RemoveTagFromAssets({ assets: [associatedItem], tag: tag.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         } else {
-            setSelectedIds([...selectedIds, tag.id])
             await AddTagToAssets({ assets: [associatedItem], tag: tag.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        }
+
+        const selectedIds = await GetTagsOnAsset({ asset: associatedItem })
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        if (selectedIds) {
+            console.log(selectedIds)
+            setSelectedIds(selectedIds)
+        }
+
+        let assets: string[] | void = undefined;
+        switch (browsingFolder.data.subTy) {
+            case "tag":
+                if (browsingFolder.data.id) {
+                    assets = await GetAssetsContainingTag({ tag: browsingFolder.data.id })
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                }
+                break
+            case "uncategorized":
+                assets = await GetAllUncategorizedAssets()
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                break
+        }
+
+        if (assets) {
+            if (selectedItems?.data) {
+                console.log(selectedItems.data, assets)
+                selectedItems.setter(selectedItems.data.filter(id => assets.includes(id.id)))
+            }
+
+            browsingFolder.setter({
+                ...browsingFolder.data,
+                content: assets.map(a => { return { id: a, ty: "asset" } }),
+            })
         }
     }
 
@@ -81,11 +90,22 @@ export default function TagsContainer({
     }, [selectedIds])
 
     useEffect(() => {
-        if (associatedItem != currentItem) {
-            setCurrentItem(associatedItem)
+        async function fetch() {
+            if (associatedItem) {
+                const tags = await GetTagsOnAsset({ asset: associatedItem })
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                if (tags) {
+                    setSelectedIds(tags)
+                }
+            }
         }
-        fetchAllTags()
+
+        fetch()
     }, [associatedItem])
+
+    useEffect(() => {
+        fetchAllTags()
+    }, [])
 
     const available = allTags?.filter(tag => selected.find(t => t.id == tag.id) == undefined)
 
@@ -103,7 +123,7 @@ export default function TagsContainer({
                                 key={index}
                                 dismissible={!readonly}
                                 value={tag.id}
-                                style={{ color: `#${tag.color}` }}
+                                style={tag.color ? { color: `#${tag.color}` } : undefined}
                             >
                                 <TagName name={tag.name} />
                             </FluentTag>
@@ -126,7 +146,7 @@ export default function TagsContainer({
                                     : available?.map((tag, index) =>
                                         <MenuItem
                                             key={index}
-                                            style={{ color: `#${tag.color}` }}
+                                            style={tag.color ? { color: `#${tag.color}` } : undefined}
                                             onClick={() => update(tag, false)}
                                         >
                                             <TagName name={tag.name} />

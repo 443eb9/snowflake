@@ -8,33 +8,8 @@ import { t } from "../i18n"
 
 export function BrowsingPath() {
     const [virtualPath, setVirtualPath] = useState<string[] | undefined>()
-
     const browsingFolder = useContext(browsingFolderContext)
-
     const { dispatchToast } = useToastController(GlobalToasterId)
-
-    const pathChangeHandler = async (pop: number) => {
-        if (!browsingFolder?.data?.id || pop == 0 || browsingFolder.data.subTy) {
-            return
-        }
-
-        // const folderTree = await GetFolderTree()
-        //     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-        // if (folderTree) {
-        //     let currentFolder = folderTree.get(browsingFolder.data.id) as Folder
-        //     while (pop-- && currentFolder.parent) {
-        //         currentFolder = folderTree.get(currentFolder.parent) as Folder
-        //     }
-
-        //     browsingFolder.setter({
-        //         id: currentFolder.id,
-        //         name: currentFolder.name,
-        //         content: currentFolder.content.map(a => { return { id: a, ty: "asset" } }),
-        //         subTy: "folder",
-        //     })
-        // }
-    }
 
     useEffect(() => {
         async function fetch() {
@@ -68,8 +43,6 @@ export function BrowsingPath() {
         fetch()
     }, [browsingFolder?.data])
 
-    console.log(virtualPath)
-
     return (
         <Breadcrumb>
             {
@@ -78,7 +51,7 @@ export function BrowsingPath() {
                     : virtualPath.map((seg, index) =>
                         <>
                             <BreadcrumbItem key={index * 2}>
-                                <BreadcrumbButton onClick={() => pathChangeHandler(virtualPath.length - 1 - index)}>
+                                <BreadcrumbButton>
                                     {seg}
                                 </BreadcrumbButton>
                             </BreadcrumbItem>
