@@ -28,8 +28,8 @@ export default function CollectionTagContextMenu() {
 
     const [allCollections, setAllCollections] = useState<Collection[] | undefined>()
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
-    const [color, setColor] = useState<TinyColor | undefined>()
-    const [tagModification, settagModification] = useState<"add" | "remove">("add")
+    const [color, setColor] = useState<TinyColor>(new TinyColor("ffffff"))
+    const [tagModification, setTagModification] = useState<"add" | "remove">("add")
     const [deletionConfirm, setDeletionConfirm] = useState(false)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -265,7 +265,7 @@ export default function CollectionTagContextMenu() {
                     </PopoverTrigger>
                     <PopoverSurface>
                         <ColorPicker
-                            color={color?.toHsv() ?? new TinyColor("ffffff").toHsv()}
+                            color={color.toHsv()}
                             onColorChange={(_, data) => setColor(new TinyColor(data.color))}
                         >
                             <ColorArea />
@@ -498,12 +498,12 @@ export default function CollectionTagContextMenu() {
                         <RadioGroup defaultValue={"add"} layout="horizontal">
                             <Radio
                                 value={"add"}
-                                onClick={() => settagModification("add")}
+                                onClick={() => setTagModification("add")}
                                 label={t("ctxMenu.modifyTags.add")}
                             />
                             <Radio
                                 value={"remove"}
-                                onClick={() => settagModification("remove")}
+                                onClick={() => setTagModification("remove")}
                                 label={t("ctxMenu.modifyTags.remove")}
                             />
                         </RadioGroup>
