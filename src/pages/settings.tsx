@@ -2,7 +2,7 @@ import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger,
 import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
-import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetProcessDir, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
+import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
@@ -427,10 +427,11 @@ function AboutTab(props: TabProps) {
                 <Button
                     icon={<ArrowUpRight20Regular />}
                     onClick={async () => {
-                        const pwd = await GetProcessDir()
+                        const cr = await path.appDataDir()
+                            .then(async appData => await path.join(appData, "crashReports"))
                             .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                        if (pwd) {
-                            openURL(await path.join(pwd, "crashReports"))
+                        if (cr) {
+                            openURL(cr)
                         }
                     }}
                 />

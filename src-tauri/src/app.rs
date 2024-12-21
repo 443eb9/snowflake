@@ -148,8 +148,8 @@ pub struct AppData {
 
 impl AppData {
     pub fn read(app: &AppHandle) -> AppResult<Self> {
-        let cache_dir = app.path().app_cache_dir()?;
-        let dir = cache_dir.join(DATA);
+        let data_dir = app.path().app_data_dir()?;
+        let dir = data_dir.join(DATA);
 
         #[cfg(debug_assertions)]
         let debug = true;
@@ -176,8 +176,8 @@ impl AppData {
     }
 
     pub fn save(&self, app: &AppHandle) -> Result<(), AppError> {
-        let cache_dir = app.path().app_cache_dir()?;
-        let dir = cache_dir.join(DATA);
+        let data_dir = app.path().app_data_dir()?;
+        let dir = data_dir.join(DATA);
         Ok(std::fs::write(dir, serde_json::to_string(self)?)?)
     }
 }

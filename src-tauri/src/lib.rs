@@ -12,22 +12,6 @@ mod event;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    if let Ok(pwd) = std::env::current_dir() {
-        let _ = std::fs::create_dir_all(pwd.join("crashReports"));
-
-        std::panic::set_hook(Box::new(move |info| {
-            log::error!("Thread panic.");
-            let _ = std::fs::write(
-                pwd.join("crashReports").join(&format!(
-                    "crash-{}.txt",
-                    chrono::Local::now().to_rfc3339().replace(':', "_")
-                )),
-                info.to_string(),
-            );
-            log::info!("Crash report saved.");
-        }));
-    }
-
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_log::Builder::new().build())
@@ -38,11 +22,26 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
+            let crash_reports = app.path().app_data_dir().unwrap().join("crashReports");
+            let _ = std::fs::create_dir_all(&crash_reports);
+            std::panic::set_hook(Box::new(move |info| {
+                log::error!("Main thread panic.");
+                let _ = std::fs::write(
+                    crash_reports.join(&format!(
+                        "crash-{}.txt",
+                        chrono::Local::now().to_rfc3339().replace(':', "_")
+                    )),
+                    info.to_string(),
+                );
+                log::info!("Crash report saved.");
+            }));
+
             app.manage(Mutex::new(Option::<Storage>::None));
             app.manage(ResourceCache::new(app.handle()).unwrap());
             app.manage(Mutex::new(AppData::read(app.handle()).unwrap()));
             let main_window = app.get_webview_window("main").unwrap();
             window_vibrancy::apply_mica(main_window, Some(true)).unwrap();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

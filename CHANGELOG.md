@@ -14,6 +14,8 @@
 - Rename when blurring input.
 - New library initialization UI.
 - Import folders as tags.
+- Crash reporting.
+- Changed folder of global application data.
 
 # What's Fixed
 
