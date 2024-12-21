@@ -1,4 +1,8 @@
-use std::{fs::write, path::PathBuf, sync::Mutex};
+use std::{
+    fs::{copy, create_dir_all, write},
+    path::PathBuf,
+    sync::Mutex,
+};
 
 use base64::Engine;
 use chrono::Local;
@@ -209,41 +213,67 @@ pub fn unload_library(storage: State<'_, Mutex<Option<Storage>>>) -> Result<(), 
     Ok(())
 }
 
-// fn export_recursion(storage: &Storage, folder: &FolderId, path: &Path) -> Result<(), AppError> {
-//     if let Some(folder) = storage.folders.get(folder) {
-//         let folder_path = path.join(&folder.name);
-//         let _ = create_dir_all(&folder_path);
+fn export_recursion(
+    storage: &Storage,
+    collection: CollectionId,
+    path: PathBuf,
+    tag_to_path: &mut HashMap<TagId, PathBuf>,
+) -> Result<(), AppError> {
+    if let Some(collection) = storage.collections.get(&collection) {
+        let collection_path = path.join(&collection.name);
+        let _ = create_dir_all(&collection_path);
 
-//         for asset in &folder.content {
-//             if let Some(asset) = storage.assets.get(asset) {
-//                 copy(
-//                     asset.get_file_path(&storage.cache.root),
-//                     folder_path.join(asset.gen_file_name()),
-//                 )?;
-//             }
-//         }
+        for tag in &collection.content {
+            let Some(tag) = storage.tags.get(tag) else {
+                return Err(AppError::TagNotFound(*tag));
+            };
+            let _ = create_dir_all(&collection_path.join(&tag.name));
+            tag_to_path.insert(tag.id, collection_path.join(tag.name.clone()));
+        }
 
-//         for child in &folder.children {
-//             export_recursion(storage, child, &folder_path)?;
-//         }
-//     }
+        for child in collection.children.clone() {
+            export_recursion(storage, child, collection_path.clone(), tag_to_path)?;
+        }
+    }
 
-//     Ok(())
-// }
+    Ok(())
+}
 
-// #[tauri::command]
-// pub fn export_library(
-//     root_folder: PathBuf,
-//     storage: State<'_, Mutex<Option<Storage>>>,
-// ) -> Result<(), String> {
-//     log::info!("Exporting library to {:?}", root_folder);
+#[tauri::command]
+pub fn export_library(
+    root_folder: PathBuf,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Exporting library to {:?}", root_folder);
 
-//     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-//         export_recursion(&storage, &storage.root_folder, &root_folder).map_err(|e| e.to_string())
-//     } else {
-//         Err(storage_not_initialized())
-//     }
-// }
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        let mut tag_to_path = HashMap::default();
+        export_recursion(
+            storage,
+            storage.sp_collections.root,
+            root_folder.join(&storage.lib_meta.name),
+            &mut tag_to_path,
+        )
+        .map_err(|e| e.to_string())?;
+
+        for asset in storage.assets.values() {
+            let asset_path = asset.get_file_path(&storage.cache.root);
+
+            for tag in asset.tags.grouped.values().chain(&asset.tags.ungrouped) {
+                if let Some(path) = tag_to_path.get(tag) {
+                    copy(&asset_path, path.join(asset.gen_file_name()))
+                        .map_err(|e| e.to_string())?;
+                } else {
+                    return Err(AppError::TagNotFound(*tag).to_string());
+                }
+            }
+        }
+
+        Ok(())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
 
 #[tauri::command]
 pub fn gen_statistics(

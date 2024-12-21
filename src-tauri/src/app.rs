@@ -295,10 +295,6 @@ pub struct ItemId {
 }
 
 impl ItemId {
-    pub fn new(ty: IdType, id: Uuid) -> Self {
-        Self { ty, id }
-    }
-
     pub fn asset(self) -> AssetId {
         assert_eq!(self.ty, IdType::Asset);
         AssetId(self.id)
@@ -1097,34 +1093,6 @@ impl<'de> Deserialize<'de> for Color {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct Folder {
-    pub is_deleted: bool,
-    pub parent: Option<FolderId>,
-    pub id: FolderId,
-    pub name: String,
-    pub children: HashSet<FolderId>,
-    pub content: HashSet<AssetId>,
-    pub meta: Metadata,
-    pub tags: HashSet<TagId>,
-}
-
-impl Folder {
-    pub fn new(parent: Option<FolderId>, name: String, meta: Metadata) -> Self {
-        Self {
-            is_deleted: false,
-            parent,
-            id: FolderId(Uuid::new_v4()),
-            name,
-            children: Default::default(),
-            content: Default::default(),
-            meta,
-            tags: Default::default(),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct TagContainer {
@@ -1178,6 +1146,7 @@ impl TagContainer {
         self.ungrouped.contains(&id) || self.grouped.values().find(|t| t == &&id).is_some()
     }
 
+    #[allow(unused)]
     pub fn contains(&self, tag: Tag) -> bool {
         match tag.group {
             Some(group) => self.grouped.contains_key(&group),
