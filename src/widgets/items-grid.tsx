@@ -100,7 +100,7 @@ export default function ItemsGrid() {
                 container={gridRef.current}
                 boundContainer={boundRef.current}
                 selectableTargets={[`.${SelectableClassTag}`]}
-                hitRate={-1}
+                hitRate={0}
                 selectByClick
                 toggleContinueSelect={"shift"}
                 dragCondition={() => fileManipulation?.data?.op != "rename"}

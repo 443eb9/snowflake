@@ -448,8 +448,7 @@ impl LibraryMeta {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct RecycleBin {
-    pub items: HashSet<ItemId>,
-    pub tag_associated_assets: HashMap<TagId, Vec<AssetId>>,
+    pub assets: HashSet<AssetId>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -667,9 +666,7 @@ impl Storage {
         if let Some(asset) = self.assets.get_mut(&id) {
             asset.is_deleted = true;
             self.cache.remove_asset(asset.id);
-            self.recycle_bin
-                .items
-                .insert(ItemId::new(IdType::Asset, id.0));
+            self.recycle_bin.assets.insert(id);
 
             Ok(())
         } else {
@@ -724,22 +721,16 @@ impl Storage {
         Ok(())
     }
 
-    pub fn recover_items(&mut self, items: Vec<ItemId>) -> AppResult<DuplicateAssets> {
-        for item in items {
-            match item.ty {
-                IdType::Asset => {
-                    let Some(asset) = self.assets.get_mut(&item.asset()) else {
-                        continue;
-                    };
-                    asset.is_deleted = false;
-                    self.cache
-                        .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
-                }
-                IdType::Collection => todo!(),
-                IdType::Tag => todo!(),
-            }
+    pub fn recover_assets(&mut self, assets: Vec<AssetId>) -> AppResult<DuplicateAssets> {
+        for asset in assets {
+            let Some(asset) = self.assets.get_mut(&asset) else {
+                continue;
+            };
+            asset.is_deleted = false;
+            self.cache
+                .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
 
-            self.recycle_bin.items.remove(&item);
+            self.recycle_bin.assets.remove(&asset.id);
         }
 
         Ok(DuplicateAssets::default())

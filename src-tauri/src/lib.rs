@@ -45,7 +45,7 @@ pub fn run() {
             cmd::import_assets,
             cmd::import_memory_asset,
             cmd::import_web_assets,
-            cmd::recover_items,
+            cmd::recover_assets,
             cmd::get_recycle_bin,
             cmd::get_duplicated_assets,
             cmd::get_asset_abs_path,

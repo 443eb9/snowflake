@@ -179,8 +179,8 @@ export function GenStatistics(): Promise<LibraryStatistics> {
     return invoke("gen_statistics")
 }
 
-export function RecoverItems(params: { items: ItemId[] }): Promise<void> {
-    return invoke("recover_items", params)
+export function RecoverAssets(params: { assets: string[] }): Promise<void> {
+    return invoke("recover_assets", params)
 }
 
 export function GetRecycleBin(): Promise<ItemId[]> {

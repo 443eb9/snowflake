@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
-import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverItems, RegroupTag, RenameItem } from "../backend"
+import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverAssets, RegroupTag, RenameItem } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
@@ -185,9 +185,9 @@ export default function FileManipulator() {
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
     }
 
-    async function handleObjectsRecover() {
+    async function handleAssetsRecover(assets: string[]) {
         if (selectedItems?.data && browsingFolder?.data) {
-            await RecoverItems({ items: selectedItems.data })
+            await RecoverAssets({ assets })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             const recycleBin = await GetRecycleBin()
@@ -214,7 +214,7 @@ export default function FileManipulator() {
         if (data?.submit == undefined) { return }
 
         if (data.id.length > 0 && data.op == "recover") {
-            handleObjectsRecover()
+            handleAssetsRecover(data.id.map(id => id.id))
         }
 
         const assets = data.id.filter(id => id.ty == "asset").map(id => id.id)

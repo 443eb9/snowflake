@@ -442,14 +442,14 @@ pub async fn import_web_assets(
 }
 
 #[tauri::command]
-pub fn recover_items(
-    items: Vec<ItemId>,
+pub fn recover_assets(
+    assets: Vec<AssetId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Option<DuplicateAssets>, String> {
-    log::info!("Recovering items {:?}", items);
+    log::info!("Recovering items {:?}", assets);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let duplication = storage.recover_items(items).map_err(|e| e.to_string())?;
+        let duplication = storage.recover_assets(assets).map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
@@ -460,11 +460,11 @@ pub fn recover_items(
 #[tauri::command]
 pub fn get_recycle_bin(
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<HashSet<ItemId>, String> {
+) -> Result<HashSet<AssetId>, String> {
     log::info!("Getting recycle bin.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        Ok(storage.recycle_bin.items.clone())
+        Ok(storage.recycle_bin.assets.clone())
     } else {
         Err(storage_not_initialized())
     }
