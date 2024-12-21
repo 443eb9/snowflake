@@ -183,7 +183,7 @@ export default function CollectionTree() {
                             id: undefined,
                             name: t("collection.uncategorized"),
                             content: allUncategorizedAssets.map(a => { return { id: a, ty: "asset" } }),
-                            subTy: "uncategoriezed",
+                            subTy: "uncategorized",
                         })
                     }
                     clearSelection()

@@ -28,7 +28,7 @@ export default function TagsContainer({
 
         const currentFolder = browsingFolder.data
 
-        if ((currentFolder?.subTy == "uncategoriezed" && !isDismiss)
+        if ((currentFolder?.subTy == "uncategorized" && !isDismiss)
             || (isDismiss && tag.id == currentFolder?.id)) {
             browsingFolder.setter({
                 ...currentFolder,
@@ -37,7 +37,7 @@ export default function TagsContainer({
             selectedItems?.setter([])
         }
 
-        if ((currentFolder?.subTy == "uncategoriezed" && isDismiss)
+        if ((currentFolder?.subTy == "uncategorized" && isDismiss)
             || (!isDismiss && tag.id == currentFolder?.id)) {
             browsingFolder.setter({
                 ...currentFolder,

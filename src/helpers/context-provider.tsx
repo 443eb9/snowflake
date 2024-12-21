@@ -10,7 +10,7 @@ export type VirtualFolder = {
     id: string | undefined,
     name: string,
     content: ItemId[],
-    subTy: "recycleBin" | "tag" | "uncategoriezed" | "all",
+    subTy: "recycleBin" | "tag" | "uncategorized" | "all",
 }
 
 export type FileManipulation = {

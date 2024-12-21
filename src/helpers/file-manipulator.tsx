@@ -67,7 +67,7 @@ export default function FileManipulator() {
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
-            case "uncategoriezed":
+            case "uncategorized":
                 assets = await GetAllUncategorizedAssets()
                     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 break

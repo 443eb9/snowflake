@@ -56,7 +56,7 @@ export function BrowsingPath() {
                         }
                     }
                     break
-                case "uncategoriezed":
+                case "uncategorized":
                     setVirtualPath([t("collection.uncategorized")])
                     break
                 case "all":

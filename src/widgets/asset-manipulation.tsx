@@ -104,7 +104,7 @@ export default function AssetManipulation() {
     function getButtons() {
         switch (browsingFolder?.data?.subTy) {
             case "all":
-            case "uncategoriezed":
+            case "uncategorized":
             case "tag":
                 return (
                     <>
