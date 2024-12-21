@@ -19,7 +19,6 @@ export default function RecycleBin() {
                     .catch(err => dispatchToast(<ErrToast body={err} />))
 
                 if (recycleBin) {
-                    console.log(recycleBin)
                     browsingFolder?.setter({
                         id: undefined,
                         name: t("recycleBin.title"),

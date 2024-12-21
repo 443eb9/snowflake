@@ -99,7 +99,6 @@ export default function ModelReference({ src, asset, onContextMenu }: { src: str
                     const original = st.gl.render.bind(st.gl)
 
                     st.gl.render = (scene, camera) => {
-                        console.log(fps, performance.now() - time.current)
                         if (performance.now() - time.current >= 1000 / fps) {
                             time.current = performance.now()
                             original(scene, camera)

@@ -78,7 +78,6 @@ export default function Startup() {
             await LoadLibrary({ rootFolder: path })
                 .then(dup => {
                     if (dup) {
-                        console.log(dup)
                         dispatchToast(<MsgToast
                             title={t("toast.assetDuplication.title")}
                             body={<DuplicationList list={dup} />}
@@ -111,7 +110,6 @@ export default function Startup() {
                 await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
                     .then(dup => {
                         if (dup) {
-                            console.log(dup)
                             dispatchToast(<MsgToast
                                 title={t("toast.assetDuplication.title")}
                                 body={<DuplicationList list={dup} />}

@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { AddTagToAssets, GetAllTags, GetAllUncategorizedAssets, GetAssetsContainingTag, GetTags, GetTagsOnAsset, RemoveTagFromAssets, Tag } from "../backend";
+import { AddTagToAssets, GetAllTags, GetTags, GetTagsOnAsset, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
@@ -35,35 +35,17 @@ export default function TagsContainer({
 
         const selectedIds = await GetTagsOnAsset({ asset: associatedItem })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+
         if (selectedIds) {
-            console.log(selectedIds)
-            setSelectedIds(selectedIds)
-        }
-
-        let assets: string[] | void = undefined;
-        switch (browsingFolder.data.subTy) {
-            case "tag":
-                if (browsingFolder.data.id) {
-                    assets = await GetAssetsContainingTag({ tag: browsingFolder.data.id })
-                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                }
-                break
-            case "uncategorized":
-                assets = await GetAllUncategorizedAssets()
-                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                break
-        }
-
-        if (assets) {
-            if (selectedItems?.data) {
-                console.log(selectedItems.data, assets)
-                selectedItems.setter(selectedItems.data.filter(id => assets.includes(id.id)))
+            if (browsingFolder.data.id && !selectedIds.includes(browsingFolder.data.id)) {
+                selectedItems?.setter([])
+                browsingFolder.setter({
+                    ...browsingFolder.data,
+                    content: browsingFolder.data.content.filter(id => id.id != associatedItem)
+                })
             }
 
-            browsingFolder.setter({
-                ...browsingFolder.data,
-                content: assets.map(a => { return { id: a, ty: "asset" } }),
-            })
+            setSelectedIds(selectedIds)
         }
     }
 
