@@ -944,7 +944,7 @@ pub fn create_collections(
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for name in collection_names {
             storage
-                .create_collection(name, Color::from_hex_str("FFFFFF").unwrap(), parent)
+                .create_collection(name, parent)
                 .map_err(|e| e.to_string())?;
         }
 
@@ -957,7 +957,7 @@ pub fn create_collections(
 #[tauri::command]
 pub fn recolor_collection(
     collection: CollectionId,
-    color: Color,
+    color: Option<Color>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Recoloring collections {:?} into {:?}", collection, color);
@@ -967,12 +967,10 @@ pub fn recolor_collection(
             return Err(AppError::IllegalCollectionModification(collection).to_string());
         }
 
-        if let Some(collection) = storage.collections.get_mut(&collection) {
-            collection.color = color;
-            storage.save().map_err(|e| e.to_string())
-        } else {
-            Err(AppError::CollectionNotFound(collection).to_string())
-        }
+        storage
+            .recolor_collection(collection, color)
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())
     } else {
         Err(storage_not_initialized())
     }

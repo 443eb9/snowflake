@@ -151,7 +151,7 @@ export default function FileManipulator() {
         targetId: string,
         color: string,
     ) {
-        await RecolorCollection({ collection: targetId, color })
+        await RecolorCollection({ collection: targetId, color: color.length == 0 ? null : color })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
     }
 
@@ -203,7 +203,6 @@ export default function FileManipulator() {
 
     useEffect(() => {
         const data = fileManipulation?.data
-        console.log(data)
         if (data?.submit == undefined) { return }
 
         if (data.id.length > 0 && data.op == "recover") {

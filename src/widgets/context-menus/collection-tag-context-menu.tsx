@@ -4,7 +4,7 @@ import { Item, Menu, Submenu, useContextMenu } from "react-contexify"
 import { Collection, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef } from "../../backend"
 import { Button, CompoundButton, makeStyles, Popover, PopoverSurface, PopoverTrigger, Text, useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../../main"
-import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
+import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Eraser20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { t } from "../../i18n"
 import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
@@ -243,6 +243,19 @@ export default function CollectionTagContextMenu() {
                                             id: [contextMenuProp.data],
                                             op: "recolor",
                                             submit: [color.toHex()],
+                                        })
+                                    }
+                                    hideAll()
+                                }}
+                            />
+                            <Button
+                                icon={<Eraser20Regular />}
+                                onClick={() => {
+                                    if (contextMenuProp.data && contextMenuProp.data.ty == "collection") {
+                                        fileManipulation?.setter({
+                                            id: [contextMenuProp.data],
+                                            op: "recolor",
+                                            submit: [""],
                                         })
                                     }
                                     hideAll()

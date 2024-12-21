@@ -21,7 +21,7 @@ export type LibraryMeta = {
 }
 
 export type Collection = {
-    parent: string | undefined,
+    parent: string | null,
     id: string,
     name: string,
     children: string[],
@@ -60,7 +60,7 @@ export type Asset = {
 export type Tag = {
     id: string,
     name: string,
-    color: string,
+    color: string | null,
     meta: Metadata,
     parent: string,
 }
@@ -301,7 +301,7 @@ export function RenameItem(params: { item: ItemId, name: string }): Promise<void
     return invoke("rename_item", params)
 }
 
-export function RecolorCollection(params: { collection: string, color: string }): Promise<void> {
+export function RecolorCollection(params: { collection: string, color: string | null }): Promise<void> {
     return invoke("recolor_collection", params)
 }
 

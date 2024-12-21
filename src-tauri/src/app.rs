@@ -490,11 +490,7 @@ impl Storage {
             &mut duplication,
         )?;
 
-        let root_collection = Collection::new(
-            None,
-            Color::from_hex_str("000000").unwrap(),
-            Default::default(),
-        );
+        let root_collection = Collection::new(None, None, Default::default());
         let sp_collections = SpecialCollections {
             root: root_collection.id,
         };
@@ -741,13 +737,8 @@ impl Storage {
         Ok(())
     }
 
-    pub fn create_collection(
-        &mut self,
-        name: String,
-        color: Color,
-        parent: CollectionId,
-    ) -> AppResult<()> {
-        let collection = Collection::new(Some(parent), color, name);
+    pub fn create_collection(&mut self, name: String, parent: CollectionId) -> AppResult<()> {
+        let collection = Collection::new(Some(parent), None, name);
         let Some(parent) = self.collections.get_mut(&parent) else {
             return Err(AppError::CollectionNotFound(parent));
         };
@@ -784,12 +775,29 @@ impl Storage {
         }
     }
 
+    pub fn recolor_collection(
+        &mut self,
+        id: CollectionId,
+        new_color: Option<Color>,
+    ) -> AppResult<()> {
+        if self.sp_collections.is_special(id) {
+            return Err(AppError::IllegalCollectionModification(id));
+        }
+
+        let Some(collection) = self.collections.get_mut(&id) else {
+            return Err(AppError::CollectionNotFound(id));
+        };
+
+        collection.color = new_color;
+        Ok(())
+    }
+
     pub fn move_collection_to(
         &mut self,
         src_id: CollectionId,
         dst_id: CollectionId,
     ) -> AppResult<()> {
-        if self.sp_collections.is_special(src_id) {
+        if self.sp_collections.is_special(src_id) || src_id == dst_id {
             return Err(AppError::IllegalCollectionModification(src_id));
         }
 
@@ -893,14 +901,14 @@ pub struct Collection {
     pub parent: Option<CollectionId>,
     pub id: CollectionId,
     pub name: String,
-    pub color: Color,
+    pub color: Option<Color>,
     pub meta: Metadata,
     pub content: HashSet<TagId>,
     pub children: HashSet<CollectionId>,
 }
 
 impl Collection {
-    pub fn new(parent: Option<CollectionId>, color: Color, name: String) -> Self {
+    pub fn new(parent: Option<CollectionId>, color: Option<Color>, name: String) -> Self {
         Self {
             is_deleted: false,
             parent,
