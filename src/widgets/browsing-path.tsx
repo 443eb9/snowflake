@@ -4,6 +4,7 @@ import { GetTagVirtualPath } from "../backend"
 import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, useToastController } from "@fluentui/react-components"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
+import { t } from "../i18n"
 
 export function BrowsingPath() {
     const [virtualPath, setVirtualPath] = useState<string[] | undefined>()
@@ -45,16 +46,6 @@ export function BrowsingPath() {
                 case "recycleBin":
                     setVirtualPath([browsingFolder.data.name])
                     break
-                case "folder":
-                    // if (browsingFolder.data.id) {
-                    //     const path = await GetFolderVirtualPath({ folder: browsingFolder.data.id })
-                    //         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-
-                    //     if (path) {
-                    //         setVirtualPath(path)
-                    //     }
-                    // }
-                    break
                 case "tag":
                     if (browsingFolder.data.id) {
                         const path = await GetTagVirtualPath({ tag: browsingFolder.data.id })
@@ -65,11 +56,17 @@ export function BrowsingPath() {
                         }
                     }
                     break
+                case "uncategoriezed":
+                    setVirtualPath([t("collection.uncategorized")])
+                    break
+                case "all":
+                    setVirtualPath([t("collection.all")])
+                    break
             }
         }
 
         fetch()
-    }, [browsingFolder?.data?.id])
+    }, [browsingFolder?.data])
 
     if (!virtualPath) {
         return <></>

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react"
 import { Input, Text, useToastController } from "@fluentui/react-components"
 import { List, ListItem } from "@fluentui/react-list-preview"
 import TagsContainer from "../widgets/tags-container"
-import { Asset, GetAsset, GetAssetAbsPath, ModifySrcOf } from "../backend"
+import { Asset, GetAsset, GetAssetAbsPath, GetRemovedAsset, ModifySrcOf } from "../backend"
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider"
 import { formatFileSize } from "../util"
 import { darkenContentStyleHook } from "../helpers/styling"
@@ -38,7 +38,10 @@ export default function DetailInfo() {
         if (asset && asset.id == selected.id) { return }
 
         async function fetch() {
-            const asset = await GetAsset({ asset: selected.id })
+            if (!browsingFolder?.data) { return }
+
+            const ty = browsingFolder.data.subTy
+            const asset = await (ty == "recycleBin" ? GetRemovedAsset({ asset: selected.id }) : GetAsset({ asset: selected.id }))
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             const absPath = await GetAssetAbsPath({ asset: selected.id })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))

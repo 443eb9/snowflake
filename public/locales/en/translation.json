@@ -112,5 +112,9 @@
     "update.title": "Update Available",
     "update.title.already": "You are up to date",
     "ctxMenu.createCollection": "Create Collection",
-    "ctxMenu.createTag": "Create Tag"
+    "ctxMenu.createTag": "Create Tag",
+    "collection.all": "All",
+    "collection.uncategorized": "Uncategorized",
+    "collection.root": "User Defined",
+    "ctxMenu.recolorCollection": "Recolor Collection"
 }

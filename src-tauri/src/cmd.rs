@@ -11,10 +11,10 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 
 use crate::{
     app::{
-        AppData, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId, Color,
-        DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, LibraryMeta, LibraryStatistics,
-        RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue, Storage, Tag, TagId,
-        UserSettings, CACHE,
+        AppData, AppError, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId,
+        Color, DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, LibraryMeta,
+        LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue,
+        SpecialCollections, Storage, Tag, TagId, UserSettings, CACHE,
     },
     err::{asset_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -260,14 +260,18 @@ pub fn gen_statistics(
 
 #[tauri::command]
 pub fn import_assets(
+    initial_tag: Option<TagId>,
     path: Vec<PathBuf>,
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<(), String> {
-    log::info!("Importing assets {:?}.", path);
+) -> Result<Option<DuplicateAssets>, String> {
+    log::info!("Importing assets {:?} to {:?}.", path, initial_tag);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        storage.add_assets(path).map_err(|e| e.to_string())?;
-        storage.save().map_err(|e| e.to_string())
+        let duplication = storage
+            .add_assets(initial_tag, path)
+            .map_err(|e| e.to_string())?;
+        storage.save().map_err(|e| e.to_string())?;
+        Ok(duplication.reduce())
     } else {
         Err(storage_not_initialized())
     }
@@ -300,6 +304,7 @@ pub fn change_library_name(
 
 #[tauri::command]
 pub fn import_memory_asset(
+    initial_tag: Option<TagId>,
     data: Vec<u8>,
     format: String,
     storage: State<'_, Mutex<Option<Storage>>>,
@@ -308,11 +313,14 @@ pub fn import_memory_asset(
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         let duplication = storage
-            .add_raw_assets(vec![RawAsset {
-                bytes: data,
-                ext: format.into(),
-                src: Default::default(),
-            }])
+            .add_raw_assets(
+                initial_tag,
+                vec![RawAsset {
+                    bytes: data,
+                    ext: format.into(),
+                    src: Default::default(),
+                }],
+            )
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
 
@@ -324,6 +332,7 @@ pub fn import_memory_asset(
 
 #[tauri::command]
 pub async fn import_web_assets(
+    initial_tag: Option<TagId>,
     urls: Vec<String>,
     storage: State<'_, Mutex<Option<Storage>>>,
     progress: Channel<DownloadEvent>,
@@ -422,7 +431,9 @@ pub async fn import_web_assets(
     }
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let duplication = storage.add_raw_assets(results).map_err(|e| e.to_string())?;
+        let duplication = storage
+            .add_raw_assets(initial_tag, results)
+            .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
@@ -438,9 +449,7 @@ pub fn recover_items(
     log::info!("Recovering items {:?}", items);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        let duplication = storage
-            .recover_items(items, true)
-            .map_err(|e| e.to_string())?;
+        let duplication = storage.recover_items(items).map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
@@ -529,13 +538,13 @@ pub fn get_collection_tree(
 }
 
 #[tauri::command]
-pub fn get_root_collection_id(
+pub fn get_special_collections(
     storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<CollectionId, String> {
-    log::info!("Getting root collection id.");
+) -> Result<SpecialCollections, String> {
+    log::info!("Getting special collections.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage.root_collection)
+        Ok(storage.sp_collections)
     } else {
         Err(storage_not_initialized())
     }
@@ -547,6 +556,40 @@ pub fn get_all_tags(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Ta
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage.tags.values().cloned().collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_all_assets(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<AssetId>, String> {
+    log::info!("Getting all assets");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage
+            .assets
+            .values()
+            .filter(|a| !a.is_deleted)
+            .map(|a| a.id)
+            .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_all_uncategorized_assets(
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<AssetId>, String> {
+    log::info!("Getting all uncategorized assets");
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(storage
+            .assets
+            .values()
+            .filter(|a| !a.is_deleted && a.tags.is_empty())
+            .map(|a| a.id)
+            .collect())
     } else {
         Err(storage_not_initialized())
     }
@@ -575,6 +618,26 @@ pub fn get_asset(
         storage
             .assets
             .get(&asset)
+            .filter(|a| !a.is_deleted)
+            .ok_or_else(|| asset_doesnt_exist(asset))
+            .cloned()
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_removed_asset(
+    asset: AssetId,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Asset, String> {
+    log::info!("Getting removed asset {:?}", asset);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        storage
+            .assets
+            .get(&asset)
+            .filter(|a| a.is_deleted)
             .ok_or_else(|| asset_doesnt_exist(asset))
             .cloned()
     } else {
@@ -592,7 +655,7 @@ pub fn get_assets(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(assets
             .into_iter()
-            .filter_map(|a| storage.assets.get(&a))
+            .filter_map(|a| storage.assets.get(&a).filter(|a| !a.is_deleted))
             .cloned()
             .collect())
     } else {
@@ -750,7 +813,10 @@ pub fn get_assets_containing_tag(
         Ok(storage
             .assets
             .values()
-            .filter_map(|asset| asset.tags.contains(&tag).then_some(asset.id))
+            .filter_map(|asset| {
+                (!asset.is_deleted).then(|| asset.tags.contains(&tag).then_some(asset.id))
+            })
+            .flatten()
             .collect())
     } else {
         Err(storage_not_initialized())
@@ -883,6 +949,30 @@ pub fn create_collections(
         }
 
         storage.save().map_err(|e| e.to_string())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn recolor_collection(
+    collection: CollectionId,
+    color: Color,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<(), String> {
+    log::info!("Recoloring collections {:?} into {:?}", collection, color);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        if storage.sp_collections.is_special(collection) {
+            return Err(AppError::IllegalCollectionModification(collection).to_string());
+        }
+
+        if let Some(collection) = storage.collections.get_mut(&collection) {
+            collection.color = color;
+            storage.save().map_err(|e| e.to_string())
+        } else {
+            Err(AppError::CollectionNotFound(collection).to_string())
+        }
     } else {
         Err(storage_not_initialized())
     }

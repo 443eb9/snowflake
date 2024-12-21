@@ -52,9 +52,6 @@ export default function AssetManipulation() {
     }
 
     async function handleImport(folder: boolean) {
-        const parent = browsingFolder?.data?.id
-        if (!parent) { return }
-
         const items = await open({
             title: t("asset-mani.importDialogTitle"),
             multiple: true,
@@ -63,10 +60,11 @@ export default function AssetManipulation() {
 
         if (items) {
             fileManipulation?.setter({
-                id: [{ id: parent, ty: "tag" }],
+                id: [{ id: browsingFolder?.data?.id ?? "", ty: "tag" }],
                 op: "import",
                 submit: items,
             })
+            selectedItems?.setter([])
         }
     }
 
@@ -105,7 +103,9 @@ export default function AssetManipulation() {
 
     function getButtons() {
         switch (browsingFolder?.data?.subTy) {
-            case "folder":
+            case "all":
+            case "uncategoriezed":
+            case "tag":
                 return (
                     <>
                         <Button
@@ -177,7 +177,7 @@ export default function AssetManipulation() {
             </div>
             <div className="flex gap-1">
                 {
-                    browsingFolder?.data?.subTy == "folder" &&
+                    browsingFolder?.data?.subTy != "recycleBin" &&
                     <>
                         <Button icon={<Add20Regular />} onClick={() => handleImport(false)} appearance="outline" />
                         <Button icon={<FolderOpen20Regular />} onClick={() => handleImport(true)} appearance="outline" />

@@ -37,18 +37,14 @@ pub enum AppError {
     Image(#[from] imagesize::ImageError),
     #[error("Asset {0:?} not found.")]
     AssetNotFound(AssetId),
-    #[error("Folder {0:?} not found.")]
-    FolderNotFound(FolderId),
     #[error("Folder at {0} is not empty.")]
     FolderNotEmpty(PathBuf),
     #[error("Collection {0:?} not found.")]
     CollectionNotFound(CollectionId),
     #[error("Tag {0:?} not found.")]
     TagNotFound(TagId),
-    #[error("Illegal folder deletion: {0:?}")]
-    IllegalFolderDeletion(FolderId),
-    #[error("Illegal collection deletion: {0:?}")]
-    IllegalCollectionDeletion(CollectionId),
+    #[error("Illegal collection modification: {0:?}")]
+    IllegalCollectionModification(CollectionId),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -438,19 +434,6 @@ impl LibraryMeta {
     }
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LegacyStorage {
-    #[serde(skip)]
-    pub cache: StorageCache,
-    pub root_id: FolderId,
-    pub tags: HashMap<TagId, Tag>,
-    pub folders: HashMap<FolderId, Folder>,
-    pub assets: HashMap<AssetId, Asset>,
-    pub recycle_bin: HashSet<ItemId>,
-    pub lib_meta: LibraryMeta,
-}
-
 #[derive(Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct RecycleBin {
@@ -458,12 +441,24 @@ pub struct RecycleBin {
     pub tag_associated_assets: HashMap<TagId, Vec<AssetId>>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "camelCase")]
+pub struct SpecialCollections {
+    pub root: CollectionId,
+}
+
+impl SpecialCollections {
+    pub fn is_special(&self, id: CollectionId) -> bool {
+        id == self.root
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Storage {
     #[serde(skip)]
     pub cache: StorageCache,
-    pub root_collection: CollectionId,
+    pub sp_collections: SpecialCollections,
     pub tags: HashMap<TagId, Tag>,
     pub collections: HashMap<CollectionId, Collection>,
     pub assets: HashMap<AssetId, Asset>,
@@ -500,11 +495,14 @@ impl Storage {
             Color::from_hex_str("000000").unwrap(),
             Default::default(),
         );
-        let collections = HashMap::from([(root_collection.id, root_collection.clone())]);
+        let sp_collections = SpecialCollections {
+            root: root_collection.id,
+        };
+        let collections = HashMap::from([(root_collection.id, root_collection)]);
 
         let mut result = Self {
             cache: Default::default(),
-            root_collection: root_collection.id,
+            sp_collections,
             tags: Default::default(),
             collections,
             assets,
@@ -561,20 +559,23 @@ impl Storage {
 
     pub fn add_assets(
         &mut self,
+        initial_tag: Option<TagId>,
         path: Vec<PathBuf>,
-        // parent: FolderId,
     ) -> AppResult<DuplicateAssets> {
         let mut asset_crc = HashMap::default();
+        let mut assets = HashMap::default();
         for path in path {
-            collect_path(
-                &self.cache.root.clone(),
-                path,
-                &mut self.assets,
-                &mut asset_crc,
-            )?;
+            collect_path(&self.cache.root.clone(), path, &mut assets, &mut asset_crc)?;
+        }
+
+        if let Some(initial_tag) = initial_tag {
+            for asset in assets.values_mut() {
+                asset.tags.insert(initial_tag);
+            }
         }
 
         self.cache.asset_crc.extend(asset_crc.clone());
+        self.assets.extend(assets);
         let duplication = self
             .cache
             .get_duplications(asset_crc.values().cloned().collect());
@@ -582,7 +583,11 @@ impl Storage {
         Ok(DuplicateAssets(duplication))
     }
 
-    pub fn add_raw_assets(&mut self, data: Vec<RawAsset>) -> AppResult<DuplicateAssets> {
+    pub fn add_raw_assets(
+        &mut self,
+        initial_tag: Option<TagId>,
+        data: Vec<RawAsset>,
+    ) -> AppResult<DuplicateAssets> {
         let root = self.cache.root.clone();
 
         let mut added_crc = HashSet::<u32>::default();
@@ -627,10 +632,14 @@ impl Storage {
                 }
             };
 
-            let asset = Asset {
+            let mut asset = Asset {
                 id: AssetId(id),
                 ..Asset::new(id.to_string(), ext.into(), meta, ty, props, src)
             };
+
+            if let Some(initial_tag) = initial_tag {
+                asset.tags.insert(initial_tag);
+            }
 
             self.assets.insert(asset.id, asset);
         }
@@ -641,11 +650,8 @@ impl Storage {
     }
 
     pub fn move_asset_to_recycle_bin(&mut self, id: AssetId) -> AppResult<()> {
-        if let Some(asset) = self.assets.get(&id).cloned() {
-            // if let Some(parent) = self.folders.get_mut(&asset.parent) {
-            //     parent.content.remove(&id);
-            // }
-
+        if let Some(asset) = self.assets.get_mut(&id) {
+            asset.is_deleted = true;
             self.cache.remove_asset(asset.id);
             self.recycle_bin
                 .items
@@ -659,10 +665,6 @@ impl Storage {
 
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
-            // if let Some(parent) = self.folders.get_mut(&asset.parent) {
-            //     parent.content.remove(&id);
-            // }
-
             self.cache.remove_asset(asset.id);
             remove_file(asset.get_file_path(&self.cache.root))?;
 
@@ -685,8 +687,8 @@ impl Storage {
     }
 
     pub fn delete_collection(&mut self, id: CollectionId) -> AppResult<()> {
-        if self.root_collection == id {
-            return Err(AppError::IllegalCollectionDeletion(id));
+        if self.sp_collections.is_special(id) {
+            return Err(AppError::IllegalCollectionModification(id));
         }
 
         let Some(collection) = self.collections.remove(&id) else {
@@ -708,26 +710,22 @@ impl Storage {
         Ok(())
     }
 
-    pub fn recover_items(
-        &mut self,
-        items: Vec<ItemId>,
-        recover_folder_content: bool,
-    ) -> AppResult<DuplicateAssets> {
-        let mut recover_recursion = Vec::new();
+    pub fn recover_items(&mut self, items: Vec<ItemId>) -> AppResult<DuplicateAssets> {
         for item in items {
-            let ItemId { ty, id } = item;
-
-            match ty {
-                IdType::Asset => todo!(),
+            match item.ty {
+                IdType::Asset => {
+                    let Some(asset) = self.assets.get_mut(&item.asset()) else {
+                        continue;
+                    };
+                    asset.is_deleted = false;
+                    self.cache
+                        .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
+                }
                 IdType::Collection => todo!(),
                 IdType::Tag => todo!(),
             }
 
             self.recycle_bin.items.remove(&item);
-        }
-
-        if !recover_recursion.is_empty() {
-            self.recover_items(recover_recursion, false)?;
         }
 
         Ok(DuplicateAssets::default())
@@ -791,6 +789,10 @@ impl Storage {
         src_id: CollectionId,
         dst_id: CollectionId,
     ) -> AppResult<()> {
+        if self.sp_collections.is_special(src_id) {
+            return Err(AppError::IllegalCollectionModification(src_id));
+        }
+
         let Some(src_collection) = self.collections.get(&src_id).cloned() else {
             return Err(AppError::CollectionNotFound(src_id));
         };
@@ -807,13 +809,7 @@ impl Storage {
         };
 
         new_parent.children.insert(src_id);
-        self.collections.insert(
-            src_id,
-            Collection {
-                parent: Some(dst_id),
-                ..src_collection
-            },
-        );
+        self.collections.get_mut(&src_id).unwrap().parent = Some(dst_id);
 
         Ok(())
     }
@@ -926,7 +922,6 @@ pub struct Tag {
     #[serde(default)]
     pub parent: CollectionId,
     pub id: TagId,
-    pub color_override: Option<Color>,
     pub name: String,
     pub meta: Metadata,
 }
@@ -936,7 +931,6 @@ impl Tag {
         Self {
             parent,
             id: TagId(Uuid::new_v4()),
-            color_override: None,
             name,
             meta: Metadata::now(0),
         }
@@ -1047,6 +1041,7 @@ impl Folder {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Asset {
+    pub is_deleted: bool,
     pub id: AssetId,
     pub name: String,
     pub ty: AssetType,
@@ -1067,6 +1062,7 @@ impl Asset {
         src: String,
     ) -> Self {
         Self {
+            is_deleted: false,
             id: AssetId(Uuid::new_v4()),
             ty,
             name,

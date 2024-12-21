@@ -1,13 +1,13 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
-import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecoverItem, RenameItem } from "../backend"
+import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, GetRecycleBin, ImportAssets, ItemId, ItemTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverItems, RenameItem } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
 import MsgToast from "../widgets/toasts/msg-toast"
 import DuplicationList from "../widgets/duplication-list"
 import { t } from "../i18n"
-import { decodeId, decodeItem } from "../util"
+import { decodeId } from "../util"
 import { SelectedClassTag } from "../widgets/items-grid"
 
 export default function FileManipulator() {
@@ -53,29 +53,44 @@ export default function FileManipulator() {
 
     async function handleAssetsImport(
         items: string[],
-        parent: string,
+        parent: string | null,
     ) {
-        const dup = await ImportAssets({ parent, path: items })
+        if (!browsingFolder?.data) { return }
+        const dup = await ImportAssets({ initialTag: parent, path: items })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-        // TODO update
-        // const folder = await GetFolder({ folder: parent })
-        //     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-        // if (folder) {
-        //     browsingFolder?.setter({
-        //         ...folder,
-        //         content: folder.content.map(a => { return { id: a, ty: "asset" } }),
-        //         subTy: "folder",
-        //     })
 
-        //     if (dup) {
-        //         dispatchToast(<MsgToast
-        //             title={t("toast.assetDuplication.title")}
-        //             body={<DuplicationList list={dup} />}
-        //         />,
-        //             { intent: "warning" }
-        //         )
-        //     }
-        // }
+        let assets;
+        switch (browsingFolder.data.subTy) {
+            case "tag":
+                if (browsingFolder.data.id) {
+                    assets = await GetAssetsContainingTag({ tag: browsingFolder.data.id })
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                }
+                break
+            case "uncategoriezed":
+                assets = await GetAllUncategorizedAssets()
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                break
+            case "all":
+                assets = await GetAllAssets()
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                break
+        }
+        if (!assets) { return }
+
+        browsingFolder?.setter({
+            ...browsingFolder.data,
+            content: assets.map(a => { return { id: a, ty: "asset" } }),
+        })
+
+        if (dup) {
+            dispatchToast(<MsgToast
+                title={t("toast.assetDuplication.title")}
+                body={<DuplicationList list={dup} />}
+            />,
+                { intent: "warning" }
+            )
+        }
     }
 
     async function handleFolderAlikeRename(
@@ -132,6 +147,14 @@ export default function FileManipulator() {
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
     }
 
+    async function handleCollectionRecolor(
+        targetId: string,
+        color: string,
+    ) {
+        await RecolorCollection({ collection: targetId, color })
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+    }
+
     // Tags
 
     async function handleTagCreation(
@@ -156,15 +179,7 @@ export default function FileManipulator() {
 
     async function handleObjectsRecover() {
         if (selectedItems?.data && browsingFolder?.data) {
-            const items = selectedItems.data.map(item => {
-                switch (item.ty) {
-                    case "asset":
-                        return { asset: item.id }
-                    // TODO collection and tag
-                }
-            }).filter(id => id != undefined)
-
-            await RecoverItem({ items })
+            await RecoverItems({ items: selectedItems.data })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             const recycleBin = await GetRecycleBin()
@@ -173,10 +188,7 @@ export default function FileManipulator() {
                 selectedItems.setter([])
                 browsingFolder.setter({
                     ...browsingFolder.data,
-                    content: recycleBin.map(obj => {
-                        const decoded = decodeItem(obj)
-                        return { id: decoded.id, ty: decoded.ty }
-                    }),
+                    content: recycleBin,
                 })
 
                 // update folder tree
@@ -191,7 +203,8 @@ export default function FileManipulator() {
 
     useEffect(() => {
         const data = fileManipulation?.data
-        if (data?.submit == undefined || !browsingFolder || !selectedItems) { return }
+        console.log(data)
+        if (data?.submit == undefined) { return }
 
         if (data.id.length > 0 && data.op == "recover") {
             handleObjectsRecover()
@@ -207,7 +220,6 @@ export default function FileManipulator() {
                 case "deletion": handleAssetDeletion(assets, false); break
                 case "deletionPermanent": handleAssetDeletion(assets, true); break
                 case "create": console.error("Creating an asset is invalid."); break
-                case "import": handleAssetsImport(data.submit, assets[0]); break
             }
         }
 
@@ -225,6 +237,7 @@ export default function FileManipulator() {
                     }
                     break
                 case "move": handleFolderAlikeMove(collections, data.submit[0], "collection"); break
+                case "recolor": handleCollectionRecolor(collections[0], data.submit[0]); break
             }
         }
 
@@ -234,11 +247,12 @@ export default function FileManipulator() {
                 case "deletion":
                 case "deletionPermanent": handleTagDeletion(tags); break
                 case "move": handleFolderAlikeMove(tags, data.submit[0], "tag"); break
+                case "import": handleAssetsImport(data.submit, tags[0].length == 0 ? null : tags[0]); break
             }
         }
 
         fileManipulation?.setter(undefined)
-    }, [fileManipulation])
+    }, [fileManipulation?.data])
 
     useEffect(() => {
         document.querySelectorAll(`.${SelectedClassTag}`)

@@ -5,7 +5,6 @@ import { browsingFolderContext } from "../helpers/context-provider";
 import { GetRecycleBin } from "../backend";
 import ErrToast from "./toasts/err-toast";
 import { t } from "../i18n";
-import { decodeItem } from "../util";
 
 export default function RecycleBin() {
     const browsingFolder = useContext(browsingFolderContext)
@@ -24,10 +23,7 @@ export default function RecycleBin() {
                     browsingFolder?.setter({
                         id: undefined,
                         name: t("recycleBin.title"),
-                        content: recycleBin.map(obj => {
-                            const decoded = decodeItem(obj)
-                            return { id: decoded.id, ty: decoded.ty }
-                        }),
+                        content: recycleBin,
                         subTy: "recycleBin",
                     })
                 }

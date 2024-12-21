@@ -1,4 +1,4 @@
-import { ItemId, Item, ItemTy } from "./backend"
+import { ItemId, Item, ItemTy, Asset, Collection, Tag } from "./backend"
 
 const units = ["B", "KB", "MB", "GB"]
 
@@ -21,12 +21,13 @@ export function encodeId(id: string, ty: ItemTy) {
 
 export function decodeId(id: string): ItemId {
     const s = id.split("/")
+    if (s.length != 2) { throw new Error(`Invalid id ${id}`) }
     return { id: s[1], ty: s[0] as ItemTy }
 }
 
-export function decodeItem(item: Item): { ty: ItemTy, id: string } {
+export function decodeItem(item: Item): { ty: "asset", data: Asset } | { ty: "collection", data: Collection } | { ty: "tag", data: Tag } {
     const obj = Object.entries(item)[0]
-    return { ty: obj[0] as ItemTy, id: obj[1] }
+    return { ty: obj[0] as ItemTy, data: obj[1] }
 }
 
 export function GetNodeId(node: HTMLElement) {

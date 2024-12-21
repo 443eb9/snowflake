@@ -1,6 +1,8 @@
-import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Slot, TreeItemLayout, useHeadlessFlatTree_unstable } from "@fluentui/react-components"
+import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Slot, TreeItemLayout, useHeadlessFlatTree_unstable, useToastController } from "@fluentui/react-components"
 import { MenuId, useContextMenu } from "react-contexify"
 import { MouseEvent, ReactNode } from "react"
+import { GlobalToasterId } from "../main"
+import ErrToast from "../widgets/toasts/err-toast"
 
 type ItemTreeNode<T> = HeadlessFlatTreeItemProps & T
 
@@ -10,7 +12,7 @@ export default function ItemTree<T, I>(
         itemTree: Map<string, I>,
         onItemClick: (ev: MouseEvent, id: I) => void,
         onItemContextMenu: (ev: MouseEvent, id: I) => void,
-        renderItem: (node: ItemTreeNode<T>) => ReactNode,
+        renderNode: (node: ItemTreeNode<T>, item: I) => ReactNode,
         isNodeExpandable: (id: string) => boolean,
         itemToNode: (item: I) => ItemTreeNode<T>,
         itemChildrenIds: (item: I) => string[],
@@ -20,6 +22,7 @@ export default function ItemTree<T, I>(
     }
 ) {
     const { show: showContextMenu } = useContextMenu()
+    const { dispatchToast } = useToastController(GlobalToasterId)
 
     const flatTree = useHeadlessFlatTree_unstable(convertItemTreeToFlatTree())
 
@@ -28,6 +31,10 @@ export default function ItemTree<T, I>(
 
         function collectTree(id: string) {
             const item = props.itemTree.get(id) as I
+            if (item == undefined) {
+                dispatchToast(<ErrToast body="Broken tree." />)
+                return
+            }
             result.push({ ...props.itemToNode(item), ...item })
             props.itemChildrenIds(item).forEach(child => collectTree(child))
         }
@@ -70,7 +77,7 @@ export default function ItemTree<T, I>(
                                 }}
                             >
                                 {
-                                    props.renderItem(treeItemProps)
+                                    props.renderNode(treeItemProps, treeItemProps)
                                 }
                             </TreeItemLayout>
                         </FlatTreeItem>

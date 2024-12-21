@@ -1,14 +1,15 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../../helpers/context-provider"
-import { Item, ItemParams, Menu, Submenu } from "react-contexify"
-import { Collection, GetCollectionTree, OpenWithDefaultApp, QuickRef } from "../../backend"
-import { Button, CompoundButton, makeStyles, Text, useToastController } from "@fluentui/react-components"
+import { Item, Menu, Submenu, useContextMenu } from "react-contexify"
+import { Collection, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef } from "../../backend"
+import { Button, CompoundButton, makeStyles, Popover, PopoverSurface, PopoverTrigger, Text, useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../../main"
-import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Collections20Regular, CollectionsAdd20Regular, Delete20Regular, DrawImage20Regular, Edit20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
+import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { t } from "../../i18n"
 import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
-import { decodeId, GetNodeId } from "../../util"
+import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview"
+import { TinyColor } from "@ctrl/tinycolor";
 
 export const CollectionTagCtxMenuId = "collectiontagctxmenu"
 
@@ -27,8 +28,10 @@ export default function CollectionTagContextMenu() {
 
     const [allCollections, setAllCollections] = useState<Collection[] | undefined>()
     const [focused, setFocused] = useState(-1)
+    const [color, setColor] = useState<TinyColor | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
+    const { hideAll } = useContextMenu({ id: CollectionTagCtxMenuId })
 
     const buttonStyle = buttonStyleHook()
 
@@ -48,58 +51,78 @@ export default function CollectionTagContextMenu() {
         window.location.reload()
     }
 
-    const handleDelete = (ev: ItemParams) => {
-        if (!ev.triggerEvent.target) { return }
-        const id = GetNodeId(ev.triggerEvent.target as HTMLElement)
-        if (!id) { return }
-
-        fileManipulation?.setter({
-            id: [decodeId(id)],
-            op: "deletion",
-            submit: [],
-        })
+    const handleDelete = () => {
+        const data = contextMenuProp?.data
+        if (data) {
+            switch (data.ty) {
+                case "assets":
+                    fileManipulation?.setter({
+                        id: data.data.map(id => { return { id, ty: "asset" } }),
+                        op: "deletion",
+                        submit: [],
+                    })
+                    break
+                case "collection":
+                case "tag":
+                    fileManipulation?.setter({
+                        id: [data],
+                        op: "deletion",
+                        submit: [],
+                    })
+                    break
+            }
+        }
     }
 
     const handleRename = () => {
-        const ty = fileManipulation?.data?.id[0].ty
-        if (fileManipulation?.data && (ty == "collection" || ty == "tag")) {
-            fileManipulation.setter({
-                ...fileManipulation.data,
-                op: "rename",
-            })
-        }
+        if (!contextMenuProp?.data) { return }
 
-        if (selectedItems?.data?.length == 1 && browsingFolder && selectedItems && fileManipulation) {
-            fileManipulation.setter({
-                id: selectedItems.data,
-                op: "rename",
-                submit: undefined,
-            })
+        let id: ItemId | undefined = undefined;
+        switch (contextMenuProp.data.ty) {
+            case "assets":
+                if (contextMenuProp.data.data.length == 1) {
+                    id = {
+                        id: contextMenuProp.data.data[0],
+                        ty: "asset"
+                    }
+                }
+                break
+            case "collection":
+                id = {
+                    id: contextMenuProp.data.id,
+                    ty: "collection",
+                }
+                break
+            case "tag":
+                id = {
+                    id: contextMenuProp.data.id,
+                    ty: "tag",
+                }
+                break
         }
+        if (id == undefined) { return }
+
+        fileManipulation?.setter({
+            id: [id],
+            op: "rename",
+            submit: undefined,
+        })
     }
 
-    const handleTagCreation = (ev: ItemParams) => {
-        if (!ev.triggerEvent.target) { return }
-        const parent = GetNodeId(ev.triggerEvent.target as HTMLElement)
-        if (!parent) { return }
-
-        if (parent) {
+    const handleTagCreation = () => {
+        if (contextMenuProp?.data && contextMenuProp.data.ty == "collection") {
             fileManipulation?.setter({
-                id: [decodeId(parent)],
+                id: [contextMenuProp.data],
                 op: "create",
                 submit: ["New Tag", "tag"],
             })
         }
     }
 
-    const handleCollectionCreation = (ev: ItemParams) => {
-        if (!ev.triggerEvent.target) { return }
-        const parent = GetNodeId(ev.triggerEvent.target as HTMLElement)
-        if (!parent) { return }
-
-        if (parent) {
+    const handleCollectionCreation = () => {
+        if (contextMenuProp?.data && contextMenuProp.data.ty == "collection") {
             fileManipulation?.setter({
-                id: [decodeId(parent)],
+                id: [contextMenuProp.data],
                 op: "create",
                 submit: ["New Collection", "collection"],
             })
@@ -107,45 +130,33 @@ export default function CollectionTagContextMenu() {
     }
 
     const handleMove = (dst: Collection) => {
-        const target = contextMenuProp?.data?.target
-        if (!target) { return }
+        const ty = contextMenuProp?.data?.ty
+        if (!contextMenuProp?.data) { return }
 
-        switch (target) {
+        switch (ty) {
             case "collection":
-                if (contextMenuProp.data?.extra) {
-                    fileManipulation?.setter({
-                        id: [{ id: contextMenuProp.data?.extra, ty: "collection" }],
-                        op: "move",
-                        submit: [dst.id],
-                    })
-                }
-                break
             case "tag":
-                if (contextMenuProp.data?.extra) {
-                    fileManipulation?.setter({
-                        id: [{ id: contextMenuProp.data?.extra, ty: "tag" }],
-                        op: "move",
-                        submit: [dst.id],
-                    })
-                }
+                fileManipulation?.setter({
+                    id: [contextMenuProp.data],
+                    op: "move",
+                    submit: [dst.id],
+                })
                 break
         }
     }
 
     const handleQuickRef = async () => {
-        const target = contextMenuProp?.data?.target
-        if (!target) { return }
+        const ty = contextMenuProp?.data?.ty
+        if (!contextMenuProp?.data) { return }
 
-        switch (target) {
+        switch (ty) {
             case "tag":
-                if (contextMenuProp.data?.extra) {
-                    await QuickRef({ ty: { tag: contextMenuProp.data?.extra } })
-                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                }
+                await QuickRef({ ty: { tag: contextMenuProp.data.id } })
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 break
             case "assets":
                 if (selectedItems?.data) {
-                    await QuickRef({ ty: { asset: selectedItems.data.map(a => a.id) } })
+                    await QuickRef({ ty: { asset: contextMenuProp.data.data } })
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 }
                 break
@@ -161,11 +172,10 @@ export default function CollectionTagContextMenu() {
         }
     }
 
-    const multipleSelected = contextMenuProp?.data?.target == "assets" &&
-        selectedItems?.data?.length != undefined && selectedItems.data.length > 1
-    const ty = fileManipulation?.data?.id.length != 0 ? fileManipulation?.data?.id[0].ty : undefined
+    const ty = contextMenuProp?.data?.ty
+    const multipleSelected = contextMenuProp?.data?.ty == "assets" && contextMenuProp.data.data.length > 1
 
-    if (!allCollections) {
+    if (!allCollections || !ty || !contextMenuProp.data) {
         return <></>
     }
 
@@ -198,7 +208,60 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.rename")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleCollectionCreation} disabled={ty == "tag"}>
+            <Item disabled={ty != "collection"} closeOnClick={false}>
+                <Popover>
+                    <PopoverTrigger>
+                        <Button
+                            className={buttonStyle.root}
+                            icon={<Color20Regular />}
+                            appearance="subtle"
+                        >
+                            <Text>{t("ctxMenu.recolorCollection")}</Text>
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverSurface>
+                        <ColorPicker
+                            color={color?.toHsv() ?? new TinyColor("ffffff").toHsv()}
+                            onColorChange={(_, data) => setColor(new TinyColor(data.color))}
+                        >
+                            <ColorArea />
+                            <ColorSlider />
+                        </ColorPicker>
+                        <div className="flex gap-2 items-center">
+                            <Button
+                                icon={<Dismiss20Regular />}
+                                onClick={() => {
+                                    fileManipulation?.setter(undefined)
+                                    hideAll()
+                                }}
+                            />
+                            <Button
+                                icon={<Checkmark20Regular />}
+                                onClick={() => {
+                                    if (contextMenuProp.data && contextMenuProp.data.ty == "collection" && color) {
+                                        fileManipulation?.setter({
+                                            id: [contextMenuProp.data],
+                                            op: "recolor",
+                                            submit: [color.toHex()],
+                                        })
+                                    }
+                                    hideAll()
+                                }}
+                            />
+                            <Text
+                                size={400}
+                                font="monospace"
+                                style={{
+                                    color: `#${color?.toHex()}`,
+                                }}
+                            >
+                                {color?.toHex()}
+                            </Text>
+                        </div>
+                    </PopoverSurface>
+                </Popover>
+            </Item>
+            <Item onClick={handleCollectionCreation} disabled={ty != "collection"}>
                 <Button
                     className={buttonStyle.root}
                     icon={<CollectionsAdd20Regular />}
@@ -207,7 +270,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.createCollection")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleTagCreation} disabled={ty == "tag"}>
+            <Item onClick={handleTagCreation} disabled={ty != "collection"}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Tag20Regular />}
@@ -227,7 +290,7 @@ export default function CollectionTagContextMenu() {
                         <Text>{t("ctxMenu.moveTo")}</Text>
                     </Button>
                 }
-                disabled={ty == undefined}
+                disabled={ty == "assets"}
             >
                 <FilterableSearch
                     range={allCollections}
@@ -263,7 +326,7 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.quickRef")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleOpen} disabled={ty == "tag"}>
+            <Item onClick={handleOpen} disabled={ty == "collection"}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Open20Regular />}

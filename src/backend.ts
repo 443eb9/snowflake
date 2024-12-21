@@ -27,6 +27,7 @@ export type Collection = {
     children: string[],
     content: string[],
     meta: Metadata,
+    color: string,
 }
 
 export type AssetProperty = {
@@ -99,6 +100,10 @@ export type Item = {
     collection: Collection,
 } | {
     tag: Tag,
+}
+
+export type SpecialCollections = {
+    root: string,
 }
 
 export type ItemTy = "asset" | "collection" | "tag"
@@ -175,11 +180,11 @@ export function GenStatistics(): Promise<LibraryStatistics> {
     return invoke("gen_statistics")
 }
 
-export function RecoverItem(params: { items: ({ asset: string } | { folder: string })[] }): Promise<void> {
+export function RecoverItems(params: { items: ItemId[] }): Promise<void> {
     return invoke("recover_items", params)
 }
 
-export function GetRecycleBin(): Promise<Item[]> {
+export function GetRecycleBin(): Promise<ItemId[]> {
     return invoke("get_recycle_bin")
 }
 
@@ -191,15 +196,15 @@ export function ChangeLibraryName(params: { name: string }): Promise<DuplicateAs
     return invoke("change_library_name", params)
 }
 
-export function ImportAssets(params: { path: string[], parent: string }): Promise<DuplicateAssets | undefined> {
+export function ImportAssets(params: { path: string[], initialTag: string | null }): Promise<DuplicateAssets | undefined> {
     return invoke("import_assets", params)
 }
 
-export function ImportMemoryAssets(params: { data: Uint8Array, format: string, parent: string }): Promise<DuplicateAssets | undefined> {
+export function ImportMemoryAssets(params: { data: Uint8Array, format: string, initialTag: string | null }): Promise<DuplicateAssets | undefined> {
     return invoke("import_memory_asset", params)
 }
 
-export function ImportWebAssets(params: { urls: string[], parent: string, progress: Channel<DownloadEvent> }): Promise<DuplicateAssets | undefined> {
+export function ImportWebAssets(params: { urls: string[], initialTag: string | null, progress: Channel<DownloadEvent> }): Promise<DuplicateAssets | undefined> {
     return invoke("import_web_assets", params)
 }
 
@@ -216,12 +221,20 @@ export async function GetCollectionTree(): Promise<Map<string, Collection>> {
         .then(map => new Map(Object.entries(map as { [s: string]: Collection; })))
 }
 
-export function GetRootCollectionId(): Promise<string> {
-    return invoke("get_root_collection_id")
+export function GetSpecialCollections(): Promise<SpecialCollections> {
+    return invoke("get_special_collections")
 }
 
 export function GetAllTags(): Promise<Tag[]> {
     return invoke("get_all_tags")
+}
+
+export function GetAllAssets(): Promise<string[]> {
+    return invoke("get_all_assets")
+}
+
+export function GetAllUncategorizedAssets(): Promise<string[]> {
+    return invoke("get_all_uncategorized_assets")
 }
 
 export function ModifyTag(params: { newTag: Tag }): Promise<void> {
@@ -230,6 +243,10 @@ export function ModifyTag(params: { newTag: Tag }): Promise<void> {
 
 export function GetAsset(params: { asset: string }): Promise<Asset> {
     return invoke("get_asset", params)
+}
+
+export function GetRemovedAsset(params: { asset: string }): Promise<Asset> {
+    return invoke("get_removed_asset", params)
 }
 
 export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
@@ -282,6 +299,10 @@ export function CreateCollections(params: { collectionNames: string[], parent: s
 
 export function RenameItem(params: { item: ItemId, name: string }): Promise<void> {
     return invoke("rename_item", params)
+}
+
+export function RecolorCollection(params: { collection: string, color: string }): Promise<void> {
+    return invoke("recolor_collection", params)
 }
 
 export function MoveCollectionsTo(params: { srcCollections: string[], dstCollection: string }): Promise<void> {

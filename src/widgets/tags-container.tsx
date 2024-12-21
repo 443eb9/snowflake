@@ -1,7 +1,7 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
 import { GetAllTags, GetTags, ModifyTagsOf, Tag } from "../backend";
-import { browsingFolderContext } from "../helpers/context-provider";
+import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
 import ErrToast from "./toasts/err-toast";
@@ -16,6 +16,7 @@ export default function TagsContainer({
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [selected, setSelected] = useState<Tag[]>([])
     const browsingFolder = useContext(browsingFolderContext)
+    const selectedItems = useContext(selectedItemsContext)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
@@ -30,17 +31,20 @@ export default function TagsContainer({
 
             const currentFolder = browsingFolder.data
 
-            if (isDismiss && currentFolder?.subTy == "tag" && newTags.find(t => t.id == currentFolder?.id) == undefined) {
+            if ((currentFolder?.subTy == "uncategoriezed" && !isDismiss)
+                || (isDismiss && currentFolder?.id && newTags.find(t => t.id == currentFolder.id) == undefined)) {
                 browsingFolder.setter({
                     ...currentFolder,
                     content: currentFolder.content.filter(itemId => itemId.id != associatedItem)
                 })
+                selectedItems?.setter([])
             }
 
-            if (!isDismiss && currentFolder?.subTy == "tag" && selected.find(t => t.id == currentFolder.id) == undefined) {
+            if ((currentFolder?.subTy == "uncategoriezed" && isDismiss)
+                || (!isDismiss && currentFolder?.id && selected.find(t => t.id == currentFolder.id) == undefined)) {
                 browsingFolder.setter({
                     ...currentFolder,
-                    content: [...currentFolder.content, { id: associatedItem, ty: "asset" }]
+                    content: [...currentFolder.content, { id: associatedItem, ty: "asset" }],
                 })
             }
 

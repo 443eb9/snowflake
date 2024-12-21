@@ -37,19 +37,17 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
     }
 
     const startDownload = async () => {
-        if (browsingFolder?.data?.id) {
-            statusMapper.clear()
-            const dup = await ImportWebAssets({ urls, parent: browsingFolder.data.id, progress })
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        statusMapper.clear()
+        const dup = await ImportWebAssets({ urls, initialTag: browsingFolder?.data?.id ?? null, progress })
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-            if (dup) {
-                dispatchToast(<MsgToast
-                    title={t("toast.assetDuplication.title")}
-                    body={<DuplicationList list={dup} />}
-                />,
-                    { intent: "warning" }
-                )
-            }
+        if (dup) {
+            dispatchToast(<MsgToast
+                title={t("toast.assetDuplication.title")}
+                body={<DuplicationList list={dup} />}
+            />,
+                { intent: "warning" }
+            )
         }
     }
 

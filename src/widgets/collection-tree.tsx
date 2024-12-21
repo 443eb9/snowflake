@@ -1,8 +1,8 @@
 import { useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
-import { HeadlessFlatTreeItemProps, Input, makeStyles, Text, useToastController } from "@fluentui/react-components"
-import { Collection, GetAllTags, GetAssetsContainingTag, GetCollectionTree, GetRootCollectionId, Tag } from "../backend"
+import { Button, HeadlessFlatTreeItemProps, Input, makeStyles, Text, useToastController } from "@fluentui/react-components"
+import { Collection, GetAllAssets, GetAllTags, GetAllUncategorizedAssets, GetAssetsContainingTag, GetCollectionTree, GetSpecialCollections, SpecialCollections, Tag } from "../backend"
 import { GlobalToasterId } from "../main"
 import ErrToast from "./toasts/err-toast"
 import { SelectedClassTag } from "./items-grid"
@@ -10,6 +10,7 @@ import ItemTree from "../components/item-tree"
 import { Collections20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-menu"
 import { encodeId } from "../util"
+import { t } from "../i18n"
 
 const inputStyleHook = makeStyles({
     root: {
@@ -18,16 +19,19 @@ const inputStyleHook = makeStyles({
 })
 
 type CollectionOrTag = {
-    type: "collection",
+    ty: "collection",
 } & Collection | {
-    type: "tag",
+    ty: "tag",
 } & Tag
 
 type FlatTreeNode = HeadlessFlatTreeItemProps & { name: string }
 
 export default function CollectionTree() {
     const nav = useNavigate()
-    const [collectionOrTags, setCollectionOrTags] = useState<{ map: Map<string, CollectionOrTag>, root: string } | undefined>()
+    const [treeContext, setTreeContext] = useState<{
+        items: Map<string, CollectionOrTag>,
+        spCollections: SpecialCollections,
+    } | undefined>()
 
     const browsingFolder = useContext(browsingFolderContext)
     const selectedItems = useContext(selectedItemsContext)
@@ -44,17 +48,24 @@ export default function CollectionTree() {
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             const allTags = await GetAllTags()
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            const rootCollectionId = await GetRootCollectionId()
+            const specialCollections = await GetSpecialCollections()
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-            if (allCollections && rootCollectionId && allTags) {
+            if (allCollections && specialCollections && allTags) {
                 let data = new Map<string, CollectionOrTag>()
 
-                allCollections.forEach(collection => data.set(collection.id, { type: "collection", ...collection }))
-                allTags.forEach(tag => data.set(tag.id, { type: "tag", ...tag }))
-                console.log(allCollections, allTags)
+                const root = allCollections.get(specialCollections.root) as Collection
+                allCollections.set(root.id, {
+                    ...root,
+                    name: t("collection.root"),
+                })
+                allCollections.forEach(collection => data.set(collection.id, { ty: "collection", ...collection }))
+                allTags.forEach(tag => data.set(tag.id, { ty: "tag", ...tag }))
 
-                setCollectionOrTags({ map: new Map(data), root: rootCollectionId })
+                setTreeContext({
+                    items: new Map(data),
+                    spCollections: specialCollections,
+                })
             } else {
                 nav("/startup")
             }
@@ -65,104 +76,148 @@ export default function CollectionTree() {
         fetch()
     }, [fileManipulation?.data])
 
+    const clearSelection = () => {
+        selectedItems?.setter([])
+        document.querySelectorAll(`.${SelectedClassTag}`)
+            .forEach(elem => elem.classList.remove(SelectedClassTag))
+    }
+
     const updateBrowsingFolder = async (item: CollectionOrTag) => {
-        if (item.id == browsingFolder?.data?.id) {
+        if (item.id == browsingFolder?.data?.id || !treeContext?.spCollections || item.ty != "tag") {
             return
         }
 
-        if (item.type == "tag") {
-            const assets = await GetAssetsContainingTag({ tag: item.id })
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            if (!assets) { return }
-
-            selectedItems?.setter([])
-            document.querySelectorAll(`.${SelectedClassTag}`)
-                .forEach(elem => elem.classList.remove(SelectedClassTag))
+        let assets = await GetAssetsContainingTag({ tag: item.id })
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        if (assets) {
             browsingFolder?.setter({
                 id: item.id,
                 name: item.name,
                 content: assets.map(a => { return { id: a, ty: "asset" } }),
-                subTy: item.type,
+                subTy: "tag",
             })
+            clearSelection()
         }
     }
 
     const isEditing = (id: string) => {
-        return fileManipulation?.data?.op != undefined
-            && fileManipulation.data.id.find(i => i.id == id) != undefined
+        return fileManipulation?.data?.id.find(i => i.id == id) != undefined
     }
 
-    function CollectionNode({ node }: { node: FlatTreeNode }) {
+    function CollectionNode({ node, item }: { node: FlatTreeNode & { type: "collection" | "tag" }, item: CollectionOrTag }) {
         if (!fileManipulation) { return }
 
         const id = node.value as string
 
-        return isEditing(id)
-            ? <Input
-                className={inputStyle.root}
-                defaultValue={node.name}
-                autoFocus
-                onKeyDown={ev => {
-                    if (ev.key == "Enter") {
-                        if (fileManipulation.data) {
-                            fileManipulation.setter({
-                                ...fileManipulation.data,
-                                submit: [ev.currentTarget.value],
-                            })
-                        }
-                    } else if (ev.key == "Escape") {
-                        fileManipulation.setter(undefined)
-                    }
-                }}
-            />
-            : <Text
-                id={id}
-            >
-                {node.name}
-            </Text>
+        return (
+            <>
+                {
+                    isEditing(id) && fileManipulation.data?.op == "rename"
+                        ? <Input
+                            className={inputStyle.root}
+                            defaultValue={node.name}
+                            autoFocus
+                            onKeyDown={ev => {
+                                if (ev.key == "Enter") {
+                                    if (fileManipulation.data) {
+                                        fileManipulation.setter({
+                                            ...fileManipulation.data,
+                                            submit: [ev.currentTarget.value],
+                                        })
+                                    }
+                                } else if (ev.key == "Escape") {
+                                    fileManipulation.setter(undefined)
+                                }
+                            }}
+                        />
+                        : <Text
+                            id={encodeId(id, node.type)}
+                            style={{ color: `#${item.color}` }}
+                        >
+                            {node.name}
+                        </Text>
+                }
+            </>
+        )
     }
 
-    if (!collectionOrTags) {
+    if (!treeContext) {
         return <></>
     }
 
     return (
-        <ItemTree<{ name: string, type: "collection" | "tag" }, CollectionOrTag>
-            rootItemId={collectionOrTags.root}
-            itemTree={collectionOrTags.map}
-            onItemClick={(_, item) => updateBrowsingFolder(item)}
-            onItemContextMenu={(_, item) => {
-                contextMenuProp?.setter({
-                    extra: item.id,
-                    target: item.type,
-                })
-                fileManipulation?.setter({
-                    id: [{ id: item.id, ty: item.type }],
-                    op: undefined,
-                    submit: undefined,
-                })
-            }}
-            isNodeExpandable={id => !isEditing(id)}
-            renderItem={node => <CollectionNode node={node} />}
-            itemToNode={item => {
-                return {
-                    value: item.id,
-                    name: item.name,
-                    parentValue: item.parent ?? undefined,
-                    type: item.type,
-                }
-            }}
-            itemChildrenIds={item => item.type == "collection" ? item.children.concat(item.content) : []}
-            icon={item => {
-                switch (item.type) {
-                    case "collection":
-                        return <Collections20Regular />
-                    case "tag":
-                        return <Tag20Regular />
-                }
-            }}
-            relatedContextMenu={CollectionTagCtxMenuId}
-            itemId={item => encodeId(item.id, item.type)}
-        />
+        <>
+            <Button
+                appearance="subtle"
+                shape="square"
+                style={{
+                    justifyContent: "start",
+                }}
+                onClick={async () => {
+                    const allAssets = await GetAllAssets()
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                    if (allAssets) {
+                        browsingFolder?.setter({
+                            id: undefined,
+                            name: t("collection.all"),
+                            content: allAssets.map(a => { return { id: a, ty: "asset" } }),
+                            subTy: "all",
+                        })
+                    }
+                    clearSelection()
+                }}
+            >
+                <Text>{t("collection.all")}</Text>
+            </Button>
+            <Button
+                appearance="subtle"
+                shape="square"
+                style={{
+                    justifyContent: "start",
+                }}
+                onClick={async () => {
+                    const allUncategorizedAssets = await GetAllUncategorizedAssets()
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                    if (allUncategorizedAssets) {
+                        browsingFolder?.setter({
+                            id: undefined,
+                            name: t("collection.uncategorized"),
+                            content: allUncategorizedAssets.map(a => { return { id: a, ty: "asset" } }),
+                            subTy: "uncategoriezed",
+                        })
+                    }
+                    clearSelection()
+                }}
+            >
+                <Text>{t("collection.uncategorized")}</Text>
+            </Button>
+            <ItemTree<{ name: string, type: "collection" | "tag" }, CollectionOrTag>
+                rootItemId={treeContext.spCollections.root}
+                itemTree={treeContext.items}
+                onItemClick={(_, item) => updateBrowsingFolder(item)}
+                onItemContextMenu={(_, item) => contextMenuProp?.setter(item)}
+                isNodeExpandable={id => !isEditing(id)}
+                renderNode={(node, item) => <CollectionNode node={node} item={item} />}
+                itemToNode={item => {
+                    return {
+                        value: item.id,
+                        name: item.name,
+                        parentValue: item.parent ?? undefined,
+                        type: item.ty,
+                    }
+                }}
+                itemChildrenIds={item => item.ty == "collection" ? item.children.concat(item.content) : []}
+                icon={item => {
+                    switch (item.type) {
+                        case "collection":
+                            return <Collections20Regular />
+                        case "tag":
+                            return <Tag20Regular />
+                    }
+                }}
+                relatedContextMenu={CollectionTagCtxMenuId}
+                itemId={item => encodeId(item.id, item.ty)}
+            />
+        </>
     )
 }

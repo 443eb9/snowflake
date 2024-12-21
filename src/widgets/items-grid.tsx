@@ -9,7 +9,7 @@ import { TriggerEvent, useContextMenu } from "react-contexify";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import { RecycleBinCtxMenuId } from "./context-menus/recycle-bin-context-menu";
-import { decodeId } from "../util";
+import { decodeId, decodeItem } from "../util";
 import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-menu";
 
 export const SelectableClassTag = "selectable-asset"
@@ -46,10 +46,12 @@ export default function ItemsGrid() {
             target.classList.add(SelectedClassTag)
         }
 
-        contextMenuProp?.setter({
-            target: "assets",
-            extra: undefined,
-        })
+        if (selectoRef.current) {
+            contextMenuProp?.setter({
+                ty: "assets",
+                data: selectoRef.current.getSelectedTargets().map(node => decodeId(node.id).id),
+            })
+        }
 
         if (browsingFolder.data.subTy == "recycleBin") {
             showCtxMenu({ event: ev, id: RecycleBinCtxMenuId })
@@ -119,16 +121,13 @@ export default function ItemsGrid() {
                 <div className="flex w-full flex-wrap gap-2 overflow-x-hidden" ref={gridRef}>
                     {
                         objects.map((object, index) => {
-                            const value = Object.entries(object)[0]
-                            const ty = value[0]
-                            const data = value[1]
-
-                            switch (ty) {
+                            const item = decodeItem(object)
+                            switch (item.ty) {
                                 case "asset":
                                     return (
                                         <AssetPreview
                                             key={index}
-                                            asset={data}
+                                            asset={item.data}
                                             onContextMenu={handleContextMenu}
                                         />
                                     )

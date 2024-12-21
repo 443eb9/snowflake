@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useState } from "react"
-import { ItemId, Tag } from "../backend"
+import { Collection, ItemId, Tag } from "../backend"
 
 export type StateContext<T> = {
     data: T | undefined,
@@ -10,19 +10,23 @@ export type VirtualFolder = {
     id: string | undefined,
     name: string,
     content: ItemId[],
-    subTy: "recycleBin" | "folder" | "tag",
+    subTy: "recycleBin" | "tag" | "uncategoriezed" | "all",
 }
 
 export type FileManipulation = {
     id: ItemId[],
-    op: "rename" | "deletion" | "deletionPermanent" | "create" | "import" | "move" | "recover" | undefined,
+    op: "rename" | "deletion" | "deletionPermanent" | "create" | "import" | "move" | "recover" | "recolor" | undefined,
     submit: string[] | undefined,
 }
 
 export type ContextMenuProp = {
-    target: "folder" | "assets" | "collection" | "tag",
-    extra: string | undefined,
-}
+    ty: "assets",
+    data: string[],
+} | {
+    ty: "collection",
+} & Collection | {
+    ty: "tag",
+} & Tag
 
 export type Overlays = {
     ty: "assetDownload" | "settings" | undefined,

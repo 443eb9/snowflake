@@ -33,7 +33,7 @@ export default function QuickRefContextMenu({ asset }: { asset: Asset }) {
                 const data = await blob?.arrayBuffer()
 
                 if (data) {
-                    const dup = await ImportMemoryAssets({ data: new Uint8Array(data), format: "png", parent: asset.parent })
+                    const dup = await ImportMemoryAssets({ data: new Uint8Array(data), format: "png", initialTag: null })
                         .then(dup => {
                             dispatchToast(<SuccessToast body={t("toast.screenshot.success")} />, { intent: "success" })
                             return dup
