@@ -1,10 +1,10 @@
-import { Button, Image, Menu, MenuItem, MenuPopover, MenuTrigger, Text, Title1, useToastController } from "@fluentui/react-components";
-import { Book20Regular, Clock20Regular, Library20Regular, New20Regular, Settings20Regular } from "@fluentui/react-icons";
+import { Button, Image, Input, Menu, MenuItem, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, Switch, Text, Title1, useToastController } from "@fluentui/react-components";
+import { Book20Regular, Clock20Regular, Folder20Regular, Library20Regular, New20Regular, Settings20Regular } from "@fluentui/react-icons";
 import WindowControls from "../widgets/window-controls";
 import ErrToast from "../widgets/toasts/err-toast";
 import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
-import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib, UnloadLibrary } from "../backend";
+import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib, StorageConstructionSettings, UnloadLibrary } from "../backend";
 import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "./overlay-panel";
@@ -94,37 +94,75 @@ export default function Startup() {
         }
     }
 
-    async function initializeLibrary() {
-        const srcPath = await open({
-            directory: true,
-            title: t("startup.initLibSrcRootDialogTitle"),
+    const InitializeLibraryPopover = () => {
+        const [settings, setSettings] = useState<StorageConstructionSettings>({
+            srcRoot: "",
+            root: "",
+            folderAsTag: false,
         })
 
-        if (srcPath) {
-            const path = await open({
-                directory: true,
-                title: t("startup.initLibDstRootDialogTitle"),
-            })
+        return (
+            <div className="flex flex-col gap-2">
+                <div className="flex gap-2 items-center">
+                    <Text>{t("libInit.srcPath")}</Text>
+                    <Input value={settings.srcRoot} onChange={ev => setSettings({ ...settings, srcRoot: ev.currentTarget.value })} />
+                    <Button
+                        icon={<Folder20Regular />}
+                        onClick={async () => {
+                            const srcPath = await open({
+                                directory: true,
+                                title: t("startup.initLibSrcRootDialogTitle"),
+                            })
+                            if (srcPath) {
+                                setSettings({ ...settings, srcRoot: srcPath })
+                            }
+                        }}
+                    />
+                </div>
+                <div className="flex gap-2 items-center">
+                    <Text>{t("libInit.srcPath")}</Text>
+                    <Input value={settings.root} onChange={ev => setSettings({ ...settings, root: ev.currentTarget.value })} />
+                    <Button
+                        icon={<Folder20Regular />}
+                        onClick={async () => {
+                            const root = await open({
+                                directory: true,
+                                title: t("startup.initLibDstRootDialogTitle"),
+                            })
+                            if (root) {
+                                setSettings({ ...settings, root })
+                            }
+                        }}
+                    />
+                </div>
+                <div className="flex gap-2 items-center justify-between">
+                    <Text>{t("libInit.folderAsTag")}</Text>
+                    <Switch checked={settings.folderAsTag} onChange={ev => setSettings({ ...settings, folderAsTag: ev.currentTarget.checked })} />
+                </div>
+                <Button
+                    onClick={async () => {
+                        await InitializeLibrary({ settings })
+                            .then(dup => {
+                                if (dup) {
+                                    dispatchToast(<MsgToast
+                                        title={t("toast.assetDuplication.title")}
+                                        body={<DuplicationList list={dup} />}
+                                    />,
+                                        { intent: "warning" }
+                                    )
+                                }
 
-            if (path) {
-                await InitializeLibrary({ srcRootFolder: srcPath, rootFolder: path })
-                    .then(dup => {
-                        if (dup) {
-                            dispatchToast(<MsgToast
-                                title={t("toast.assetDuplication.title")}
-                                body={<DuplicationList list={dup} />}
-                            />,
-                                { intent: "warning" }
-                            )
-                        }
-
-                        nav("/app")
-                    })
-                    .catch(err => {
-                        dispatch(err)
-                    })
-            }
-        }
+                                nav("/app")
+                            })
+                            .catch(err => {
+                                dispatch(err)
+                            })
+                    }}
+                >
+                    {t("libInit.init")}
+                </Button>
+            </div>
+        )
     }
 
     return (
@@ -153,14 +191,20 @@ export default function Startup() {
                         >
                             {t("startup.btnOpenLib")}
                         </Button>
-                        <Button
-                            icon={<New20Regular />}
-                            onClick={initializeLibrary}
-                            className="h-12"
-                            appearance="outline"
-                        >
-                            {t("startup.btnInitLib")}
-                        </Button>
+                        <Popover>
+                            <PopoverTrigger>
+                                <Button
+                                    icon={<New20Regular />}
+                                    className="h-12"
+                                    appearance="outline"
+                                >
+                                    {t("startup.btnInitLib")}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverSurface>
+                                <InitializeLibraryPopover />
+                            </PopoverSurface>
+                        </Popover>
                         <Menu>
                             <MenuTrigger>
                                 <Button
@@ -171,7 +215,6 @@ export default function Startup() {
                                     {t("startup.btnRecent")}
                                 </Button>
                             </MenuTrigger>
-
                             <MenuPopover>
                                 {
                                     recentLibs?.length == 0

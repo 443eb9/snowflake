@@ -18,7 +18,7 @@ use crate::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId,
         Color, DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, LibraryMeta,
         LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue,
-        SpecialCollections, Storage, Tag, TagId, UserSettings, CACHE,
+        SpecialCollections, Storage, StorageConstructionSettings, Tag, TagId, UserSettings, CACHE,
     },
     err::{asset_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
@@ -157,24 +157,22 @@ pub fn load_library(
 
 #[tauri::command]
 pub fn initialize_library(
-    src_root_folder: PathBuf,
-    root_folder: PathBuf,
+    settings: StorageConstructionSettings,
     storage: State<'_, Mutex<Option<Storage>>>,
     data: State<'_, Mutex<AppData>>,
     app: AppHandle,
 ) -> Result<Option<DuplicateAssets>, String> {
-    log::info!("Start initializing library at {:?}", root_folder);
+    log::info!("Start initializing library {:?}", settings);
 
-    let mut new_storage =
-        Storage::from_constructed(&src_root_folder, &root_folder).map_err(|e| e.to_string())?;
+    let mut new_storage = Storage::from_constructed(settings.clone()).map_err(|e| e.to_string())?;
     new_storage.save().map_err(|e| e.to_string())?;
 
     let mut data = data.lock().map_err(|e| e.to_string())?;
     data.recent_libs.insert(
-        root_folder.clone(),
+        settings.root.clone(),
         RecentLib {
             name: new_storage.lib_meta.name.clone(),
-            path: root_folder,
+            path: settings.root.clone(),
             last_open: Local::now().into(),
         },
     );

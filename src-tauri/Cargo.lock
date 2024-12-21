@@ -3913,6 +3913,7 @@ dependencies = [
  "md5",
  "opener",
  "pathdiff",
+ "rand 0.8.5",
  "reqwest",
  "serde",
  "serde_json",

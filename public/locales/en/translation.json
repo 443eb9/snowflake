@@ -124,5 +124,9 @@
     "collection.root": "User Defined",
     "ctxMenu.recolorCollection": "Recolor Collection",
     "ctxMenu.regroupTag": "Regroup Tag",
-    "ctxMenu.regroupTag.clear": "Clear"
+    "ctxMenu.regroupTag.clear": "Clear",
+    "libInit.srcPath": "Source Root Folder Path",
+    "libInit.rootPath": "Library Root Folder Path",
+    "libInit.folderAsTag": "Folders as Collections and Tags",
+    "libInit.init": "Initialize Library"
 }

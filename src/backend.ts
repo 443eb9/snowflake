@@ -127,6 +127,12 @@ export type CollectionDesc = {
     color: string,
 }
 
+export type StorageConstructionSettings = {
+    srcRoot: string,
+    root: string,
+    folderAsTag: boolean,
+}
+
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
 }
@@ -159,7 +165,7 @@ export function LoadLibrary(params: { rootFolder: string }): Promise<DuplicateAs
     return invoke("load_library", params)
 }
 
-export function InitializeLibrary(params: { srcRootFolder: string, rootFolder: string }): Promise<DuplicateAssets | undefined> {
+export function InitializeLibrary(params: { settings: StorageConstructionSettings }): Promise<DuplicateAssets | undefined> {
     return invoke("initialize_library", params)
 }
 

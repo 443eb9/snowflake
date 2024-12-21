@@ -11,6 +11,7 @@ use filetime::FileTime;
 use glam::{Mat4, Vec3};
 use gltf::Gltf;
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
+use rand::Rng;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use thiserror::Error;
@@ -189,12 +190,51 @@ pub struct RecentLib {
     pub last_open: DateTime<FixedOffset>,
 }
 
-fn collect_path(
+#[derive(Debug)]
+struct FolderAsTag<'a> {
+    root_collection: CollectionId,
+    tags: &'a mut HashMap<TagId, Tag>,
+    collections: &'a mut HashMap<CollectionId, Collection>,
+    folder_tags: &'a mut HashMap<PathBuf, TagId>,
+    folder_collections: &'a mut HashMap<PathBuf, CollectionId>,
+}
+
+fn collect_path<'a>(
     root: &Path,
     path: PathBuf,
     assets: &mut HashMap<AssetId, Asset>,
     asset_crc: &mut HashMap<AssetId, u32>,
+    folder_as_tag: &mut Option<FolderAsTag<'a>>,
 ) -> AppResult<()> {
+    fn retrace_path_collections<'a>(
+        current: &Path,
+        folder_as_tag: &mut FolderAsTag<'a>,
+    ) -> Option<CollectionId> {
+        if let Some(collection) = folder_as_tag.folder_collections.get(current) {
+            Some(*collection)
+        } else {
+            let parent = retrace_path_collections(current.parent()?, folder_as_tag)?;
+            let collection = Collection::new(
+                Some(parent),
+                Some(Color::random()),
+                current.file_stem().unwrap().to_string_lossy().to_string(),
+            );
+            folder_as_tag
+                .folder_collections
+                .insert(current.to_path_buf(), collection.id);
+            folder_as_tag
+                .collections
+                .insert(collection.id, collection.clone());
+            folder_as_tag
+                .collections
+                .get_mut(&parent)
+                .unwrap()
+                .children
+                .insert(collection.id);
+            Some(collection.id)
+        }
+    }
+
     let std_meta = metadata(&path)?;
     let meta = Metadata::from_std_meta(&std_meta);
     let name = path
@@ -204,8 +244,14 @@ fn collect_path(
         .to_string();
 
     if path.is_dir() {
-        for entry in read_dir(path)? {
-            collect_path(root, entry?.path(), assets, asset_crc)?;
+        let dir_entries = read_dir(&path)?.collect::<Vec<_>>();
+
+        if dir_entries.is_empty() {
+            return Ok(());
+        }
+
+        for entry in dir_entries {
+            collect_path(root, entry?.path(), assets, asset_crc, folder_as_tag)?;
         }
 
         Ok(())
@@ -244,7 +290,46 @@ fn collect_path(
             }
         };
 
-        let asset = Asset::new(name, ext.into(), meta, ty, props, Default::default());
+        let mut asset = Asset::new(name, ext.into(), meta, ty, props, Default::default());
+        if let Some(folder_as_tag) = folder_as_tag.as_mut() {
+            let parent_path = path.parent().unwrap();
+
+            let tag = match folder_as_tag.folder_tags.get(parent_path) {
+                Some(tag_id) => folder_as_tag.tags[tag_id].clone(),
+                None => {
+                    let parent = parent_path
+                        .parent()
+                        .and_then(|grandparent| {
+                            retrace_path_collections(grandparent, folder_as_tag)
+                        })
+                        .unwrap_or(folder_as_tag.root_collection);
+
+                    let mut tag = Tag::new(
+                        parent_path
+                            .file_stem()
+                            .unwrap()
+                            .to_string_lossy()
+                            .to_string(),
+                        parent,
+                    );
+                    tag.group = Some(parent);
+                    tag.color = folder_as_tag.collections[&parent].color;
+                    folder_as_tag
+                        .folder_tags
+                        .insert(parent_path.to_path_buf(), tag.id);
+                    folder_as_tag.tags.insert(tag.id, tag.clone());
+                    tag
+                }
+            };
+
+            folder_as_tag
+                .collections
+                .get_mut(&tag.parent)
+                .unwrap()
+                .content
+                .insert(tag.id);
+            asset.tags.insert_unchecked(&tag);
+        }
 
         // Copy to preserve metadata
         copy(&path, asset.get_file_path(root))?;
@@ -466,6 +551,15 @@ pub enum TagGroupConflictResolve {
     Remove,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+
+pub struct StorageConstructionSettings {
+    pub src_root: PathBuf,
+    pub root: PathBuf,
+    pub folder_as_tag: bool,
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Storage {
@@ -480,39 +574,46 @@ pub struct Storage {
 }
 
 impl Storage {
-    pub fn from_constructed(
-        src_root_folder: impl AsRef<Path>,
-        root_folder: impl AsRef<Path>,
-    ) -> AppResult<Self> {
-        let src_root_folder = src_root_folder.as_ref();
-        let root_path = root_folder.as_ref();
+    pub fn from_constructed(settings: StorageConstructionSettings) -> AppResult<Self> {
+        let src_root_folder = settings.src_root;
+        let root_path = settings.root;
 
-        if root_path.exists() && read_dir(root_path)?.count() != 0 {
+        if root_path.exists() && read_dir(&root_path)?.count() != 0 {
             return Err(AppError::FolderNotEmpty(root_path.to_path_buf()));
         }
 
-        validate_library(root_path, true);
-
-        let mut assets = HashMap::default();
-        let mut duplication = HashMap::default();
-
-        collect_path(
-            root_path,
-            src_root_folder.to_path_buf(),
-            &mut assets,
-            &mut duplication,
-        )?;
+        validate_library(&root_path, true);
 
         let root_collection = Collection::new(None, None, Default::default());
         let sp_collections = SpecialCollections {
             root: root_collection.id,
         };
-        let collections = HashMap::from([(root_collection.id, root_collection)]);
+
+        let mut assets = HashMap::default();
+        let mut duplication = HashMap::default();
+        let mut tags = HashMap::default();
+        let mut collections = HashMap::from([(root_collection.id, root_collection.clone())]);
+        let mut folder_tags = HashMap::default();
+        let mut folder_collections = HashMap::from([(src_root_folder.clone(), root_collection.id)]);
+
+        collect_path(
+            &root_path,
+            src_root_folder.to_path_buf(),
+            &mut assets,
+            &mut duplication,
+            &mut settings.folder_as_tag.then_some(FolderAsTag {
+                root_collection: root_collection.id,
+                tags: &mut tags,
+                collections: &mut collections,
+                folder_tags: &mut folder_tags,
+                folder_collections: &mut folder_collections,
+            }),
+        )?;
 
         let mut result = Self {
             cache: Default::default(),
             sp_collections,
-            tags: Default::default(),
+            tags,
             collections,
             assets,
             recycle_bin: Default::default(),
@@ -520,7 +621,7 @@ impl Storage {
                 root_path.file_name().unwrap().to_string_lossy().to_string(),
             ),
         };
-        result.cache = StorageCache::build(root_path, duplication);
+        result.cache = StorageCache::build(&root_path, duplication);
 
         Ok(result)
     }
@@ -573,8 +674,15 @@ impl Storage {
     ) -> AppResult<DuplicateAssets> {
         let mut asset_crc = HashMap::default();
         let mut assets = HashMap::default();
+
         for path in path {
-            collect_path(&self.cache.root.clone(), path, &mut assets, &mut asset_crc)?;
+            collect_path(
+                &self.cache.root.clone(),
+                path,
+                &mut assets,
+                &mut asset_crc,
+                &mut None,
+            )?;
         }
 
         if let Some(initial_tag) = initial_tag.and_then(|i| self.tags.get(&i)) {
@@ -1037,6 +1145,16 @@ pub struct Color {
 }
 
 impl Color {
+    pub fn random() -> Self {
+        let mut rng = rand::thread_rng();
+        Self {
+            r: rng.gen(),
+            g: rng.gen(),
+            b: rng.gen(),
+            a: rng.gen(),
+        }
+    }
+
     pub fn into_hex_str(self) -> String {
         format!("{:02x}{:02x}{:02x}{:02x}", self.r, self.g, self.b, self.a)
     }
@@ -1407,9 +1525,9 @@ impl GltfModelProperty {
             }
         }
 
-        let vertices = merged.into_iter().fold(0, |acc, range| {
-            acc + dbg!(range).len() / size_of::<[f32; 3]>()
-        });
+        let vertices = merged
+            .into_iter()
+            .fold(0, |acc, range| acc + range.len() / size_of::<[f32; 3]>());
 
         Some(Self {
             max,

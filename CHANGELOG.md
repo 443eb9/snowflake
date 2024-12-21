@@ -12,6 +12,8 @@
     - There can be multiple ungrouped tags exist on same asset.
     - When regrouping tags, you can choose to override or skip this incoming tag in settings.
 - Rename when blurring input.
+- New library initialization UI.
+- Import folders as tags.
 
 # What's Fixed
 
