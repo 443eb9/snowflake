@@ -1,4 +1,4 @@
-import { Button, Input, makeStyles, Text, useToastController } from "@fluentui/react-components";
+import { Button, makeStyles, Text, useToastController } from "@fluentui/react-components";
 import { Asset, GetUserSetting, OpenWithDefaultApp, QuickRef } from "../backend";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext, settingsChangeFlagContext } from "../helpers/context-provider";
@@ -7,6 +7,7 @@ import { encodeId } from "../util";
 import AssetImage from "./asset-image";
 import { GlobalToasterId } from "../main";
 import ErrToast from "./toasts/err-toast";
+import ResponsiveInput from "../components/responsive-input";
 
 const inputStyleHook = makeStyles({
     root: {
@@ -64,31 +65,20 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
             </div>
             {
                 onRename
-                    ? <Input
+                    ? <ResponsiveInput
                         defaultValue={asset.name}
                         className={inputStyle.root}
                         appearance="underline"
                         autoFocus
-                        onKeyDown={ev => {
-                            if (ev.key == "Enter") {
-                                if (fileManipulation.data) {
-                                    fileManipulation.setter({
-                                        ...fileManipulation.data,
-                                        submit: [ev.currentTarget.value]
-                                    })
-                                }
-                            } else if (ev.key == "Escape") {
-                                fileManipulation.setter(undefined)
-                            }
-                        }}
-                        onBlur={ev => {
+                        onConfirm={target => {
                             if (fileManipulation.data) {
                                 fileManipulation.setter({
                                     ...fileManipulation.data,
-                                    submit: [ev.currentTarget.value]
+                                    submit: [target.value]
                                 })
                             }
                         }}
+                        onCancel={target => target.value = asset.name}
                     />
                     : <Text align="center" as="p">{asset.name}</Text>
             }

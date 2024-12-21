@@ -1,4 +1,4 @@
-import { Button, Input, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
+import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
@@ -12,6 +12,7 @@ import { open as openURL } from "@tauri-apps/plugin-shell";
 import SuccessToast from "../widgets/toasts/success-toast";
 import { useNavigate } from "react-router-dom";
 import { app } from "@tauri-apps/api";
+import ResponsiveInput from "../components/responsive-input";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState<Tab>("general")
@@ -200,16 +201,14 @@ function LibraryTab({ libraryMeta, ...props }: TabProps & { libraryMeta: Library
                 <Button icon={<ArrowExport20Regular />} onClick={handleExport} />
             </SettingsItem>
             <SettingsItem title="name" currentTab={props.currentTab}>
-                <Input
+                <ResponsiveInput
                     defaultValue={libraryMeta.name}
-                    onKeyDown={async ev => {
-                        if (ev.key == "Enter") {
-                            ev.currentTarget.blur()
-                            await ChangeLibraryName({ name: ev.currentTarget.value })
-                                .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                            props.update()
-                        }
+                    onConfirm={async target => {
+                        await ChangeLibraryName({ name: target.value })
+                            .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                        props.update()
                     }}
+                    onCancel={target => target.value = libraryMeta.name}
                 />
             </SettingsItem>
             <SettingsItem title="statistics" currentTab={props.currentTab}>
@@ -227,15 +226,13 @@ function ModelRenderingTab(props: TabProps) {
     return (
         <>
             <SettingsItem title="fps" currentTab={props.currentTab}>
-                <Input
+                <ResponsiveInput
                     defaultValue={props.user["modelRendering"]["fps"] as string}
                     type="number"
-                    onKeyDown={async ev => {
-                        if (ev.key == "Enter") {
-                            ev.currentTarget.blur()
-                            props.update("fps", Number.parseFloat(ev.currentTarget.value))
-                        }
+                    onConfirm={target => {
+                        props.update("fps", Number.parseFloat(target.value))
                     }}
+                    onCancel={target => target.value = props.user["modelRendering"]["fps"] as string}
                 />
             </SettingsItem>
         </>

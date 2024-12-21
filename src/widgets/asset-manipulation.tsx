@@ -1,9 +1,10 @@
-import { Button, Input, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
+import { Button, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
 import { Add20Regular, ArrowCounterclockwise20Regular, ArrowDownload20Regular, Checkmark20Regular, Delete20Regular, Edit20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
 import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedItemsContext } from "../helpers/context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
 import { t } from "../i18n"
+import ResponsiveInput from "../components/responsive-input"
 
 const renameInputStyleHook = makeStyles({
     root: {
@@ -26,7 +27,6 @@ export default function AssetManipulation() {
     const inputStyle = renameInputStyleHook()
     const confirmTextStyle = confirmTextStyleHook()
 
-    const [newName, setNewName] = useState("")
     const [renamePopoverOpen, setRenamePopoverOpen] = useState(false)
     const [confirmPopoverOpen, setConfirmPopoverOpen] = useState(false)
 
@@ -40,15 +40,15 @@ export default function AssetManipulation() {
         }
     }
 
-    const handleRename = () => {
-        if (browsingFolder && selectedItems?.data) {
+    const handleRename = (newName: string | undefined) => {
+        if (browsingFolder && selectedItems?.data && newName) {
             fileManipulation?.setter({
                 id: selectedItems.data,
                 op: "rename",
                 submit: [newName],
             })
-            setRenamePopoverOpen(false)
         }
+        setRenamePopoverOpen(false)
     }
 
     async function handleImport(folder: boolean) {
@@ -125,14 +125,10 @@ export default function AssetManipulation() {
                             <MenuPopover>
                                 <div className="flex flex-grow gap-2 items-center p-1">
                                     <Text>{t("asset-mani.rename")}</Text>
-                                    <Input
+                                    <ResponsiveInput
                                         className={inputStyle.root}
-                                        onChange={ev => setNewName(ev.target.value)}
-                                        onKeyDown={ev => {
-                                            if (ev.key == "Enter") {
-                                                handleRename()
-                                            }
-                                        }}
+                                        onConfirm={target => handleRename(target.value)}
+                                        onCancel={() => handleRename(undefined)}
                                     />
                                 </div>
                             </MenuPopover>

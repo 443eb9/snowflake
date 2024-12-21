@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
-import { Button, Input, makeStyles, Text, useToastController } from "@fluentui/react-components"
+import { Button, makeStyles, Text, useToastController } from "@fluentui/react-components"
 import { Collection, GetAllAssets, GetAllTags, GetAllUncategorizedAssets, GetAssetsContainingTag, GetCollectionTree, GetSpecialCollections, SpecialCollections, Tag } from "../backend"
 import { GlobalToasterId } from "../main"
 import ErrToast from "./toasts/err-toast"
@@ -11,6 +11,7 @@ import { Collections20Regular, Tag20Regular } from "@fluentui/react-icons"
 import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-menu"
 import { encodeId } from "../util"
 import { t } from "../i18n"
+import ResponsiveInput from "../components/responsive-input"
 
 const inputStyleHook = makeStyles({
     root: {
@@ -106,28 +107,21 @@ export default function CollectionTree() {
         if (!fileManipulation) { return }
 
         return isEditing(item.id) && fileManipulation.data?.op == "rename"
-            ? <Input
+            ? <ResponsiveInput
                 className={inputStyle.root}
                 defaultValue={item.name}
                 autoFocus
-                onKeyDown={ev => {
-                    if (ev.key == "Enter") {
-                        if (fileManipulation.data) {
-                            fileManipulation.setter({
-                                ...fileManipulation.data,
-                                submit: [ev.currentTarget.value],
-                            })
-                        }
-                    } else if (ev.key == "Escape") {
-                        fileManipulation.setter(undefined)
-                    }
-                }}
-                onBlur={ev => {
+                onConfirm={target => {
                     if (fileManipulation.data) {
                         fileManipulation.setter({
                             ...fileManipulation.data,
-                            submit: [ev.currentTarget.value],
+                            submit: [target.value],
                         })
+                    }
+                }}
+                onCancel={() => {
+                    if (fileManipulation.data) {
+                        fileManipulation.setter(undefined)
                     }
                 }}
             />
