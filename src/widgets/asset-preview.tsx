@@ -18,7 +18,6 @@ const inputStyleHook = makeStyles({
 type DbClick = "open" | "ref"
 
 export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTMLAttributes<HTMLButtonElement>) {
-    const [newName, setNewName] = useState<string>()
     const [dbClick, setDbClick] = useState<DbClick | undefined>()
     const inputStyle = inputStyleHook()
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -27,12 +26,6 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
     const settingsChange = useContext(settingsChangeFlagContext)
 
     const onRename = fileManipulation?.data?.op == "rename" && fileManipulation.data.id[0].id == asset.id
-
-    useEffect(() => {
-        if (onRename) {
-            setNewName(asset.name)
-        }
-    }, [fileManipulation?.data])
 
     useEffect(() => {
         async function fetch() {
@@ -75,18 +68,25 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
                         defaultValue={asset.name}
                         className={inputStyle.root}
                         appearance="underline"
-                        onChange={ev => setNewName(ev.target.value)}
                         autoFocus
                         onKeyDown={ev => {
                             if (ev.key == "Enter") {
-                                if (fileManipulation.data && newName) {
+                                if (fileManipulation.data) {
                                     fileManipulation.setter({
                                         ...fileManipulation.data,
-                                        submit: [newName]
+                                        submit: [ev.currentTarget.value]
                                     })
                                 }
                             } else if (ev.key == "Escape") {
                                 fileManipulation.setter(undefined)
+                            }
+                        }}
+                        onBlur={ev => {
+                            if (fileManipulation.data) {
+                                fileManipulation.setter({
+                                    ...fileManipulation.data,
+                                    submit: [ev.currentTarget.value]
+                                })
                             }
                         }}
                     />

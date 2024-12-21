@@ -115,7 +115,7 @@ export default function CollectionTree() {
                     isEditing(id) && fileManipulation.data?.op == "rename"
                         ? <Input
                             className={inputStyle.root}
-                            defaultValue={node.name}
+                            defaultValue={item.name}
                             autoFocus
                             onKeyDown={ev => {
                                 if (ev.key == "Enter") {
@@ -129,12 +129,20 @@ export default function CollectionTree() {
                                     fileManipulation.setter(undefined)
                                 }
                             }}
+                            onBlur={ev => {
+                                if (fileManipulation.data) {
+                                    fileManipulation.setter({
+                                        ...fileManipulation.data,
+                                        submit: [ev.currentTarget.value],
+                                    })
+                                }
+                            }}
                         />
                         : <Text
                             id={encodeId(id, node.type)}
-                            style={{ color: `#${item.color}` }}
+                        // style={{ color: `#${item.color}` }}
                         >
-                            {node.name}
+                            {item.name}
                         </Text>
                 }
             </>

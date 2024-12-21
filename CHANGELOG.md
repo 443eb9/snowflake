@@ -11,6 +11,7 @@
     - Tags in same group can visually in different collections.
     - There can be multiple ungrouped tags exist on same asset.
     - When regrouping tags, you can choose to override or skip this incoming tag in settings.
+- Rename when blurring input.
 
 # What's Fixed
 
