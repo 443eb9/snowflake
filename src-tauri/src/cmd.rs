@@ -25,6 +25,16 @@ use crate::{
 };
 
 #[tauri::command]
+pub fn crash_test() {
+    panic!("Oops.")
+}
+
+#[tauri::command]
+pub fn get_process_dir() -> Result<PathBuf, String> {
+    std::env::current_dir().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn get_recent_libraries(data: State<'_, Mutex<AppData>>) -> Result<Vec<RecentLib>, String> {
     log::info!("Getting recent libraries.");
     let data = data.lock().map_err(|e| e.to_string())?;

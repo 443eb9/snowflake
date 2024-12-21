@@ -1,8 +1,8 @@
 import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
-import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, Triangle20Regular } from "@fluentui/react-icons";
+import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
-import { ChangeLibraryName, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
+import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetProcessDir, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
@@ -11,7 +11,7 @@ import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { open as openURL } from "@tauri-apps/plugin-shell";
 import SuccessToast from "../widgets/toasts/success-toast";
 import { useNavigate } from "react-router-dom";
-import { app } from "@tauri-apps/api";
+import { app, path } from "@tauri-apps/api";
 import ResponsiveInput from "../components/responsive-input";
 
 export default function Settings() {
@@ -413,6 +413,24 @@ function AboutTab(props: TabProps) {
                                     />
                                 )
                             }
+                        }
+                    }}
+                />
+            </SettingsItem>
+            <SettingsItem title="crash" currentTab={props.currentTab}>
+                <Button
+                    icon={<ErrorCircle20Regular />}
+                    onClick={async () => await CrashTest()}
+                />
+            </SettingsItem>
+            <SettingsItem title="crashReports" currentTab={props.currentTab}>
+                <Button
+                    icon={<ArrowUpRight20Regular />}
+                    onClick={async () => {
+                        const pwd = await GetProcessDir()
+                            .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                        if (pwd) {
+                            openURL(await path.join(pwd, "crashReports"))
                         }
                     }}
                 />

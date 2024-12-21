@@ -133,6 +133,14 @@ export type StorageConstructionSettings = {
     folderAsTag: boolean,
 }
 
+export function CrashTest(): Promise<void> {
+    return invoke("crash_test")
+}
+
+export function GetProcessDir(): Promise<string> {
+    return invoke("get_process_dir")
+}
+
 export function GetRecentLibs(): Promise<RecentLib[]> {
     return invoke("get_recent_libraries")
 }

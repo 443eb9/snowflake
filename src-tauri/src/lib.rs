@@ -12,6 +12,22 @@ mod event;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    if let Ok(pwd) = std::env::current_dir() {
+        let _ = std::fs::create_dir_all(pwd.join("crashReports"));
+
+        std::panic::set_hook(Box::new(move |info| {
+            log::error!("Thread panic.");
+            let _ = std::fs::write(
+                pwd.join("crashReports").join(&format!(
+                    "crash-{}.txt",
+                    chrono::Local::now().to_rfc3339().replace(':', "_")
+                )),
+                info.to_string(),
+            );
+            log::info!("Crash report saved.");
+        }));
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_log::Builder::new().build())
@@ -30,6 +46,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            cmd::crash_test,
+            cmd::get_process_dir,
             cmd::get_recent_libraries,
             cmd::get_user_settings,
             cmd::get_user_setting,

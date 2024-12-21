@@ -54,6 +54,8 @@
     "settings.about.repo": "Repository",
     "settings.about.updateCheck": "Check for Update",
     "settings.about.ver": "Version",
+    "settings.about.crash": "Crash Test",
+    "settings.about.crashReports": "Crash Reports",
     "settings.experimental": "Experimental",
     "settings.experimental.aigcDetect": "AIGC Detection",
     "settings.general": "General",
