@@ -940,7 +940,7 @@ impl Storage {
 
         let mut res = vec![tag.name.clone()];
         let mut cur_id = Some(tag.parent);
-        while let Some(id) = cur_id {
+        while let Some(id) = cur_id.filter(|i| !self.sp_collections.is_special(*i)) {
             if let Some(collection) = self.collections.get(&id) {
                 res.push(collection.name.clone());
                 cur_id = collection.parent;

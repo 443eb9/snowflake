@@ -68,14 +68,12 @@ export function BrowsingPath() {
         fetch()
     }, [browsingFolder?.data])
 
-    if (!virtualPath) {
-        return <></>
-    }
+    console.log(virtualPath)
 
     return (
         <Breadcrumb>
             {
-                virtualPath.length == 0
+                !virtualPath || virtualPath.length == 0
                     ? <BreadcrumbButton>Void</BreadcrumbButton>
                     : virtualPath.map((seg, index) =>
                         <>

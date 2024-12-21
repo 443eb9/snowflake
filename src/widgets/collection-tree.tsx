@@ -105,8 +105,6 @@ export default function CollectionTree() {
     function CollectionNode({ item }: { item: CollectionOrTag }) {
         if (!fileManipulation) { return }
 
-        console.log(item)
-
         return isEditing(item.id) && fileManipulation.data?.op == "rename"
             ? <Input
                 className={inputStyle.root}
