@@ -1,10 +1,10 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../../helpers/context-provider"
 import { Item, Menu, Submenu, useContextMenu } from "react-contexify"
-import { Collection, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef } from "../../backend"
-import { Button, CompoundButton, makeStyles, Popover, PopoverSurface, PopoverTrigger, Text, useToastController } from "@fluentui/react-components"
+import { AddTagToAssets, Collection, GetAllTags, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef, RemoveTagFromAssets, Tag } from "../../backend"
+import { Button, CompoundButton, makeStyles, Popover, PopoverSurface, PopoverTrigger, Radio, RadioGroup, Text, useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../../main"
-import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Eraser20Regular, Group20Regular, Open20Regular, Tag20Regular } from "@fluentui/react-icons"
+import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Eraser20Regular, Group20Regular, Open20Regular, Tag20Regular, TagMultiple20Regular } from "@fluentui/react-icons"
 import { t } from "../../i18n"
 import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
@@ -27,7 +27,9 @@ export default function CollectionTagContextMenu() {
     const contextMenuProp = useContext(contextMenuPropContext)
 
     const [allCollections, setAllCollections] = useState<Collection[] | undefined>()
+    const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [color, setColor] = useState<TinyColor | undefined>()
+    const [tagModification, settagModification] = useState<"add" | "remove">("add")
 
     const { dispatchToast } = useToastController(GlobalToasterId)
     const { hideAll } = useContextMenu({ id: CollectionTagCtxMenuId })
@@ -42,8 +44,17 @@ export default function CollectionTagContextMenu() {
         }
     }
 
+    async function fetchAllTags() {
+        const allTags = await GetAllTags()
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        if (allTags) {
+            setAllTags(allTags)
+        }
+    }
+
     useEffect(() => {
         fetchAllCollections()
+        fetchAllTags()
     }, [])
 
     const handleRefresh = () => {
@@ -118,6 +129,22 @@ export default function CollectionTagContextMenu() {
         }
     }
 
+    const handleTagModification = async (tag: Tag) => {
+        if (selectedItems?.data) {
+            const assets = selectedItems.data.map(id => id.id)
+            switch (tagModification) {
+                case "add":
+                    await AddTagToAssets({ tag: tag.id, assets })
+                        .catch(err => dispatchToast(<ErrToast body={err} />))
+                    break
+                case "remove":
+                    await RemoveTagFromAssets({ tag: tag.id, assets })
+                        .catch(err => dispatchToast(<ErrToast body={err} />))
+                    break
+            }
+        }
+    }
+
     const handleCollectionCreation = () => {
         if (contextMenuProp?.data && contextMenuProp.data.ty == "collection") {
             fileManipulation?.setter({
@@ -188,7 +215,7 @@ export default function CollectionTagContextMenu() {
     const ty = contextMenuProp?.data?.ty
     const multipleSelected = contextMenuProp?.data?.ty == "assets" && contextMenuProp.data.data.length > 1
 
-    if (!allCollections || !ty || !contextMenuProp.data) {
+    if (!allCollections || !ty || !contextMenuProp.data || !allTags) {
         return <></>
     }
 
@@ -313,7 +340,11 @@ export default function CollectionTagContextMenu() {
                                     appearance="subtle"
                                     size="small"
                                 >
-                                    <Text>{collection.name}</Text>
+                                    <Text
+                                        style={collection.color ? { color: `#${collection.color}` } : undefined}
+                                    >
+                                        {collection.name}
+                                    </Text>
                                 </CompoundButton>
                             }
                             noMatch={
@@ -391,7 +422,11 @@ export default function CollectionTagContextMenu() {
                                 appearance="subtle"
                                 size="small"
                             >
-                                <Text>{collection.name}</Text>
+                                <Text
+                                    style={collection.color ? { color: `#${collection.color}` } : undefined}
+                                >
+                                    {collection.name}
+                                </Text>
                             </CompoundButton>
                         }
                         noMatch={
@@ -399,8 +434,8 @@ export default function CollectionTagContextMenu() {
                                 <Text>{t("ctxMenu.noFolderFallback")}</Text>
                             </CompoundButton>
                         }
-                        itemProps={folder => {
-                            return { onClick: () => handleMove(folder) }
+                        itemProps={collection => {
+                            return { onClick: () => handleMove(collection) }
                         }}
                     />
                     <Button
@@ -412,6 +447,72 @@ export default function CollectionTagContextMenu() {
                     >
                         <Text>{t("ctxMenu.refresh")}</Text>
                     </Button>
+                </Submenu>
+            </Item>
+            <Item closeOnClick={false}>
+                <Submenu
+                    label={
+                        <Button
+                            className={buttonStyle.root}
+                            icon={<TagMultiple20Regular />}
+                            appearance="subtle"
+                        >
+                            <Text>{t("ctxMenu.modifyTags")}</Text>
+                        </Button>
+                    }
+                    disabled={ty != "assets"}
+                    className="w-full"
+                >
+                    <FilterableSearch
+                        range={allTags}
+                        searchKey={tag => tag.name}
+                        component={tag =>
+                            <CompoundButton
+                                className={buttonStyle.root}
+                                icon={<Tag20Regular />}
+                                secondaryContent={tag.id}
+                                appearance="subtle"
+                                size="small"
+                            >
+                                <Text
+                                    style={tag.color ? { color: `#${tag.color}` } : undefined}
+                                >
+                                    {tag.name}
+                                </Text>
+                            </CompoundButton>
+                        }
+                        noMatch={
+                            <CompoundButton appearance="transparent" size="small">
+                                <Text>{t("ctxMenu.noTagFallback")}</Text>
+                            </CompoundButton>
+                        }
+                        itemProps={tag => {
+                            return { onClick: () => handleTagModification(tag) }
+                        }}
+                    />
+                    <div className="flex">
+                        <RadioGroup defaultValue={"add"} layout="horizontal">
+                            <Radio
+                                value={"add"}
+                                onClick={() => settagModification("add")}
+                                label={t("ctxMenu.modifyTags.add")}
+                            />
+                            <Radio
+                                value={"remove"}
+                                onClick={() => settagModification("remove")}
+                                label={t("ctxMenu.modifyTags.remove")}
+                            />
+                        </RadioGroup>
+                        <Button
+                            icon={<ArrowCounterclockwise20Regular />}
+                            className={buttonStyle.root}
+                            size="large"
+                            appearance="subtle"
+                            onClick={fetchAllTags}
+                        >
+                            <Text>{t("ctxMenu.refresh")}</Text>
+                        </Button>
+                    </div>
                 </Submenu>
             </Item>
             <Item onClick={handleQuickRef}>
