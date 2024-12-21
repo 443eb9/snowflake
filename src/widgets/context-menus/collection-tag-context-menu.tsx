@@ -34,16 +34,16 @@ export default function CollectionTagContextMenu() {
 
     const buttonStyle = buttonStyleHook()
 
-    useEffect(() => {
-        async function fetch() {
-            const allCollections = await GetCollectionTree({ noSpecial: true })
-                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-            if (allCollections) {
-                setAllCollections(Array.from(allCollections.values()))
-            }
+    async function fetchAllCollections() {
+        const allCollections = await GetCollectionTree({ noSpecial: true })
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        if (allCollections) {
+            setAllCollections(Array.from(allCollections.values()))
         }
+    }
 
-        fetch()
+    useEffect(() => {
+        fetchAllCollections()
     }, [])
 
     const handleRefresh = () => {
@@ -325,16 +325,27 @@ export default function CollectionTagContextMenu() {
                                 return { onClick: () => handleTagRegroup(collection.id) }
                             }}
                         />
+                        <div className="flex">
+                            <Button
+                                icon={<Eraser20Regular />}
+                                className={buttonStyle.root}
+                                size="large"
+                                appearance="subtle"
+                                onClick={() => handleTagRegroup("")}
+                            >
+                                <Text>{t("ctxMenu.regroupTag.clear")}</Text>
+                            </Button>
+                            <Button
+                                icon={<ArrowCounterclockwise20Regular />}
+                                className={buttonStyle.root}
+                                size="large"
+                                appearance="subtle"
+                                onClick={fetchAllCollections}
+                            >
+                                <Text>{t("ctxMenu.refresh")}</Text>
+                            </Button>
+                        </div>
                     </div>
-                    <Button
-                        icon={<Eraser20Regular />}
-                        className={buttonStyle.root}
-                        size="large"
-                        appearance="subtle"
-                        onClick={() => handleTagRegroup("")}
-                    >
-                        <Text>{t("ctxMenu.regroupTag.clear")}</Text>
-                    </Button>
                 </Submenu>
             </Item>
             <Item onClick={handleCollectionCreation} disabled={ty != "collection"}>
@@ -392,6 +403,15 @@ export default function CollectionTagContextMenu() {
                             return { onClick: () => handleMove(folder) }
                         }}
                     />
+                    <Button
+                        icon={<ArrowCounterclockwise20Regular />}
+                        className={buttonStyle.root}
+                        size="large"
+                        appearance="subtle"
+                        onClick={fetchAllCollections}
+                    >
+                        <Text>{t("ctxMenu.refresh")}</Text>
+                    </Button>
                 </Submenu>
             </Item>
             <Item onClick={handleQuickRef}>

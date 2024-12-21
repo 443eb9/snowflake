@@ -122,5 +122,5 @@
     "collection.root": "User Defined",
     "ctxMenu.recolorCollection": "Recolor Collection",
     "ctxMenu.regroupTag": "Regroup Tag",
-    "ctxMenu.regroupTag.clear": "Clear Tag Group"
+    "ctxMenu.regroupTag.clear": "Clear"
 }
