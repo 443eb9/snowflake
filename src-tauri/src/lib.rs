@@ -97,6 +97,7 @@ pub fn run() {
             cmd::remove_tag_from_assets,
             cmd::move_collections_to,
             cmd::open_with_default_app,
+            cmd::global_search,
             cmd::quick_ref,
             cmd::compute_camera_pos,
             cmd::save_render_cache,

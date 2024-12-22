@@ -314,7 +314,16 @@ function KeyMappingTab(props: TabProps) {
             ])
 
             const recorder = (ev: KeyboardEvent) => {
+                const key = ev.key.toLowerCase()
+
                 let keys = []
+                if (!["control", "alt", "shift"].includes(key)) {
+                    keys.push(codeMapping.get(key) ?? key)
+                }
+                if (keys.length == 0) {
+                    return
+                }
+
                 if (ev.ctrlKey) {
                     keys.push("ctrl")
                 }
@@ -323,15 +332,6 @@ function KeyMappingTab(props: TabProps) {
                 }
                 if (ev.shiftKey) {
                     keys.push("shift")
-                }
-                if (!["Control", "Alt", "Shift"].includes(ev.key)) {
-                    const key = ev.key.toLowerCase()
-                    const mapped = codeMapping.get(key)
-                    if (mapped) {
-                        keys.push(mapped)
-                    } else {
-                        keys.push(key)
-                    }
                 }
 
                 setListenedKeyMap(keys)
@@ -353,11 +353,11 @@ function KeyMappingTab(props: TabProps) {
             {
                 Object
                     .entries(props.user[tab])
-                    .map(([title, value]) => {
+                    .map(([title, value], index) => {
                         const keys = value as string[]
 
                         return (
-                            <SettingsItem title={title} currentTab={props.currentTab}>
+                            <SettingsItem key={index} title={title} currentTab={props.currentTab}>
                                 <div className="flex gap-2 items-center">
                                     {
                                         keys.map(key =>
@@ -520,8 +520,9 @@ function SelectableCandidates({
             <MenuPopover>
                 <MenuList>
                     {
-                        selectable.candidates.map((candidate: string) =>
+                        selectable.candidates.map((candidate, index) =>
                             <MenuItem
+                                key={index}
                                 onClick={() => onSelect(title, candidate)}
                             >
                                 {t(`settings.${currentTab}.${title}.${candidate}`)}

@@ -1222,6 +1222,72 @@ pub fn move_collections_to(
     }
 }
 
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub enum SearchQueryTy {
+    AssetId,
+    AssetName,
+    TagId,
+    TagName,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(tag = "ty", content = "data")]
+pub enum SearchQueryResult {
+    Assets(Vec<Asset>),
+    Tags(Vec<Tag>),
+}
+
+#[tauri::command]
+pub async fn global_search(
+    ty: SearchQueryTy,
+    query: String,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<SearchQueryResult, String> {
+    log::info!("Global searching {:?} {}", ty, query);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(match ty {
+            SearchQueryTy::AssetId => SearchQueryResult::Assets(
+                storage
+                    .assets
+                    .iter()
+                    .filter(|(_, asset)| !asset.is_deleted)
+                    .filter(|(id, _)| id.0.to_string().contains(&query))
+                    .map(|(_, asset)| asset.clone())
+                    .collect(),
+            ),
+            SearchQueryTy::AssetName => SearchQueryResult::Assets(
+                storage
+                    .assets
+                    .values()
+                    .filter(|asset| !asset.is_deleted && asset.name.contains(&query))
+                    .cloned()
+                    .collect(),
+            ),
+            SearchQueryTy::TagId => SearchQueryResult::Tags(
+                storage
+                    .tags
+                    .iter()
+                    .filter(|(id, _)| id.0.to_string().contains(&query))
+                    .map(|(_, tag)| tag.clone())
+                    .collect(),
+            ),
+            SearchQueryTy::TagName => SearchQueryResult::Tags(
+                storage
+                    .tags
+                    .values()
+                    .filter(|tag| dbg!(&tag.name).contains(&query))
+                    .cloned()
+                    .collect(),
+            ),
+        })
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
 #[tauri::command]
 pub fn open_with_default_app(
     asset: AssetId,

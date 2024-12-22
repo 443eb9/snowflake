@@ -4,15 +4,15 @@ import { useToastController } from "@fluentui/react-components";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/toasts/err-toast";
 import { useContext, useEffect, useState } from "react";
-import { fileManipulationContext, settingsChangeFlagContext, selectedItemsContext } from "./context-provider";
+import { fileManipulationContext, settingsChangeFlagContext, selectedItemsContext, overlaysContext } from "./context-provider";
 import SuccessToast from "../widgets/toasts/success-toast";
 import { t } from "../i18n";
-
 
 export default function ShortcutKeyProvider(props: HotKeysProps) {
     const selectedItems = useContext(selectedItemsContext)
     const fileManipulation = useContext(fileManipulationContext)
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
+    const overlay = useContext(overlaysContext)
     const [keyMap, setKeyMap] = useState<{ [key: string]: string } | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -23,17 +23,10 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (sets) {
-                const keyMap = Object.entries(sets["keyMapping"])
-                    .map(([action, keys], _) => {
-                        const trigger = keys as string[]
-                        let combined = ""
-                        trigger.forEach((key, index) => {
-                            combined += index == trigger.length - 1 ? key : (key + "+")
-                        })
-                        return [action, combined]
-                    })
+                const keyMap = sets["keyMapping"]
+                keyMap["overlayClose"] = ["escape"]
 
-                setKeyMap(Object.fromEntries(keyMap))
+                setKeyMap(Object.fromEntries(Object.entries(keyMap).map(([action, keys]) => [action, (keys as string[]).reduce((prev, key) => prev + "+" + key)])))
             }
         }
 
@@ -64,6 +57,16 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
                 })
             }
         },
+        overlayClose: () => {
+            if (overlay?.data) {
+                overlay.setter(undefined)
+            }
+        },
+        globalSearch: () => {
+            overlay?.setter({
+                ty: "globalSearch",
+            })
+        }
     }
 
     return (

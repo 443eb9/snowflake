@@ -64,10 +64,9 @@
         "delete": [
             "del"
         ],
-        "newFolder": [
+        "globalSearch": [
             "ctrl",
-            "shift",
-            "n"
+            "p"
         ]
     },
     "experimental": {

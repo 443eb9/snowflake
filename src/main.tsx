@@ -23,7 +23,10 @@ root.render(
     <React.StrictMode>
         <FluentProvider theme={webDarkTheme} style={{ backgroundColor: "transparent" }}>
             <ContextProvider>
-                <div className="w-[100vw] h-[100vh] overflow-hidden" onContextMenu={ev => ev.preventDefault()}>
+                <div
+                    className="w-[100vw] h-[100vh] overflow-hidden"
+                    onContextMenu={ev => ev.preventDefault()}
+                >
                     <Toaster toasterId={GlobalToasterId} limit={3} pauseOnHover />
                     <LanguageSwitch />
                     <WindowTransparencyManager />

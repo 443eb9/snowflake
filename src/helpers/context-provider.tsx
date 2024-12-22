@@ -29,7 +29,7 @@ export type ContextMenuProp = {
 } & Tag
 
 export type Overlays = {
-    ty: "assetDownload" | "settings" | undefined,
+    ty: "assetDownload" | "settings" | "globalSearch" | undefined,
 }
 
 export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)

@@ -84,7 +84,7 @@
     "settings.keyMapping": "Key Mapping",
     "settings.keyMapping.delete": "Delete",
     "settings.keyMapping.listening": "Listening",
-    "settings.keyMapping.newFolder": "New Folder",
+    "settings.keyMapping.globalSearch": "Global Search",
     "settings.keyMapping.rename": "Rename",
     "settings.keyMapping.save": "Save",
     "settings.library": "Library",
@@ -109,6 +109,7 @@
     "stat.title": "Statistics",
     "tagName.unnamed": "Unnamed Tag",
     "collectionName.unnamed": "Unnamed Collection",
+    "assetName.unnamed": "Unnamed Asset",
     "tagsContainer.add": "Add Tag",
     "tagsContainer.noAvailable": "No tags available.",
     "tagsContainer.none": "None",
@@ -136,5 +137,9 @@
     "libInit.srcPath": "Source Root Folder Path",
     "libInit.rootPath": "Library Root Folder Path",
     "libInit.folderAsTag": "Folders as Collections and Tags",
-    "libInit.init": "Initialize Library"
+    "libInit.init": "Initialize Library",
+    "globalSearch.item.assetName": "Asset Name",
+    "globalSearch.item.assetId": "Asset Id",
+    "globalSearch.item.tagName": "Tag Name",
+    "globalSearch.item.tagId": "Tag Id"
 }

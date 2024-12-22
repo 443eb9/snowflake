@@ -13,7 +13,6 @@ import { useNavigate } from "react-router-dom";
 import "../context.css"
 import { t } from "../i18n";
 import { overlaysContext } from "../helpers/context-provider";
-import ShortcutKeyProvider from "../helpers/shortcut-key-provider";
 import RecycleBin from "../widgets/recycle-bin";
 import RecycleBinContextMenu from "../widgets/context-menus/recycle-bin-context-menu";
 import CollectionTagContextMenu from "../widgets/context-menus/collection-tag-context-menu";
@@ -22,6 +21,7 @@ import { GetDefaultSetting, GetUserSetting, SetUserSetting } from "../backend";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/toasts/err-toast";
 import { listen } from "@tauri-apps/api/event";
+import ShortcutKeyProvider from "../helpers/shortcut-key-provider";
 
 const maxRatio = 0.45
 

@@ -136,6 +136,16 @@ export type StorageConstructionSettings = {
 
 export type WindowTransparency = "none" | "blur" | "acrylic" | "mica" | "tabbed" | "vibrancy"
 
+export type SearchQueryTy = "assetName" | "tagName" | "assetId" | "tagId"
+
+export type SearchQueryResult = {
+    ty: "assets",
+    data: Asset[],
+} | {
+    ty: "tags",
+    data: Tag[],
+}
+
 export function CrashTest(): Promise<void> {
     return invoke("crash_test")
 }
@@ -347,6 +357,10 @@ export function RegroupTag(params: { tag: string, group: string | null }): Promi
 
 export function OpenWithDefaultApp(params: { asset: string }): Promise<void> {
     return invoke("open_with_default_app", params)
+}
+
+export function GlobalSearch(params: { ty: SearchQueryTy, query: string }): Promise<SearchQueryResult> {
+    return invoke("global_search", params)
 }
 
 export function QuickRef(params: { ty: QuickRefSrcTy }): Promise<void> {
