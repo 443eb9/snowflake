@@ -6,6 +6,7 @@ import { t } from "../i18n";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import FallbackableText from "../components/fallbackable-text";
+import { Collections20Regular, Tag20Regular } from "@fluentui/react-icons";
 
 const popoverStyleHook = makeStyles({
     root: {
@@ -158,7 +159,7 @@ export default function TagsContainer({
                                 vertical
                                 onTabSelect={(_, data) => setCurBrowsingGroup(data.value as string | undefined)}
                             >
-                                <Tab value={undefined}>
+                                <Tab value={undefined} icon={<Collections20Regular />}>
                                     <Text>
                                         {t("tagsContainer.ungrouped")}
                                     </Text>
@@ -169,7 +170,7 @@ export default function TagsContainer({
 
                                         const collection = allCollections.get(group)
                                         return (
-                                            <Tab key={index} value={group}>
+                                            <Tab key={index} value={group} icon={<Collections20Regular />}>
                                                 <FallbackableText
                                                     fallback={t("collectionName.unnamed")}
                                                     style={{
@@ -196,14 +197,16 @@ export default function TagsContainer({
                                         <Button
                                             key={index}
                                             appearance="subtle"
+                                            icon={<Tag20Regular />}
+                                            style={{ justifyContent: "start" }}
                                         >
-                                            <Text
+                                            <FallbackableText
                                                 style={{
                                                     color: tag.color ? `#${tag.color}` : undefined
                                                 }}
-                                            >
-                                                {tag.name}
-                                            </Text>
+                                                text={tag.name}
+                                                fallback={t("tagName.unnamed")}
+                                            />
                                         </Button>
                                     )
                             }

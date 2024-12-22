@@ -1,7 +1,7 @@
 import { Text, TextProps } from "@fluentui/react-components";
 
 export default function FallbackableText({ fallback, text, ...props }: { fallback: string, text?: string | undefined } & TextProps) {
-    return text?.length != 0
+    return text && text.length != 0
         ? <Text {...props}>
             {text}
         </Text>
