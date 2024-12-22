@@ -1,23 +1,32 @@
-import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
+import { Tag as FluentTag, TagGroup, Text, useToastController, Popover, PopoverTrigger, Button, PopoverSurface, makeStyles, mergeClasses, TabList, Tab } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { AddTagToAssets, GetAllTags, GetTags, GetTagsOnAsset, GetTagsWithoutConflict, GetUserSetting, RemoveTagFromAssets, Tag } from "../backend";
+import { AddTagToAssets, Collection, GetAllTags, GetCollectionTree, GetTags, GetTagsOnAsset, GetTagsWithoutConflict, GetUserSetting, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 
+const popoverStyleHook = makeStyles({
+    root: {
+        backgroundColor: "var(--colorNeutralBackground2)",
+    }
+})
+
 export default function TagsContainer({
     associatedItem, tags, readonly,
 }: {
     associatedItem?: string, tags: string[], readonly?: boolean
 }) {
+    const [curBrowsingGroup, setCurBrowsingGroup] = useState<string | undefined>()
+    const [allCollections, setAllCollections] = useState<Map<string, Collection> | undefined>()
     const [available, setAvailable] = useState<Tag[] | undefined>()
     const [selected, setSelected] = useState<Tag[]>([])
     const [selectedIds, setSelectedIds] = useState(tags)
+
     const browsingFolder = useContext(browsingFolderContext)
     const selectedItems = useContext(selectedItemsContext)
-
+    const popoverStyle = popoverStyleHook()
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     const update = async (tagId: string | undefined, isDismiss: boolean) => {
@@ -90,12 +99,24 @@ export default function TagsContainer({
     }, [associatedItem])
 
     useEffect(() => {
+        async function fetchAllCollections() {
+            const allCollections = await GetCollectionTree({ noSpecial: false })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+            if (allCollections) {
+                setAllCollections(allCollections)
+            }
+        }
+
+        fetchAllCollections()
         fetchAllTags()
     }, [])
 
-    if (!available) {
+    if (!available || !allCollections) {
         return <></>
     }
+
+    const allGroups = new Set(available.map(tag => tag.group))
+    const candidateTags = curBrowsingGroup ? available.filter(tag => tag.group == curBrowsingGroup) : available.filter(tag => tag.group == undefined)
 
     return (
         <div className="flex flex-col gap-2 overflow-hidden">
@@ -121,29 +142,74 @@ export default function TagsContainer({
 
             {
                 !readonly &&
-                <Menu>
-                    <MenuTrigger>
-                        <MenuButton onClick={() => fetchAllTags()}>{t("tagsContainer.add")}</MenuButton>
-                    </MenuTrigger>
+                <Popover>
+                    <PopoverTrigger>
+                        <Button onClick={() => fetchAllTags()}>{t("tagsContainer.add")}</Button>
+                    </PopoverTrigger>
 
-                    <MenuPopover>
-                        <MenuList>
+                    <PopoverSurface className={mergeClasses("flex gap-4 max-h-96 h-96", popoverStyle.root)}>
+                        <div
+                            className="flex flex-col min-w-36 rounded-md p-2 gap-1 overflow-y-scroll"
+                            style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
+                        >
+                            <TabList
+                                vertical
+                                onTabSelect={(_, data) => setCurBrowsingGroup(data.value as string | undefined)}
+                            >
+                                <Tab value={undefined}>
+                                    <Text>
+                                        {t("tagsContainer.ungrouped")}
+                                    </Text>
+                                </Tab>
+                                {
+                                    Array.from(allGroups, (group, index) => {
+                                        if (group == undefined) { return <></> }
+
+                                        const collection = allCollections.get(group)
+                                        return (
+                                            <Tab key={index} value={group}>
+                                                <Text
+                                                    style={{
+                                                        color: collection?.color ? `#${collection.color}` : undefined
+                                                    }}
+                                                >
+                                                    {collection?.name}
+                                                </Text>
+                                            </Tab>
+                                        )
+                                    })
+                                }
+                            </TabList>
+                        </div>
+                        <div
+                            className="flex flex-col min-w-64 rounded-md p-2 gap-1 overflow-y-scroll"
+                            style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
+                        >
                             {
-                                available?.length == 0
-                                    ? <MenuItem>{t("tagsContainer.noAvailable")}</MenuItem>
-                                    : available?.map((tag, index) =>
-                                        <MenuItem
+                                candidateTags.length == 0
+                                    ? <div className="flex items-center justify-center h-full">
+                                        <Text italic className="opacity-50">
+                                            {t("tagsContainer.noAvailable")}
+                                        </Text>
+                                    </div>
+                                    : Array.from(candidateTags, (tag, index) =>
+                                        <Button
                                             key={index}
-                                            style={tag.color ? { color: `#${tag.color}` } : undefined}
-                                            onClick={() => update(tag.id, false)}
+                                            appearance="subtle"
                                         >
-                                            <TagName name={tag.name} />
-                                        </MenuItem>
+                                            <Text
+                                                style={{
+                                                    color: tag.color ? `#${tag.color}` : undefined
+                                                }}
+                                            >
+                                                {tag.name}
+                                            </Text>
+                                        </Button>
                                     )
                             }
-                        </MenuList>
-                    </MenuPopover>
-                </Menu>
+                        </div>
+                    </PopoverSurface>
+                </Popover>
             }
         </div>
     )

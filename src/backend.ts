@@ -62,6 +62,7 @@ export type Tag = {
     color: string | null,
     meta: Metadata,
     parent: string,
+    group: string | null,
 }
 
 export type Metadata = {
