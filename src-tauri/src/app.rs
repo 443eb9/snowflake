@@ -75,7 +75,7 @@ impl SettingsDefault {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum SettingsValue {
     Name(String),

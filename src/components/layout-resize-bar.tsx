@@ -61,6 +61,7 @@ export default function LayoutResizeBar({
                 width: resizeDir == "horizontal" ? size : undefined,
                 height: resizeDir == "vertical" ? size : undefined,
                 cursor: resizeDir == "horizontal" ? "col-resize" : "row-resize",
+                backgroundColor: resizing ? "#000000cc" : undefined,
             }}
             onMouseDown={ev => {
                 if (ev.button == 0) {

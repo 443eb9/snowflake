@@ -159,6 +159,20 @@ pub fn get_default_settings(
 }
 
 #[tauri::command]
+pub fn get_default_setting(
+    category: String,
+    item: String,
+    data: State<'_, ResourceCache>,
+) -> Result<SettingsDefault, String> {
+    log::info!("Getting default setting {} {}.", category, item);
+    data.settings
+        .get(&category)
+        .and_then(|c| c.get(&item))
+        .cloned()
+        .ok_or_else(|| "No such setting.".to_string())
+}
+
+#[tauri::command]
 pub fn set_user_setting(
     category: String,
     item: String,
@@ -167,7 +181,7 @@ pub fn set_user_setting(
     resource: State<'_, ResourceCache>,
     app: AppHandle,
 ) -> Result<(), String> {
-    log::info!("Getting user settings.");
+    log::info!("Setting user setting {} {} {:?}.", category, item, value);
 
     let mut data = data.lock().map_err(|e| e.to_string())?;
 

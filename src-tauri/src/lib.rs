@@ -51,6 +51,7 @@ pub fn run() {
             cmd::get_user_settings,
             cmd::get_user_setting,
             cmd::get_default_settings,
+            cmd::get_default_setting,
             cmd::get_library_meta,
             cmd::set_user_setting,
             cmd::load_library,

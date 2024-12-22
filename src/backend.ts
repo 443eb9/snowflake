@@ -171,6 +171,10 @@ export function GetDefaultSettings(): Promise<DefaultSettings> {
     return invoke("get_default_settings")
 }
 
+export function GetDefaultSetting(params: { category: string, item: string }): Promise<SettingsValue & Selectable> {
+    return invoke("get_default_setting", params)
+}
+
 export function SetUserSetting(params: { category: string, item: string, value: SettingsValue }): Promise<void> {
     return invoke("set_user_setting", params)
 }

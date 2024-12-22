@@ -20,6 +20,7 @@
 - Changed folder of global application data.
 - Allow changing window transparency style in settings.
 - Show scrollbar when tree overflows at x axis.
+- Resizable panels. Drag at borders to change panel size.
 
 # What's Fixed
 

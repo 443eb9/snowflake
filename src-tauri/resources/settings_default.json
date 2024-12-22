@@ -20,7 +20,9 @@
                 "override",
                 "remove"
             ]
-        }
+        },
+        "leftPanelWidth": 180,
+        "rightPanelWidth": 180
     },
     "appearance": {
         "theme": {
