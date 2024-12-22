@@ -19,6 +19,7 @@
   - Opening crash reports folder when app crashes.
 - Changed folder of global application data.
 - Allow changing window transparency style in settings.
+- Show scrollbar when tree overflows at x axis.
 
 # What's Fixed
 

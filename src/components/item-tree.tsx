@@ -1,6 +1,6 @@
 import { FlatTree, FlatTreeItem, HeadlessFlatTreeItemProps, Slot, TreeItemLayout, useHeadlessFlatTree_unstable, useToastController } from "@fluentui/react-components"
 import { MenuId, useContextMenu } from "react-contexify"
-import { MouseEvent, ReactNode } from "react"
+import { HTMLAttributes, MouseEvent, ReactNode } from "react"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
 
@@ -19,7 +19,7 @@ export default function ItemTree<T, I>(
         icon: (item: T) => Slot<"div">,
         relatedContextMenu: MenuId,
         itemId: (item: I) => string,
-    }
+    } & HTMLAttributes<HTMLDivElement>
 ) {
     const { show: showContextMenu } = useContextMenu()
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -47,7 +47,7 @@ export default function ItemTree<T, I>(
     return (
         <FlatTree
             {...flatTree.getTreeProps()}
-            className="overflow-hidden"
+            {...props}
             aria-label="Item Tree"
         >
             {

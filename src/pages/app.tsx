@@ -29,7 +29,7 @@ export default function MainApp() {
                 <WindowControls />
             </div>
             <div className="flex justify-between w-full h-full gap-2 p-4">
-                <div className="max-w-96 min-w-48 flex flex-col gap-2 justify-between">
+                <div className="min-w-48 flex flex-col gap-2 justify-between">
                     <div className="flex items-center gap-2">
                         <Button icon={<ArrowExit20Regular />} onClick={() => nav("/")} appearance="outline" />
                         <Title3>{t("app.libTitle")}</Title3>

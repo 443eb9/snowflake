@@ -128,6 +128,7 @@ export default function CollectionTree() {
             : <Text
                 id={encodeId(item.id, item.ty)}
                 style={item.color ? { color: `#${item.color}` } : undefined}
+                wrap={false}
             >
                 {item.name}
             </Text>
@@ -138,78 +139,83 @@ export default function CollectionTree() {
     }
 
     return (
-        <>
-            <Button
-                appearance="subtle"
-                shape="square"
-                style={{
-                    justifyContent: "start",
-                }}
-                onClick={async () => {
-                    const allAssets = await GetAllAssets()
-                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                    if (allAssets) {
-                        browsingFolder?.setter({
-                            id: undefined,
-                            name: t("collection.all"),
-                            content: allAssets.map(a => { return { id: a, ty: "asset" } }),
-                            subTy: "all",
-                        })
-                    }
-                    clearSelection()
-                }}
-            >
-                <Text>{t("collection.all")}</Text>
-            </Button>
-            <Button
-                appearance="subtle"
-                shape="square"
-                style={{
-                    justifyContent: "start",
-                }}
-                onClick={async () => {
-                    const allUncategorizedAssets = await GetAllUncategorizedAssets()
-                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                    if (allUncategorizedAssets) {
-                        browsingFolder?.setter({
-                            id: undefined,
-                            name: t("collection.uncategorized"),
-                            content: allUncategorizedAssets.map(a => { return { id: a, ty: "asset" } }),
-                            subTy: "uncategorized",
-                        })
-                    }
-                    clearSelection()
-                }}
-            >
-                <Text>{t("collection.uncategorized")}</Text>
-            </Button>
-            <ItemTree<{ name: string, type: "collection" | "tag" }, CollectionOrTag>
-                rootItemId={treeContext.spCollections.root}
-                itemTree={treeContext.items}
-                onItemClick={(_, item) => updateBrowsingFolder(item)}
-                onItemContextMenu={(_, item) => contextMenuProp?.setter(item)}
-                isNodeExpandable={id => !isEditing(id)}
-                renderNode={item => <CollectionNode item={item} />}
-                itemToNode={item => {
-                    return {
-                        value: item.id,
-                        name: item.name,
-                        parentValue: item.parent ?? undefined,
-                        type: item.ty,
-                    }
-                }}
-                itemChildrenIds={item => item.ty == "collection" ? item.children.concat(item.content) : []}
-                icon={item => {
-                    switch (item.type) {
-                        case "collection":
-                            return <Collections20Regular />
-                        case "tag":
-                            return <Tag20Regular />
-                    }
-                }}
-                relatedContextMenu={CollectionTagCtxMenuId}
-                itemId={item => encodeId(item.id, item.ty)}
-            />
-        </>
+        <div className="flex flex-col h-full min-w-36">
+            <div className="flex flex-col">
+                <Button
+                    appearance="subtle"
+                    shape="square"
+                    style={{
+                        justifyContent: "start",
+                    }}
+                    onClick={async () => {
+                        const allAssets = await GetAllAssets()
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                        if (allAssets) {
+                            browsingFolder?.setter({
+                                id: undefined,
+                                name: t("collection.all"),
+                                content: allAssets.map(a => { return { id: a, ty: "asset" } }),
+                                subTy: "all",
+                            })
+                        }
+                        clearSelection()
+                    }}
+                >
+                    <Text>{t("collection.all")}</Text>
+                </Button>
+                <Button
+                    appearance="subtle"
+                    shape="square"
+                    style={{
+                        justifyContent: "start",
+                    }}
+                    onClick={async () => {
+                        const allUncategorizedAssets = await GetAllUncategorizedAssets()
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                        if (allUncategorizedAssets) {
+                            browsingFolder?.setter({
+                                id: undefined,
+                                name: t("collection.uncategorized"),
+                                content: allUncategorizedAssets.map(a => { return { id: a, ty: "asset" } }),
+                                subTy: "uncategorized",
+                            })
+                        }
+                        clearSelection()
+                    }}
+                >
+                    <Text>{t("collection.uncategorized")}</Text>
+                </Button>
+            </div>
+            <div className="w-full h-full overflow-x-auto flex flex-grow">
+                <ItemTree<{ name: string, type: "collection" | "tag" }, CollectionOrTag>
+                    rootItemId={treeContext.spCollections.root}
+                    itemTree={treeContext.items}
+                    onItemClick={(_, item) => updateBrowsingFolder(item)}
+                    onItemContextMenu={(_, item) => contextMenuProp?.setter(item)}
+                    isNodeExpandable={id => !isEditing(id)}
+                    renderNode={item => <CollectionNode item={item} />}
+                    itemToNode={item => {
+                        return {
+                            value: item.id,
+                            name: item.name,
+                            parentValue: item.parent ?? undefined,
+                            type: item.ty,
+                        }
+                    }}
+                    itemChildrenIds={item => item.ty == "collection" ? item.children.concat(item.content) : []}
+                    icon={item => {
+                        switch (item.type) {
+                            case "collection":
+                                return <Collections20Regular />
+                            case "tag":
+                                return <Tag20Regular />
+                        }
+                    }}
+                    relatedContextMenu={CollectionTagCtxMenuId}
+                    itemId={item => encodeId(item.id, item.ty)}
+                    className="flex flex-grow"
+                />
+            </div>
+        </div>
     )
 }

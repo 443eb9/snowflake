@@ -1128,8 +1128,6 @@ impl Collection {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Tag {
-    // Backward compatibility 0.1.0
-    #[serde(default)]
     pub parent: CollectionId,
     pub group: Option<CollectionId>,
     pub id: TagId,

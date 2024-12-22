@@ -12,6 +12,8 @@ Build for creativity, not for profit.
 > This application is still at beta stage. Think twice before storing anything important.
 >
 > Backward compatibility is only available for the previous version.
+>
+> **This project may rename or change logo in the near future.**
 
 ## Features
 
