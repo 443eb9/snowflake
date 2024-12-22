@@ -86,36 +86,31 @@ export default function ItemsGrid() {
         <div
             className={mergeClasses("flex w-full flex-col gap-2 rounded-md h-full overflow-y-auto", darkenContentStyle.root)}
             ref={boundRef}
-        // onContextMenu={ev => {
-        //     selectoRef.current?.setSelectedTargets([])
-        //     selectedItems?.setter([])
-        //     document.querySelectorAll(`.${SelectedClassTag}`)
-        //         .forEach(elem => elem.classList.remove(SelectedClassTag))
-
-        //     handleContextMenu(ev)
-        // }}
         >
-            <Selecto
-                ref={selectoRef}
-                container={gridRef.current}
-                boundContainer={boundRef.current}
-                selectableTargets={[`.${SelectableClassTag}`]}
-                hitRate={0}
-                selectByClick
-                toggleContinueSelect={"shift"}
-                dragCondition={() => fileManipulation?.data?.op != "rename"}
-                onSelect={ev => {
-                    ev.added.forEach(elem => elem.classList.add(SelectedClassTag))
-                    ev.removed.forEach(elem => elem.classList.remove(SelectedClassTag))
+            {
+                boundRef.current &&
+                <Selecto
+                    ref={selectoRef}
+                    container={gridRef.current}
+                    boundContainer={boundRef.current}
+                    selectableTargets={[`.${SelectableClassTag}`]}
+                    hitRate={0}
+                    selectByClick
+                    toggleContinueSelect={"shift"}
+                    dragCondition={() => fileManipulation?.data?.op != "rename"}
+                    onSelect={ev => {
+                        ev.added.forEach(elem => elem.classList.add(SelectedClassTag))
+                        ev.removed.forEach(elem => elem.classList.remove(SelectedClassTag))
 
-                    const removed = ev.removed.map(elem => decodeId(elem.id))
-                    const selected = ev.added.map(elem => decodeId(elem.id))
-                        .concat(selectedItems?.data ?? [])
-                        .filter(id => removed.find(r => r.id == id.id) == undefined)
-                        .filter(id => id != null)
-                    selectedItems?.setter(selected)
-                }}
-            />
+                        const removed = ev.removed.map(elem => decodeId(elem.id))
+                        const selected = ev.added.map(elem => decodeId(elem.id))
+                            .concat(selectedItems?.data ?? [])
+                            .filter(id => removed.find(r => r.id == id.id) == undefined)
+                            .filter(id => id != null)
+                        selectedItems?.setter(selected)
+                    }}
+                />
+            }
             {
                 objects &&
                 <div className="flex w-full flex-wrap gap-2 overflow-x-hidden" ref={gridRef}>
