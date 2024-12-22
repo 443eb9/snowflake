@@ -854,34 +854,6 @@ pub fn get_items(
     }
 }
 
-// #[tauri::command]
-// pub fn get_items(
-//     items: Vec<Uuid>,
-//     storage: State<'_, Mutex<Option<Storage>>>,
-// ) -> Result<Vec<Item>, String> {
-//     log::info!("Getting items {:?}", items);
-
-//     if let Ok(Some(storage)) = storage.lock().as_deref() {
-//         Ok(items
-//             .into_iter()
-//             .filter_map(|item| {
-//                 let asset = storage.assets.get(&AssetId(item));
-//                 let folder = storage.folders.get(&FolderId(item));
-
-//                 if asset.is_some() && folder.is_none() {
-//                     Some(Item::Asset(asset.unwrap().clone()))
-//                 } else if asset.is_none() && folder.is_some() {
-//                     Some(Item::Folder(folder.unwrap().clone()))
-//                 } else {
-//                     None
-//                 }
-//             })
-//             .collect())
-//     } else {
-//         Err(storage_not_initialized())
-//     }
-// }
-
 #[tauri::command]
 pub fn get_tags(
     tags: Vec<TagId>,
@@ -893,6 +865,41 @@ pub fn get_tags(
         Ok(tags
             .into_iter()
             .filter_map(|t| storage.tags.get(&t))
+            .cloned()
+            .collect())
+    } else {
+        Err(storage_not_initialized())
+    }
+}
+
+#[tauri::command]
+pub fn get_tags_without_conflict(
+    tags: Vec<TagId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Tag>, String> {
+    log::info!("Getting tags without conflict {:?}", tags);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        let tags = tags
+            .iter()
+            .filter_map(|id| storage.tags.get(id))
+            .collect::<Vec<_>>();
+        let conflict_groups = tags
+            .iter()
+            .filter_map(|tag| tag.group)
+            .collect::<HashSet<_>>();
+        let conflict_ungrouped = tags
+            .iter()
+            .filter_map(|tag| tag.group.is_none().then_some(tag.id))
+            .collect::<HashSet<_>>();
+
+        Ok(storage
+            .tags
+            .values()
+            .filter(|tag| match &tag.group {
+                Some(group) => !conflict_groups.contains(group),
+                None => !conflict_ungrouped.contains(&tag.id),
+            })
             .cloned()
             .collect())
     } else {

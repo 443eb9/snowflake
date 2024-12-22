@@ -1,4 +1,4 @@
-import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
+import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, Switch, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Color20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
@@ -57,9 +57,9 @@ export default function Settings() {
         return <></>
     }
 
-    const update = async (title?: string, value?: SettingsValue) => {
-        if (title != undefined && value != undefined) {
-            await SetUserSetting({ category: currentTab, item: title, value })
+    const update = async (item?: string, value?: SettingsValue) => {
+        if (item != undefined && value != undefined) {
+            await SetUserSetting({ category: currentTab, item, value })
                 .catch(err => dispatchToast(<ErrToast body={err} />))
         }
         settingsChangeFlag?.setter(!settingsChangeFlag.data)
@@ -113,7 +113,7 @@ export default function Settings() {
 
 type Tab = "general" | "appearance" | "library" | "modelRendering" | "keyMapping" | "experimental" | "about"
 
-type UpdateFn = (title?: string, value?: SettingsValue) => void
+type UpdateFn = (item?: string, value?: SettingsValue) => void
 
 type TabProps = {
     currentTab: Tab,
@@ -159,6 +159,12 @@ function GeneralTab(props: TabProps) {
                     selectable={props.default[tab]["tagGroupConflictResolve"] as Selectable}
                     onSelect={props.update}
                     value={props.user[tab]["tagGroupConflictResolve"] as string}
+                />
+            </SettingsItem>
+            <SettingsItem title="hideConflictTagsWhenPickingNewTags" currentTab={props.currentTab}>
+                <Switch
+                    defaultChecked={props.user[tab]["hideConflictTagsWhenPickingNewTags"] as boolean}
+                    onChange={(_, data) => props.update("hideConflictTagsWhenPickingNewTags", data.checked)}
                 />
             </SettingsItem>
         </>

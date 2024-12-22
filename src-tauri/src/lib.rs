@@ -81,6 +81,7 @@ pub fn run() {
             cmd::get_assets,
             cmd::get_items,
             cmd::get_tags,
+            cmd::get_tags_without_conflict,
             cmd::modify_src_of,
             cmd::get_assets_containing_tag,
             cmd::delete_assets,

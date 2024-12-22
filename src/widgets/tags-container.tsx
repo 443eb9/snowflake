@@ -1,6 +1,6 @@
 import { Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tag as FluentTag, TagGroup, Text, useToastController } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { AddTagToAssets, GetAllTags, GetTags, GetTagsOnAsset, RemoveTagFromAssets, Tag } from "../backend";
+import { AddTagToAssets, GetAllTags, GetTags, GetTagsOnAsset, GetTagsWithoutConflict, GetUserSetting, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import TagName from "./tag-name";
 import { t } from "../i18n";
@@ -12,7 +12,7 @@ export default function TagsContainer({
 }: {
     associatedItem?: string, tags: string[], readonly?: boolean
 }) {
-    const [allTags, setAllTags] = useState<Tag[] | undefined>()
+    const [available, setAvailable] = useState<Tag[] | undefined>()
     const [selected, setSelected] = useState<Tag[]>([])
     const [selectedIds, setSelectedIds] = useState(tags)
     const browsingFolder = useContext(browsingFolderContext)
@@ -20,16 +20,16 @@ export default function TagsContainer({
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
-    const update = async (tag: Tag | undefined, isDismiss: boolean) => {
-        if (!browsingFolder?.data?.subTy || !associatedItem || !tag) {
+    const update = async (tagId: string | undefined, isDismiss: boolean) => {
+        if (!browsingFolder?.data?.subTy || !associatedItem || !tagId) {
             return
         }
 
         if (isDismiss) {
-            await RemoveTagFromAssets({ assets: [associatedItem], tag: tag.id })
+            await RemoveTagFromAssets({ assets: [associatedItem], tag: tagId })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         } else {
-            await AddTagToAssets({ assets: [associatedItem], tag: tag.id })
+            await AddTagToAssets({ assets: [associatedItem], tag: tagId })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
 
@@ -50,11 +50,15 @@ export default function TagsContainer({
     }
 
     async function fetchAllTags() {
-        const allTags = await GetAllTags()
+        const hideConflict = await GetUserSetting({ category: "general", item: "hideConflictTagsWhenPickingNewTags" })
+            .catch(err => dispatchToast(<ErrToast body={err} />)) as boolean | undefined
+        if (hideConflict == undefined) { return }
+
+        const available = await (hideConflict ? GetTagsWithoutConflict({ tags: selected.map(t => t.id) }) : GetAllTags())
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
-        if (allTags) {
-            setAllTags(allTags)
+        if (available) {
+            setAvailable(available)
         }
     }
 
@@ -89,13 +93,15 @@ export default function TagsContainer({
         fetchAllTags()
     }, [])
 
-    const available = allTags?.filter(tag => selected.find(t => t.id == tag.id) == undefined)
+    if (!available) {
+        return <></>
+    }
 
     return (
         <div className="flex flex-col gap-2 overflow-hidden">
             <TagGroup
                 className="flex-wrap gap-1"
-                onDismiss={(_, data) => update(allTags?.find(t => t.id == data.value), true)}
+                onDismiss={(_, data) => update(data.value, true)}
             >
                 {
                     selected.length == 0
@@ -129,7 +135,7 @@ export default function TagsContainer({
                                         <MenuItem
                                             key={index}
                                             style={tag.color ? { color: `#${tag.color}` } : undefined}
-                                            onClick={() => update(tag, false)}
+                                            onClick={() => update(tag.id, false)}
                                         >
                                             <TagName name={tag.name} />
                                         </MenuItem>

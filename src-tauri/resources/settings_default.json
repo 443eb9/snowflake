@@ -21,6 +21,7 @@
                 "remove"
             ]
         },
+        "hideConflictTagsWhenPickingNewTags": true,
         "leftPanelWidth": 180,
         "rightPanelWidth": 180
     },

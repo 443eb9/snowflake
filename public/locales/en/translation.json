@@ -59,6 +59,7 @@
     "settings.experimental": "Experimental",
     "settings.experimental.aigcDetect": "AIGC Detection",
     "settings.general": "General",
+    "settings.general.hideConflictTagsWhenPickingNewTags": "Hide Conflict Tags When Picking New Tags",
     "settings.general.tagGroupConflictResolve": "Tag Group Conflict Resolve",
     "settings.general.tagGroupConflictResolve.ignore": "Ignore",
     "settings.general.tagGroupConflictResolve.override": "Keep Incoming",

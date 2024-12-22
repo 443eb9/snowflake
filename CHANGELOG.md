@@ -11,6 +11,7 @@
     - Tags in same group can visually in different collections.
     - There can be multiple ungrouped tags exist on same asset.
     - When regrouping tags, you can choose to override or skip this incoming tag in settings.
+    - Tags that are conflict with those already exist on the asset will be hidden. Or you can change setting to show them.
 - Rename when blurring input.
 - New library initialization UI.
 - Import folders as tags.
