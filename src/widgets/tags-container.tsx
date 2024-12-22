@@ -2,10 +2,10 @@ import { Tag as FluentTag, TagGroup, Text, useToastController, Popover, PopoverT
 import { useContext, useEffect, useState } from "react";
 import { AddTagToAssets, Collection, GetAllTags, GetCollectionTree, GetTags, GetTagsOnAsset, GetTagsWithoutConflict, GetUserSetting, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
-import TagName from "./tag-name";
 import { t } from "../i18n";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
+import FallbackableText from "../components/fallbackable-text";
 
 const popoverStyleHook = makeStyles({
     root: {
@@ -126,7 +126,7 @@ export default function TagsContainer({
             >
                 {
                     selected.length == 0
-                        ? <Text italic className="opacity-50">{t("tagsContainer.none")}</Text>
+                        ? <FallbackableText fallback={t("tagsContainer.none")} />
                         : selected.map((tag, index) =>
                             <FluentTag
                                 key={index}
@@ -134,7 +134,9 @@ export default function TagsContainer({
                                 value={tag.id}
                                 style={tag.color ? { color: `#${tag.color}` } : undefined}
                             >
-                                <TagName name={tag.name} />
+                                {
+                                    <FallbackableText fallback={t("tagName.unnamed")} text={tag.name} />
+                                }
                             </FluentTag>
                         )
                 }
@@ -168,13 +170,13 @@ export default function TagsContainer({
                                         const collection = allCollections.get(group)
                                         return (
                                             <Tab key={index} value={group}>
-                                                <Text
+                                                <FallbackableText
+                                                    fallback={t("collectionName.unnamed")}
                                                     style={{
                                                         color: collection?.color ? `#${collection.color}` : undefined
                                                     }}
-                                                >
-                                                    {collection?.name}
-                                                </Text>
+                                                    text={collection?.name}
+                                                />
                                             </Tab>
                                         )
                                     })
@@ -188,9 +190,7 @@ export default function TagsContainer({
                             {
                                 candidateTags.length == 0
                                     ? <div className="flex items-center justify-center h-full">
-                                        <Text italic className="opacity-50">
-                                            {t("tagsContainer.noAvailable")}
-                                        </Text>
+                                        <FallbackableText fallback={t("tagsContainer.noAvailable")} italic className="opacity-50" />
                                     </div>
                                     : Array.from(candidateTags, (tag, index) =>
                                         <Button

@@ -11,6 +11,7 @@ import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
 import AssetImage from "./asset-image"
 import ResponsiveInput from "../components/responsive-input"
+import FallbackableText from "../components/fallbackable-text"
 
 export default function DetailInfo() {
     const [asset, setAsset] = useState<Asset & { tags: string[] } | undefined>()
@@ -59,9 +60,10 @@ export default function DetailInfo() {
 
     if (selectedCount != 1) {
         return (
-            <Text className="opacity-50" size={600} italic>
-                {selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
-            </Text>
+            <FallbackableText
+                size={600}
+                fallback={selectedCount == 0 ? t("detail.noAssetSelect") : t("detail.multiAssetsSelect")}
+            />
         )
     } else if (asset && assetAbsPath) {
         return (

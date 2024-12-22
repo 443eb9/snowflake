@@ -12,6 +12,7 @@ import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-m
 import { encodeId } from "../util"
 import { t } from "../i18n"
 import ResponsiveInput from "../components/responsive-input"
+import FallbackableText from "../components/fallbackable-text"
 
 const inputStyleHook = makeStyles({
     root: {
@@ -125,13 +126,13 @@ export default function CollectionTree() {
                     }
                 }}
             />
-            : <Text
+            : <FallbackableText
                 id={encodeId(item.id, item.ty)}
                 style={item.color ? { color: `#${item.color}` } : undefined}
                 wrap={false}
-            >
-                {item.name}
-            </Text>
+                text={item.name}
+                fallback={t(item.ty == "collection" ? "collectionName.unnamed" : "tagName.unnamed")}
+            />
     }
 
     if (!treeContext) {

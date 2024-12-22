@@ -7,6 +7,7 @@ export default function ResponsiveInput({ onCancel, onConfirm, ...props }: Input
             onKeyDown={ev => {
                 console.log(ev)
                 if (ev.key == "Enter") {
+                    ev.currentTarget.blur()
                     onConfirm(ev.currentTarget)
                 } else if (ev.key == "Escape") {
                     ev.currentTarget.blur()

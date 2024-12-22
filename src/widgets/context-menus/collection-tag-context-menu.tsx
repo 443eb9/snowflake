@@ -10,6 +10,7 @@ import ErrToast from "../toasts/err-toast"
 import FilterableSearch from "../../components/filterable-search"
 import { ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview"
 import { TinyColor } from "@ctrl/tinycolor";
+import FallbackableText from "../../components/fallbackable-text"
 
 export const CollectionTagCtxMenuId = "collectiontagctxmenu"
 
@@ -344,11 +345,11 @@ export default function CollectionTagContextMenu() {
                                     appearance="subtle"
                                     size="small"
                                 >
-                                    <Text
+                                    <FallbackableText
                                         style={collection.color ? { color: `#${collection.color}` } : undefined}
-                                    >
-                                        {collection.name}
-                                    </Text>
+                                        text={collection.name}
+                                        fallback={t("collectionName.unnamed")}
+                                    />
                                 </CompoundButton>
                             }
                             noMatch={
@@ -426,11 +427,11 @@ export default function CollectionTagContextMenu() {
                                 appearance="subtle"
                                 size="small"
                             >
-                                <Text
+                                <FallbackableText
                                     style={collection.color ? { color: `#${collection.color}` } : undefined}
-                                >
-                                    {collection.name}
-                                </Text>
+                                    text={collection.name}
+                                    fallback={t("collectionName.unnamed")}
+                                />
                             </CompoundButton>
                         }
                         noMatch={
@@ -478,11 +479,11 @@ export default function CollectionTagContextMenu() {
                                 appearance="subtle"
                                 size="small"
                             >
-                                <Text
+                                <FallbackableText
                                     style={tag.color ? { color: `#${tag.color}` } : undefined}
-                                >
-                                    {tag.name}
-                                </Text>
+                                    text={tag.name}
+                                    fallback={t("tagName.unnamed")}
+                                />
                             </CompoundButton>
                         }
                         noMatch={
