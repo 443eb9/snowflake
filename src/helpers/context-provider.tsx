@@ -32,7 +32,6 @@ export type Overlays = {
     ty: "assetDownload" | "settings" | undefined,
 }
 
-export const allTagsContext = createContext<StateContext<Tag[]> | undefined>(undefined)
 export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)
 export const selectedItemsContext = createContext<StateContext<ItemId[]> | undefined>(undefined)
 export const fileManipulationContext = createContext<StateContext<FileManipulation> | undefined>(undefined)
@@ -41,7 +40,6 @@ export const overlaysContext = createContext<StateContext<Overlays> | undefined>
 export const settingsChangeFlagContext = createContext<StateContext<boolean> | undefined>(undefined)
 
 export default function ContextProvider({ children }: { children?: ReactNode }) {
-    const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [browsingFolder, setBrowsingFolder] = useState<VirtualFolder | undefined>()
     const [selectedItems, setSelectedItems] = useState<ItemId[] | undefined>([])
     const [fileManipulation, setFileManipulation] = useState<FileManipulation | undefined>()
@@ -50,20 +48,18 @@ export default function ContextProvider({ children }: { children?: ReactNode }) 
     const [settingsChange, setSettingsChangeFlag] = useState<boolean | undefined>(false)
 
     return (
-        <allTagsContext.Provider value={{ data: allTags, setter: setAllTags }}>
-            <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
-                <selectedItemsContext.Provider value={{ data: selectedItems, setter: setSelectedItems }}>
-                    <fileManipulationContext.Provider value={{ data: fileManipulation, setter: setFileManipulation }}>
-                        <contextMenuPropContext.Provider value={{ data: contextMenuProp, setter: setContextMenuProp }}>
-                            <overlaysContext.Provider value={{ data: overlays, setter: setOverlays }}>
-                                <settingsChangeFlagContext.Provider value={{ data: settingsChange, setter: setSettingsChangeFlag }}>
-                                    {children}
-                                </settingsChangeFlagContext.Provider>
-                            </overlaysContext.Provider>
-                        </contextMenuPropContext.Provider>
-                    </fileManipulationContext.Provider>
-                </selectedItemsContext.Provider>
-            </browsingFolderContext.Provider>
-        </allTagsContext.Provider>
+        <browsingFolderContext.Provider value={{ data: browsingFolder, setter: setBrowsingFolder }}>
+            <selectedItemsContext.Provider value={{ data: selectedItems, setter: setSelectedItems }}>
+                <fileManipulationContext.Provider value={{ data: fileManipulation, setter: setFileManipulation }}>
+                    <contextMenuPropContext.Provider value={{ data: contextMenuProp, setter: setContextMenuProp }}>
+                        <overlaysContext.Provider value={{ data: overlays, setter: setOverlays }}>
+                            <settingsChangeFlagContext.Provider value={{ data: settingsChange, setter: setSettingsChangeFlag }}>
+                                {children}
+                            </settingsChangeFlagContext.Provider>
+                        </overlaysContext.Provider>
+                    </contextMenuPropContext.Provider>
+                </fileManipulationContext.Provider>
+            </selectedItemsContext.Provider>
+        </browsingFolderContext.Provider>
     )
 }

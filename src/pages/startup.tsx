@@ -8,7 +8,7 @@ import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib, StorageConstr
 import { useContext, useEffect, useState } from "react";
 import { t } from "../i18n";
 import OverlayPanel from "./overlay-panel";
-import { overlaysContext } from "../helpers/context-provider";
+import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, overlaysContext, selectedItemsContext, settingsChangeFlagContext } from "../helpers/context-provider";
 import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/toasts/msg-toast";
 import DuplicationList from "../widgets/duplication-list";
@@ -21,17 +21,33 @@ export default function Startup() {
     const overlays = useContext(overlaysContext)
     const nav = useNavigate()
 
+    const settingsChangeFlag = useContext(settingsChangeFlagContext)
+    const browsingFolder = useContext(browsingFolderContext)
+    const selectedItems = useContext(selectedItemsContext)
+    const fileManipulation = useContext(fileManipulationContext)
+    const overlay = useContext(overlaysContext)
+    const contextMenuProp = useContext(contextMenuPropContext)
+
+    function resetContext() {
+        settingsChangeFlag?.setter(undefined)
+        browsingFolder?.setter(undefined)
+        selectedItems?.setter(undefined)
+        fileManipulation?.setter(undefined)
+        overlay?.setter(undefined)
+        contextMenuProp?.setter(undefined)
+    }
+
     useEffect(() => {
         async function fetch() {
             const recentLibs = await GetRecentLibs()
-                .catch(err => dispatch(err))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (recentLibs) {
                 setRecentLibs(recentLibs)
             }
 
             await UnloadLibrary()
-                .catch(err => dispatch(err))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
 
         fetch()
@@ -45,7 +61,7 @@ export default function Startup() {
         async function check() {
             const tags = await fetch("https://api.github.com/repos/443eb9/snowflake/tags")
                 .then(async resp => (await resp.json()) as GitTags[])
-                .catch(err => dispatch(err))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (tags) {
                 const current = await app.getVersion()
@@ -65,9 +81,7 @@ export default function Startup() {
         check()
     }, [])
 
-    const dispatch = (ctn: string) => {
-        dispatchToast(<ErrToast body={ctn}></ErrToast>, { intent: "error" })
-    }
+    useEffect(() => resetContext(), [])
 
     async function openLibrary() {
         const path = await open({
@@ -86,12 +100,15 @@ export default function Startup() {
                         )
                     }
 
-                    nav("/app")
+                    navToApp()
                 })
-                .catch(err => {
-                    dispatch(err)
-                })
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
+    }
+
+    function navToApp() {
+        nav("/app")
+        resetContext()
     }
 
     const InitializeLibraryPopover = () => {
@@ -152,11 +169,9 @@ export default function Startup() {
                                     )
                                 }
 
-                                nav("/app")
+                                navToApp()
                             })
-                            .catch(err => {
-                                dispatch(err)
-                            })
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                     }}
                 >
                     {t("libInit.init")}
@@ -226,12 +241,8 @@ export default function Startup() {
                                                 icon={<Book20Regular />}
                                                 onClick={async () => {
                                                     await LoadLibrary({ rootFolder: lib.path })
-                                                        .then(() => {
-                                                            nav("/app")
-                                                        })
-                                                        .catch(err => {
-                                                            dispatch(err)
-                                                        })
+                                                        .then(() => navToApp())
+                                                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                                                 }}
                                             >
                                                 <Text>{lib.name}</Text>
