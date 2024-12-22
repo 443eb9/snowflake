@@ -137,8 +137,8 @@ export function CrashTest(): Promise<void> {
     return invoke("crash_test")
 }
 
-export function GetProcessDir(): Promise<string> {
-    return invoke("get_process_dir")
+export function OpenCrashReportsDir(): Promise<string> {
+    return invoke("open_crash_reports_dir")
 }
 
 export function GetRecentLibs(): Promise<RecentLib[]> {

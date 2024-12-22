@@ -13,7 +13,7 @@ mod event;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_log::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(
@@ -33,20 +33,19 @@ pub fn run() {
                     )),
                     info.to_string(),
                 );
+                let _ = tauri_plugin_opener::open_path(&crash_reports, None::<&str>);
                 log::info!("Crash report saved.");
             }));
 
             app.manage(Mutex::new(Option::<Storage>::None));
             app.manage(ResourceCache::new(app.handle()).unwrap());
             app.manage(Mutex::new(AppData::read(app.handle()).unwrap()));
-            let main_window = app.get_webview_window("main").unwrap();
-            window_vibrancy::apply_mica(main_window, Some(true)).unwrap();
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             cmd::crash_test,
-            cmd::get_process_dir,
+            cmd::open_crash_reports_dir,
             cmd::get_recent_libraries,
             cmd::get_user_settings,
             cmd::get_user_setting,

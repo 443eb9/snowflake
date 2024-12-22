@@ -16,6 +16,7 @@
     "dialog:allow-open",
     "log:default",
     "core:window:allow-set-size",
-    "shell:default"
+    "opener:default",
+    "opener:allow-open-path"
   ]
 }

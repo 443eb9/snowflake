@@ -2,16 +2,16 @@ import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger,
 import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
-import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
+import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, OpenCrashReportsDir, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import MsgToast from "../widgets/toasts/msg-toast";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { open as openURL } from "@tauri-apps/plugin-shell";
+import { open } from "@tauri-apps/plugin-dialog";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import SuccessToast from "../widgets/toasts/success-toast";
 import { useNavigate } from "react-router-dom";
-import { app, path } from "@tauri-apps/api";
+import { app } from "@tauri-apps/api";
 import ResponsiveInput from "../components/responsive-input";
 
 export default function Settings() {
@@ -178,7 +178,7 @@ function LibraryTab({ libraryMeta, ...props }: TabProps & { libraryMeta: Library
     }
 
     const handleExport = async () => {
-        const root = await openDialog({
+        const root = await open({
             directory: true,
         }).catch(err => {
             props.dispatchToast(<ErrToast body={err} />, { intent: "error" })
@@ -382,7 +382,7 @@ function AboutTab(props: TabProps) {
             <SettingsItem title="repo" currentTab={props.currentTab}>
                 <Button
                     icon={<ArrowUpRight20Regular />}
-                    onClick={() => openURL("https://github.com/443eb9/snowflake")}
+                    onClick={() => openUrl("https://github.com/443eb9/snowflake")}
                 />
             </SettingsItem>
             <SettingsItem title="updateCheck" currentTab={props.currentTab}>
@@ -426,14 +426,7 @@ function AboutTab(props: TabProps) {
             <SettingsItem title="crashReports" currentTab={props.currentTab}>
                 <Button
                     icon={<ArrowUpRight20Regular />}
-                    onClick={async () => {
-                        const cr = await path.appDataDir()
-                            .then(async appData => await path.join(appData, "crashReports"))
-                            .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-                        if (cr) {
-                            openURL(cr)
-                        }
-                    }}
+                    onClick={async () => await OpenCrashReportsDir()}
                 />
             </SettingsItem>
         </>

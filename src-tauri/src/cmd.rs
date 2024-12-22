@@ -30,8 +30,12 @@ pub fn crash_test() {
 }
 
 #[tauri::command]
-pub fn get_process_dir() -> Result<PathBuf, String> {
-    std::env::current_dir().map_err(|e| e.to_string())
+pub fn open_crash_reports_dir(app: AppHandle) -> Result<(), String> {
+    tauri_plugin_opener::open_path(
+        app.path().app_data_dir().map_err(|e| e.to_string())?,
+        None::<&str>,
+    )
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

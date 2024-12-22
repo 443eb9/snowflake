@@ -19,7 +19,7 @@
     "@react-three/fiber": "^8.17.10",
     "@tauri-apps/plugin-dialog": "~2.0.1",
     "@tauri-apps/plugin-log": "~2.0.0",
-    "@tauri-apps/plugin-shell": "~2.2.0",
+    "@tauri-apps/plugin-opener": "^2.2.2",
     "@types/three": "^0.171.0",
     "i18next": "^24.0.5",
     "i18next-http-backend": "^3.0.1",
