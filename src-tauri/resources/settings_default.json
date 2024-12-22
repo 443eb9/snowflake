@@ -36,9 +36,16 @@
                 "blur",
                 "acrylic",
                 "mica",
+                "tabbed",
                 "vibrancy"
             ]
-        }
+        },
+        "transparencyColor": [
+            20,
+            20,
+            20,
+            20
+        ]
     },
     "modelRendering": {
         "fps": 60

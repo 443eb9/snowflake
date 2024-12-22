@@ -58,6 +58,7 @@ pub enum SettingsDefault {
         candidates: Vec<String>,
     },
     Sequence(Vec<String>),
+    Integers(Vec<i32>),
     Toggle(bool),
     Float(f32),
 }
@@ -67,6 +68,7 @@ impl SettingsDefault {
         match self {
             SettingsDefault::Selection { default, .. } => SettingsValue::Name(default),
             SettingsDefault::Sequence(vec) => SettingsValue::Sequence(vec),
+            SettingsDefault::Integers(vec) => SettingsValue::Integers(vec),
             SettingsDefault::Toggle(enabled) => SettingsValue::Toggle(enabled),
             SettingsDefault::Float(val) => SettingsValue::Float(val),
         }
@@ -79,6 +81,7 @@ pub enum SettingsValue {
     Name(String),
     Toggle(bool),
     Sequence(Vec<String>),
+    Integers(Vec<i32>),
     Float(f32),
 }
 
@@ -90,6 +93,14 @@ impl SettingsValue {
             SettingsValue::Sequence(vec) => T::deserialize(&serde_json::Value::Array(
                 vec.into_iter()
                     .map(|x| serde_json::Value::String(x))
+                    .collect(),
+            ))
+            .ok(),
+            SettingsValue::Integers(vec) => T::deserialize(&serde_json::Value::Array(
+                vec.into_iter()
+                    .map(|x| {
+                        serde_json::Value::Number(serde_json::Number::from_i128(x as i128).unwrap())
+                    })
                     .collect(),
             ))
             .ok(),

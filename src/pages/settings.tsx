@@ -1,4 +1,4 @@
-import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
+import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Popover, PopoverSurface, PopoverTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
 import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Color20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
@@ -13,6 +13,8 @@ import SuccessToast from "../widgets/toasts/success-toast";
 import { useNavigate } from "react-router-dom";
 import { app } from "@tauri-apps/api";
 import ResponsiveInput from "../components/responsive-input";
+import { TinyColor } from "@ctrl/tinycolor";
+import { AlphaSlider, ColorArea, ColorPicker, ColorSlider } from "@fluentui/react-color-picker-preview";
 
 export default function Settings() {
     const [currentTab, setCurrentTab] = useState<Tab>("general")
@@ -165,7 +167,11 @@ function GeneralTab(props: TabProps) {
 
 function AppearanceTab(props: TabProps) {
     const tab = "appearance"
-    if (props.currentTab != tab) {
+
+    const col = props.user[tab]["transparencyColor"] as number[]
+    const [transparencyColor, setTransparencyColor] = useState<TinyColor>(new TinyColor({ r: col[0], g: col[1], b: col[2], a: col[3] }))
+
+    if (props.currentTab != tab || !transparencyColor) {
         return <></>
     }
 
@@ -186,12 +192,35 @@ function AppearanceTab(props: TabProps) {
                     title="transparency"
                     selectable={props.default[tab]["transparency"] as Selectable}
                     onSelect={async (title, value) => {
-                        await SetWindowTransparency({ windowLabel: null, newTransparency: value as WindowTransparency })
+                        await SetWindowTransparency({ newTransparency: value as WindowTransparency })
                             .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                         props.update(title, value)
                     }}
                     value={props.user[tab]["transparency"] as string}
                 />
+            </SettingsItem>
+            <SettingsItem title="transparencyColor" currentTab={props.currentTab}>
+                <Popover>
+                    <PopoverTrigger>
+                        <Button icon={<Color20Regular />} />
+                    </PopoverTrigger>
+                    <PopoverSurface>
+                        <ColorPicker
+                            color={transparencyColor.toHsv()}
+                            onColorChange={(_, data) => {
+                                const color = new TinyColor(data.color)
+                                setTransparencyColor(color)
+                                const rgba = [color.r, color.g, color.b, color.a].map(x => Math.min(Math.round(x), 255)) as [number, number, number, number]
+                                SetWindowTransparency({ newColor: rgba })
+                                props.update("transparencyColor", rgba)
+                            }}
+                        >
+                            <ColorArea />
+                            <ColorSlider />
+                            <AlphaSlider />
+                        </ColorPicker>
+                    </PopoverSurface>
+                </Popover>
             </SettingsItem>
         </>
     )

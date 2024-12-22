@@ -31,6 +31,8 @@ pub fn crash_test() {
 
 #[tauri::command]
 pub fn open_crash_reports_dir(app: AppHandle) -> Result<(), String> {
+    log::info!("Opening crash reports dir.");
+
     tauri_plugin_opener::open_path(
         app.path().app_data_dir().map_err(|e| e.to_string())?,
         None::<&str>,
@@ -38,7 +40,7 @@ pub fn open_crash_reports_dir(app: AppHandle) -> Result<(), String> {
     .map_err(|e| e.to_string())
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub enum WindowTransparency {
     None,
@@ -52,10 +54,18 @@ pub enum WindowTransparency {
 #[tauri::command]
 pub fn set_window_transparency(
     window_label: Option<String>,
-    new_transparency: WindowTransparency,
+    new_transparency: Option<WindowTransparency>,
+    new_color: Option<(u8, u8, u8, u8)>,
     app: AppHandle,
     data: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
+    log::info!(
+        "Setting window transparency {:?} {:?} to {:?}",
+        &new_transparency,
+        new_color,
+        window_label
+    );
+
     let window = match window_label {
         Some(label) => app.get_webview_window(&label),
         None => app.get_webview_window("main"),
@@ -65,21 +75,30 @@ pub fn set_window_transparency(
     let old_transparency = data
         .settings
         .get_as::<WindowTransparency>("appearance", "transparency")
-        .unwrap();
+        .ok_or_else(|| "Invalid user settings".to_string())?;
+    let old_color = data
+        .settings
+        .get_as::<(u8, u8, u8, u8)>("appearance", "transparencyColor")
+        .ok_or_else(|| "Invalid user settings".to_string())?;
 
-    let _ = match old_transparency {
-        WindowTransparency::None => Ok(()),
-        WindowTransparency::Blur => window_vibrancy::clear_blur(&window),
-        WindowTransparency::Acrylic => window_vibrancy::clear_acrylic(&window),
-        WindowTransparency::Mica => window_vibrancy::clear_mica(&window),
-        WindowTransparency::Tabbed => window_vibrancy::clear_tabbed(&window),
-        WindowTransparency::Vibrancy => Ok(()),
-    };
+    if new_transparency.is_some() {
+        let _ = match old_transparency {
+            WindowTransparency::None => Ok(()),
+            WindowTransparency::Blur => window_vibrancy::clear_blur(&window),
+            WindowTransparency::Acrylic => window_vibrancy::clear_acrylic(&window),
+            WindowTransparency::Mica => window_vibrancy::clear_mica(&window),
+            WindowTransparency::Tabbed => window_vibrancy::clear_tabbed(&window),
+            WindowTransparency::Vibrancy => Ok(()),
+        };
+    }
+
+    let new_transparency = new_transparency.unwrap_or(old_transparency);
+    let new_color = Some(new_color.unwrap_or(old_color));
 
     match new_transparency {
         WindowTransparency::None => Ok(()),
-        WindowTransparency::Blur => window_vibrancy::apply_blur(&window, None),
-        WindowTransparency::Acrylic => window_vibrancy::apply_acrylic(&window, None),
+        WindowTransparency::Blur => window_vibrancy::apply_blur(&window, new_color),
+        WindowTransparency::Acrylic => window_vibrancy::apply_acrylic(&window, new_color),
         WindowTransparency::Mica => window_vibrancy::apply_mica(&window, Some(true)),
         WindowTransparency::Tabbed => window_vibrancy::apply_tabbed(&window, Some(true)),
         WindowTransparency::Vibrancy => window_vibrancy::apply_vibrancy(
@@ -177,6 +196,10 @@ pub fn set_user_setting(
         },
         SettingsDefault::Sequence(_) => match value {
             SettingsValue::Sequence(new) => *original = SettingsValue::Sequence(new),
+            _ => return Err("Incompatible value".into()),
+        },
+        SettingsDefault::Integers(_) => match value {
+            SettingsValue::Integers(new) => *original = SettingsValue::Integers(new),
             _ => return Err("Incompatible value".into()),
         },
         SettingsDefault::Toggle(_) => match value {

@@ -2,7 +2,7 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 
 export type Selectable = { default: string, candidates: string[] }
 
-export type SettingsValue = string | string[] | boolean | number
+export type SettingsValue = string | string[] | number[] | boolean | number
 
 export type UserSettings = { [category: string]: { [item: string]: SettingsValue } }
 
@@ -143,7 +143,7 @@ export function OpenCrashReportsDir(): Promise<string> {
     return invoke("open_crash_reports_dir")
 }
 
-export function SetWindowTransparency(params: { windowLabel: string | null, newTransparency: WindowTransparency }): Promise<string> {
+export function SetWindowTransparency(params: { windowLabel?: string, newTransparency?: WindowTransparency, newColor?: [number, number, number, number] }): Promise<string> {
     return invoke("set_window_transparency", params)
 }
 
