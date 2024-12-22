@@ -23,6 +23,7 @@
 # What's Fixed
 
 - App crashes on platforms other than windows 11, due to `unwrap`ing when applying transparency effect that the platform doesn't support.
+- User settings not saved.
 
 # v0.1.0
 

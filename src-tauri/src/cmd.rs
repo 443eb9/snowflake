@@ -165,6 +165,7 @@ pub fn set_user_setting(
     value: SettingsValue,
     data: State<'_, Mutex<AppData>>,
     resource: State<'_, ResourceCache>,
+    app: AppHandle,
 ) -> Result<(), String> {
     log::info!("Getting user settings.");
 
@@ -211,6 +212,8 @@ pub fn set_user_setting(
             _ => return Err("Incompatible value".into()),
         },
     }
+
+    data.save(app.app_handle()).map_err(|e| e.to_string())?;
 
     Ok(())
 }

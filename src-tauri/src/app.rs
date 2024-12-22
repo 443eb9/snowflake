@@ -177,17 +177,12 @@ pub struct AppData {
 impl AppData {
     pub fn read(app: &AppHandle) -> AppResult<Self> {
         let data_dir = app.path().app_data_dir()?;
-        let dir = data_dir.join(DATA);
+        let file = data_dir.join(DATA);
 
-        #[cfg(debug_assertions)]
-        let debug = true;
-        #[cfg(not(debug_assertions))]
-        let debug = false;
-
-        let mut data = if !dir.exists() || debug {
+        let mut data = if !file.exists() {
             Self::default()
         } else {
-            let mut data = serde_json::from_reader::<_, Self>(File::open(dir)?)?;
+            let mut data = serde_json::from_reader::<_, Self>(File::open(file)?)?;
             data.recent_libs = data
                 .recent_libs
                 .into_iter()
