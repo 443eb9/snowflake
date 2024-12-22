@@ -139,7 +139,7 @@ export default function CollectionTree() {
     }
 
     return (
-        <div className="flex flex-col h-full min-w-36">
+        <div className="flex flex-col h-full">
             <div className="flex flex-col">
                 <Button
                     appearance="subtle"

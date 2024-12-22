@@ -30,7 +30,6 @@ export default function ItemTree<T, I>(
         let result = new Array<ItemTreeNode<T> & I>()
 
         function collectTree(id: string) {
-            console.log(id)
             const item = props.itemTree.get(id) as I
             if (item == undefined) {
                 dispatchToast(<ErrToast body="Broken tree." />, { intent: "error" })
