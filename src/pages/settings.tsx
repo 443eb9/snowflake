@@ -1,8 +1,8 @@
 import { Button, Menu, MenuButton, MenuItem, MenuList, MenuPopover, MenuTrigger, Tab, TabList, Tag, Text, Title2, ToastIntent, useToastController } from "@fluentui/react-components";
 import i18n, { t } from "../i18n";
-import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
+import { ArrowExport20Regular, ArrowUp20Regular, ArrowUpRight20Regular, Beaker20Regular, Book20Regular, Box20Regular, ChartMultiple20Regular, Checkmark20Regular, Color20Regular, Cube20Regular, Diamond20Regular, Dismiss20Regular, Edit20Regular, ErrorCircle20Regular, Triangle20Regular } from "@fluentui/react-icons";
 import { ReactNode, useContext, useEffect, useState } from "react";
-import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, OpenCrashReportsDir, Selectable, SettingsValue, SetUserSetting, UserSettings } from "../backend";
+import { ChangeLibraryName, CrashTest, DefaultSettings, ExportLibrary, GetDefaultSettings, GetLibraryMeta, GetUserSettings, LibraryMeta, OpenCrashReportsDir, Selectable, SettingsValue, SetUserSetting, SetWindowTransparency, UserSettings, WindowTransparency } from "../backend";
 import { settingsChangeFlagContext } from "../helpers/context-provider";
 import ErrToast from "../widgets/toasts/err-toast";
 import { GlobalToasterId } from "../main";
@@ -84,6 +84,7 @@ export default function Settings() {
                         style={{ backgroundColor: "var(--colorNeutralBackground1)" }}
                     >
                         <Tab icon={<Box20Regular />} value="general">{t("settings.general")}</Tab>
+                        <Tab icon={<Color20Regular />} value="appearance">{t("settings.appearance")}</Tab>
                         <Tab icon={<Book20Regular />} value="library" disabled={!libraryMeta}>{t("settings.library")}</Tab>
                         <Tab icon={<Cube20Regular />} value="modelRendering">{t("settings.modelRendering")}</Tab>
                         <Tab icon={<Diamond20Regular />} value="keyMapping">{t("settings.keyMapping")}</Tab>
@@ -94,6 +95,7 @@ export default function Settings() {
             </div>
             <div className="flex flex-col gap-2 flex-grow mr-8 overflow-y-scroll">
                 <GeneralTab {...props} />
+                <AppearanceTab {...props} />
                 {
                     libraryMeta &&
                     <LibraryTab {...props} libraryMeta={libraryMeta} />
@@ -107,7 +109,7 @@ export default function Settings() {
     )
 }
 
-type Tab = "general" | "library" | "modelRendering" | "keyMapping" | "experimental" | "about"
+type Tab = "general" | "appearance" | "library" | "modelRendering" | "keyMapping" | "experimental" | "about"
 
 type UpdateFn = (title?: string, value?: SettingsValue) => void
 
@@ -127,15 +129,6 @@ function GeneralTab(props: TabProps) {
 
     return (
         <>
-            <SettingsItem title="theme" currentTab={props.currentTab}>
-                <SelectableCandidates
-                    currentTab={props.currentTab}
-                    title="theme"
-                    selectable={props.default[tab]["theme"] as Selectable}
-                    onSelect={props.update}
-                    value={props.user[tab]["theme"] as string}
-                />
-            </SettingsItem>
             <SettingsItem title="lng" currentTab={props.currentTab}>
                 <SelectableCandidates
                     currentTab={props.currentTab}
@@ -164,6 +157,40 @@ function GeneralTab(props: TabProps) {
                     selectable={props.default[tab]["tagGroupConflictResolve"] as Selectable}
                     onSelect={props.update}
                     value={props.user[tab]["tagGroupConflictResolve"] as string}
+                />
+            </SettingsItem>
+        </>
+    )
+}
+
+function AppearanceTab(props: TabProps) {
+    const tab = "appearance"
+    if (props.currentTab != tab) {
+        return <></>
+    }
+
+    return (
+        <>
+            <SettingsItem title="theme" currentTab={props.currentTab}>
+                <SelectableCandidates
+                    currentTab={props.currentTab}
+                    title="theme"
+                    selectable={props.default[tab]["theme"] as Selectable}
+                    onSelect={props.update}
+                    value={props.user[tab]["theme"] as string}
+                />
+            </SettingsItem>
+            <SettingsItem title="transparency" currentTab={props.currentTab}>
+                <SelectableCandidates
+                    currentTab={props.currentTab}
+                    title="transparency"
+                    selectable={props.default[tab]["transparency"] as Selectable}
+                    onSelect={async (title, value) => {
+                        await SetWindowTransparency({ windowLabel: null, newTransparency: value as WindowTransparency })
+                            .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                        props.update(title, value)
+                    }}
+                    value={props.user[tab]["transparency"] as string}
                 />
             </SettingsItem>
         </>

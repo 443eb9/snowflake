@@ -46,6 +46,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             cmd::crash_test,
             cmd::open_crash_reports_dir,
+            cmd::set_window_transparency,
             cmd::get_recent_libraries,
             cmd::get_user_settings,
             cmd::get_user_setting,

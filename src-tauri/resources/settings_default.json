@@ -1,11 +1,5 @@
 {
     "general": {
-        "theme": {
-            "default": "dark",
-            "candidates": [
-                "dark"
-            ]
-        },
         "lng": {
             "default": "en",
             "candidates": [
@@ -25,6 +19,24 @@
             "candidates": [
                 "override",
                 "remove"
+            ]
+        }
+    },
+    "appearance": {
+        "theme": {
+            "default": "dark",
+            "candidates": [
+                "dark"
+            ]
+        },
+        "transparency": {
+            "default": "none",
+            "candidates": [
+                "none",
+                "blur",
+                "acrylic",
+                "mica",
+                "vibrancy"
             ]
         }
     },

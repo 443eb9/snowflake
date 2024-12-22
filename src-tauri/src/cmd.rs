@@ -38,6 +38,62 @@ pub fn open_crash_reports_dir(app: AppHandle) -> Result<(), String> {
     .map_err(|e| e.to_string())
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum WindowTransparency {
+    None,
+    Blur,
+    Acrylic,
+    Mica,
+    Tabbed,
+    Vibrancy,
+}
+
+#[tauri::command]
+pub fn set_window_transparency(
+    window_label: Option<String>,
+    new_transparency: WindowTransparency,
+    app: AppHandle,
+    data: State<'_, Mutex<AppData>>,
+) -> Result<(), String> {
+    let window = match window_label {
+        Some(label) => app.get_webview_window(&label),
+        None => app.get_webview_window("main"),
+    }
+    .ok_or_else(|| "Window not found".to_string())?;
+    let data = data.lock().map_err(|e| e.to_string())?;
+    let old_transparency = data
+        .settings
+        .get_as::<WindowTransparency>("appearance", "transparency")
+        .unwrap();
+
+    let _ = match old_transparency {
+        WindowTransparency::None => Ok(()),
+        WindowTransparency::Blur => window_vibrancy::clear_blur(&window),
+        WindowTransparency::Acrylic => window_vibrancy::clear_acrylic(&window),
+        WindowTransparency::Mica => window_vibrancy::clear_mica(&window),
+        WindowTransparency::Tabbed => window_vibrancy::clear_tabbed(&window),
+        WindowTransparency::Vibrancy => Ok(()),
+    };
+
+    match new_transparency {
+        WindowTransparency::None => Ok(()),
+        WindowTransparency::Blur => window_vibrancy::apply_blur(&window, None),
+        WindowTransparency::Acrylic => window_vibrancy::apply_acrylic(&window, None),
+        WindowTransparency::Mica => window_vibrancy::apply_mica(&window, Some(true)),
+        WindowTransparency::Tabbed => window_vibrancy::apply_tabbed(&window, Some(true)),
+        WindowTransparency::Vibrancy => window_vibrancy::apply_vibrancy(
+            &window,
+            window_vibrancy::NSVisualEffectMaterial::WindowBackground,
+            None,
+            None,
+        ),
+    }
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn get_recent_libraries(data: State<'_, Mutex<AppData>>) -> Result<Vec<RecentLib>, String> {
     log::info!("Getting recent libraries.");
@@ -61,11 +117,7 @@ pub fn get_user_setting(
     log::info!("Getting user setting. {} {}", category, item);
 
     let data = data.lock().map_err(|e| e.to_string())?;
-    Ok(data
-        .settings
-        .get(&category)
-        .and_then(|cate| cate.get(&item))
-        .cloned())
+    Ok(data.settings.get(&category, &item).cloned())
 }
 
 #[tauri::command]
@@ -818,8 +870,9 @@ pub fn add_tag_to_assets(
     log::info!("Adding tag to assets {:?} -> {:?}", tag, assets);
 
     let data = data.lock().map_err(|e| e.to_string())?;
-    let resolve = data.settings["general"]["tagGroupConflictResolve"]
-        .to_object()
+    let resolve = data
+        .settings
+        .get_as("general", "tagGroupConflictResolve")
         .unwrap();
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         for asset in assets {
@@ -1086,8 +1139,8 @@ pub fn regroup_tag(
             .regroup_tag(
                 tag,
                 group,
-                data.settings["general"]["tagGroupConflictResolve"]
-                    .to_object()
+                data.settings
+                    .get_as("general", "tagGroupConflictResolve")
                     .unwrap(),
             )
             .map_err(|e| e.to_string())?;

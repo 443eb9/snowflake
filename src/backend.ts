@@ -133,12 +133,18 @@ export type StorageConstructionSettings = {
     folderAsTag: boolean,
 }
 
+export type WindowTransparency = "none" | "blur" | "acrylic" | "mica" | "tabbed" | "vibrancy"
+
 export function CrashTest(): Promise<void> {
     return invoke("crash_test")
 }
 
 export function OpenCrashReportsDir(): Promise<string> {
     return invoke("open_crash_reports_dir")
+}
+
+export function SetWindowTransparency(params: { windowLabel: string | null, newTransparency: WindowTransparency }): Promise<string> {
+    return invoke("set_window_transparency", params)
 }
 
 export function GetRecentLibs(): Promise<RecentLib[]> {

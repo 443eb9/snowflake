@@ -83,12 +83,20 @@ pub enum SettingsValue {
 }
 
 impl SettingsValue {
-    pub fn to_object<T: DeserializeOwned>(&self) -> Option<T> {
+    pub fn to_object<T: DeserializeOwned>(self) -> Option<T> {
         match self {
-            SettingsValue::Name(name) => {
-                T::deserialize(&serde_json::Value::String(name.clone())).ok()
-            }
-            _ => None,
+            SettingsValue::Name(name) => T::deserialize(&serde_json::Value::String(name)).ok(),
+            SettingsValue::Toggle(b) => T::deserialize(&serde_json::Value::Bool(b)).ok(),
+            SettingsValue::Sequence(vec) => T::deserialize(&serde_json::Value::Array(
+                vec.into_iter()
+                    .map(|x| serde_json::Value::String(x))
+                    .collect(),
+            ))
+            .ok(),
+            SettingsValue::Float(f) => T::deserialize(&serde_json::Value::Number(
+                serde_json::Number::from_f64(f as f64)?,
+            ))
+            .ok(),
         }
     }
 }
@@ -124,6 +132,15 @@ impl UserSettings {
                 }
             }
         }
+    }
+
+    pub fn get(&self, category: &str, item: &str) -> Option<&SettingsValue> {
+        self.0.get(category).and_then(|c| c.get(item))
+    }
+
+    pub fn get_as<T: DeserializeOwned>(&self, category: &str, item: &str) -> Option<T> {
+        self.get(category, item)
+            .and_then(|value| value.clone().to_object())
     }
 }
 

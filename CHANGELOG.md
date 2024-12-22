@@ -15,9 +15,14 @@
 - New library initialization UI.
 - Import folders as tags.
 - Crash reporting.
+  - Saving panic info into a `.txt` file.
+  - Opening crash reports folder when app crashes.
 - Changed folder of global application data.
+- Allow changing window transparency style in settings.
 
 # What's Fixed
+
+- App crashes on platforms other than windows 11, due to `unwrap`ing when applying transparency effect that the platform doesn't support.
 
 # v0.1.0
 

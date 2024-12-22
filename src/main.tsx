@@ -11,6 +11,7 @@ import QuickRef from './pages/quick-ref'
 import ContextProvider from './helpers/context-provider'
 import LanguageSwitch from './helpers/language-switch'
 import LibStatistics from './pages/lib-statistics'
+import WindowTransparencyManager from './helpers/window-transparency-manager'
 
 export const GlobalToasterId = "globalToasterId"
 
@@ -25,6 +26,7 @@ root.render(
                 <div className="w-[100vw] h-[100vh] overflow-hidden" onContextMenu={ev => ev.preventDefault()}>
                     <Toaster toasterId={GlobalToasterId} limit={3} pauseOnHover />
                     <LanguageSwitch />
+                    <WindowTransparencyManager />
                     <Suspense>
                         <BrowserRouter>
                             <Routes>
