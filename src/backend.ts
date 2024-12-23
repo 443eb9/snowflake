@@ -299,7 +299,7 @@ export function GetTagsWithoutConflict(params: { tags: string[] }): Promise<Tag[
     return invoke("get_tags_without_conflict", params)
 }
 
-export function GetItems(params: { items: ItemId[] }): Promise<Item[]> {
+export function GetItems(params: { items: ItemId[], excludeRemoved: boolean }): Promise<Item[]> {
     return invoke("get_items", params)
 }
 

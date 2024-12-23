@@ -592,13 +592,20 @@ pub fn recover_assets(
 }
 
 #[tauri::command]
-pub fn get_recycle_bin(
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<HashSet<AssetId>, String> {
+pub fn get_recycle_bin(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<ItemId>, String> {
     log::info!("Getting recycle bin.");
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        Ok(storage.recycle_bin.assets.clone())
+        Ok(storage
+            .recycle_bin
+            .assets
+            .clone()
+            .into_iter()
+            .map(|asset| ItemId {
+                id: asset.0,
+                ty: IdType::Asset,
+            })
+            .collect())
     } else {
         Err(storage_not_initialized())
     }
@@ -828,6 +835,7 @@ pub fn get_tags_on_asset(
 #[tauri::command]
 pub fn get_items(
     items: Vec<ItemId>,
+    exclude_removed: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Item>, String> {
     log::info!("Getting items {:?}", items);
@@ -839,11 +847,13 @@ pub fn get_items(
                 IdType::Asset => storage
                     .assets
                     .get(&id.asset())
+                    .filter(|a| !a.is_deleted || !exclude_removed)
                     .cloned()
                     .map(|a| Item::Asset(a)),
                 IdType::Collection => storage
                     .collections
                     .get(&id.collection())
+                    .filter(|c| !c.is_deleted || !exclude_removed)
                     .cloned()
                     .map(|c| Item::Collection(c)),
                 IdType::Tag => storage.tags.get(&id.tag()).cloned().map(|a| Item::Tag(a)),

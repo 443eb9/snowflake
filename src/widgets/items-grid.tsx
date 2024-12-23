@@ -67,7 +67,7 @@ export default function ItemsGrid() {
                 return
             }
 
-            const objects = await GetItems({ items: browsingFolder.data.content })
+            const objects = await GetItems({ items: browsingFolder.data.content, excludeRemoved: browsingFolder.data.subTy != "recycleBin" })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (objects) {
