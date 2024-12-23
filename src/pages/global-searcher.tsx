@@ -1,7 +1,7 @@
-import { CompoundButton, Input, Radio, RadioGroup, useToastController } from "@fluentui/react-components";
+import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, Button, CompoundButton, Input, Radio, RadioGroup, Text, useToastController } from "@fluentui/react-components";
 import { t } from "../i18n";
 import { useContext, useEffect, useState } from "react";
-import { AssetType, GetAssetsContainingTag, GlobalSearch, SearchQueryResult, SearchQueryTy } from "../backend";
+import { AssetType, GetAssetsContainingTag, GetTagVirtualPath, GlobalSearch, SearchQueryResult, SearchQueryTy } from "../backend";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/toasts/err-toast";
 import { Cube20Regular, Image20Regular, Tag20Regular, Triangle20Regular } from "@fluentui/react-icons";
@@ -43,6 +43,24 @@ export default function GlobalSearcher() {
     }
 
     const QueryResults = () => {
+        const [tagsVirtualPath, setTagsVirtualPath] = useState<(void | string[])[] | undefined>()
+
+        useEffect(() => {
+            if (candidates?.ty != "tags") { return }
+
+            async function fetch() {
+                if (!candidates?.data) { return }
+
+                setTagsVirtualPath(await Promise.all(candidates.data
+                    .map(async tag =>
+                        await GetTagVirtualPath({ tag: tag.id })
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+                    )))
+            }
+
+            fetch()
+        }, [candidates])
+
         if (!candidates) { return <></> }
 
         switch (candidates.ty) {
@@ -75,12 +93,13 @@ export default function GlobalSearcher() {
                     </CompoundButton>
                 )
             case "tags":
+                if (!tagsVirtualPath) { return <></> }
+
                 return candidates.data.map((tag, index) =>
-                    <CompoundButton
+                    <Button
                         key={index}
                         appearance="subtle"
                         icon={<Tag20Regular />}
-                        secondaryContent={tag.id}
                         style={{
                             minHeight: "64px",
                             justifyContent: "start",
@@ -100,12 +119,32 @@ export default function GlobalSearcher() {
                             }
                         }}
                     >
-                        <FallbackableText
-                            fallback={t("tagName.unnamed")}
-                            text={tag.name}
-                            style={{ color: tag.color ? `#${tag.color}` : undefined }}
-                        />
-                    </CompoundButton>
+                        <div className="flex justify-between w-full items-center pl-2">
+                            <div className="flex flex-col gap-1">
+                                <FallbackableText
+                                    fallback={t("tagName.unnamed")}
+                                    text={tag.name}
+                                    style={{ color: tag.color ? `#${tag.color}` : undefined }}
+                                />
+                                <Text size={200}>{tag.id}</Text>
+                            </div>
+                            <div className="flex gap-1">
+                                {
+                                    tagsVirtualPath[index]?.map((collection, collectionIndex) =>
+                                        <>
+                                            <FallbackableText
+                                                key={collectionIndex * 2}
+                                                fallback={t("collectionName.unnamed")}
+                                                text={collection}
+                                                size={200}
+                                            />
+                                            <Text key={collectionIndex * 2 + 1} size={200}>/</Text>
+                                        </>
+                                    )
+                                }
+                            </div>
+                        </div>
+                    </Button>
                 )
         }
     }

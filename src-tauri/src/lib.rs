@@ -37,6 +37,7 @@ pub fn run() {
                 log::info!("Crash report saved.");
             }));
 
+            #[cfg(target_os = "windows")]
             for window in app.webview_windows().values() {
                 window
                     .with_webview(|webview| unsafe {

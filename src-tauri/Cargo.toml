@@ -52,5 +52,7 @@ base64 = "0.22"
 bytemuck = "1"
 rand = "0.8"
 tauri-plugin-opener = "2"
+
+[target."cfg(windows)".dependencies]
 # Follow with tauri
 webview2-com = "0.33"
