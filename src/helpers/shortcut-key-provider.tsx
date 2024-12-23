@@ -66,6 +66,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
             if (!overlay?.data) {
                 overlay?.setter({
                     ty: "globalSearch",
+                    noTemplate: true,
                 })
             }
         }

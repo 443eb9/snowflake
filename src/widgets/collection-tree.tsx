@@ -174,7 +174,6 @@ export default function CollectionTree() {
         function convertItemTreeToFlatTree() {
             let result = new Array<HeadlessFlatTreeItemProps & { data: CollectionOrTag }>()
             if (!treeContext) { return result }
-            console.log(openItems.current)
 
             function collectTree(id: string, depth: number) {
                 const item = treeContext?.items.get(id)

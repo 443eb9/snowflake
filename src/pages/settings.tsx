@@ -43,11 +43,12 @@ export default function Settings() {
             }
 
             const libraryMeta = await GetLibraryMeta()
-                .catch(() => { })
+                .catch(err => dispatchToast(<ErrToast body={err} />))
 
             if (libraryMeta) {
                 setLibraryMeta(libraryMeta)
             }
+            setCurrentTab(currentTab)
         }
 
         fetch()
@@ -80,7 +81,7 @@ export default function Settings() {
                 <div className="overflow-y-scroll h-full">
                     <TabList
                         vertical
-                        defaultSelectedValue="general"
+                        defaultSelectedValue={currentTab}
                         onTabSelect={(_, data) => setCurrentTab(data.value as Tab)}
                         className="h-full p-2 rounded-md"
                         style={{ backgroundColor: "var(--colorNeutralBackground1)" }}

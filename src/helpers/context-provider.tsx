@@ -30,6 +30,7 @@ export type ContextMenuProp = {
 
 export type Overlays = {
     ty: "assetDownload" | "settings" | "globalSearch" | undefined,
+    noTemplate?: boolean,
 }
 
 export const browsingFolderContext = createContext<StateContext<VirtualFolder> | undefined>(undefined)

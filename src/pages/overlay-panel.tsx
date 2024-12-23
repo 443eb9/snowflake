@@ -1,4 +1,4 @@
-import { ReactNode, useContext, useState } from "react"
+import { useContext, useState } from "react"
 import { overlaysContext } from "../helpers/context-provider"
 import AssetDownload from "./asset-download"
 import { Button } from "@fluentui/react-components"
@@ -23,14 +23,19 @@ export default function OverlayPanel() {
         }
     }
 
-    function OverlayTemplate({ children }: { children: ReactNode }) {
-        if (!overlays?.data) { return <></> }
+    if (!overlays?.data) { return <></> }
 
-        switch (overlays?.data?.ty) {
-            case "assetDownload":
-            case "settings":
-                return (
-                    <div
+    return (
+        <div
+            className="absolute w-full h-full z-10 flex items-center justify-center shadow-md"
+            style={{
+                backgroundColor: "#000000aa",
+            }}
+        >
+            {
+                overlays.data.noTemplate
+                    ? getOverlay()
+                    : <div
                         className="absolute w-4/5 h-4/5 rounded-md p-4"
                         style={{
                             backgroundColor: "var(--colorNeutralBackground2)"
@@ -42,26 +47,9 @@ export default function OverlayPanel() {
                             onClick={() => overlays?.setter(undefined)}
                             disabled={locked}
                         />
-                        {children}
+                        {getOverlay()}
                     </div>
-                )
-            case "globalSearch":
-                return children
-        }
-    }
-
-    if (!overlays?.data) { return <></> }
-
-    return (
-        <div
-            className="absolute w-full h-full z-10 flex items-center justify-center shadow-md"
-            style={{
-                backgroundColor: "#000000aa",
-            }}
-        >
-            <OverlayTemplate>
-                {getOverlay()}
-            </OverlayTemplate>
+            }
         </div>
     )
 }
