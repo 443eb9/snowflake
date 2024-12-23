@@ -27,6 +27,7 @@
 - Global searcher, press `ctrl+p` to open it.
   - Search assets using their ids or names.
   - Search tags using their ids or names.
+  - Jump to that asset/tag.
 
 # What's Fixed
 

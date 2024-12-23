@@ -50,7 +50,6 @@ export default function OverlayPanel() {
         }
     }
 
-    console.log(overlays?.data)
     if (!overlays?.data) { return <></> }
 
     return (

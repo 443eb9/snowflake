@@ -1,4 +1,4 @@
-import { Breadcrumb, BreadcrumbButton, BreadcrumbDivider, Button, CompoundButton, Input, Radio, RadioGroup, Text, useToastController } from "@fluentui/react-components";
+import { Button, CompoundButton, Input, Radio, RadioGroup, Text, useToastController } from "@fluentui/react-components";
 import { t } from "../i18n";
 import { useContext, useEffect, useState } from "react";
 import { AssetType, GetAssetsContainingTag, GetTagVirtualPath, GlobalSearch, SearchQueryResult, SearchQueryTy } from "../backend";
