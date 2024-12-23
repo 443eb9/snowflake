@@ -30,7 +30,7 @@ export default function LayoutResizeBar({
         }
 
         const endResizeHandler = (ev: MouseEvent) => {
-            if (ev.button == 0) {
+            if (resizing && ev.button == 0) {
                 onEndResize?.(computeSize(ev))
                 setResizing(false)
             }
