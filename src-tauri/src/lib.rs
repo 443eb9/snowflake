@@ -37,6 +37,21 @@ pub fn run() {
                 log::info!("Crash report saved.");
             }));
 
+            for window in app.webview_windows().values() {
+                window
+                    .with_webview(|webview| unsafe {
+                        use webview2_com::Microsoft::Web::WebView2::Win32::ICoreWebView2Settings3;
+
+                        let core_webview = webview.controller().CoreWebView2().unwrap();
+                        let settings: ICoreWebView2Settings3 =
+                            core::mem::transmute(core_webview.Settings().unwrap());
+                        #[cfg(not(debug_assertions))]
+                        settings.SetAreDefaultContextMenusEnabled(false).unwrap();
+                        settings.SetAreBrowserAcceleratorKeysEnabled(false).unwrap();
+                    })
+                    .unwrap();
+            }
+
             app.manage(Mutex::new(Option::<Storage>::None));
             app.manage(ResourceCache::new(app.handle()).unwrap());
             app.manage(Mutex::new(AppData::read(app.handle()).unwrap()));

@@ -24,7 +24,8 @@ export default function OverlayPanel() {
     }
 
     function OverlayTemplate({ children }: { children: ReactNode }) {
-        if (!overlays?.data?.ty) { return <></> }
+        if (!overlays?.data) { return <></> }
+
         switch (overlays?.data?.ty) {
             case "assetDownload":
             case "settings":
@@ -49,6 +50,7 @@ export default function OverlayPanel() {
         }
     }
 
+    console.log(overlays?.data)
     if (!overlays?.data) { return <></> }
 
     return (

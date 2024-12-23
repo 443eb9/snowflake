@@ -13,8 +13,8 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
     const fileManipulation = useContext(fileManipulationContext)
     const settingsChangeFlag = useContext(settingsChangeFlagContext)
     const overlay = useContext(overlaysContext)
-    const [keyMap, setKeyMap] = useState<{ [key: string]: string } | undefined>()
 
+    const [keyMap, setKeyMap] = useState<{ [key: string]: string } | undefined>()
     const { dispatchToast } = useToastController(GlobalToasterId)
 
     useEffect(() => {
@@ -33,7 +33,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
         fetch()
     }, [settingsChangeFlag?.data])
 
-    const Handlers = {
+    const handlers = {
         save: async () => {
             await SaveLibrary()
                 .then(() => dispatchToast(<SuccessToast body={t("toast.save.success")} />, { intent: "success" }))
@@ -63,9 +63,11 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
             }
         },
         globalSearch: () => {
-            overlay?.setter({
-                ty: "globalSearch",
-            })
+            if (!overlay?.data) {
+                overlay?.setter({
+                    ty: "globalSearch",
+                })
+            }
         }
     }
 
@@ -73,7 +75,7 @@ export default function ShortcutKeyProvider(props: HotKeysProps) {
         <HotKeys
             {...props}
             keyMap={keyMap}
-            handlers={Handlers}
+            handlers={handlers}
             allowChanges
         >
             {props.children}
