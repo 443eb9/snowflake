@@ -1,7 +1,7 @@
 import { Button, CompoundButton, Input, Radio, RadioGroup, Text, useToastController } from "@fluentui/react-components";
 import { t } from "../i18n";
 import { useContext, useEffect, useState } from "react";
-import { AssetType, GetAssetsContainingTag, GetTagVirtualPath, GlobalSearch, SearchQueryResult, SearchQueryTy } from "../backend";
+import { AssetType, GetAllUncategorizedAssets, GetAssetsContainingTag, GetTagsOnAsset, GetTagVirtualPath, GlobalSearch, SearchQueryResult, SearchQueryTy } from "../backend";
 import { GlobalToasterId } from "../main";
 import ErrToast from "../widgets/toasts/err-toast";
 import { Cube20Regular, Image20Regular, Tag20Regular, Triangle20Regular } from "@fluentui/react-icons";
@@ -12,7 +12,6 @@ export default function GlobalSearcher() {
     const [queryTy, setQueryTy] = useState<SearchQueryTy>("assetName")
     const [candidates, setCandidates] = useState<SearchQueryResult | undefined>()
     const [query, setQuery] = useState("")
-    const [focusedItem, setFocusedItem] = useState<number | undefined>()
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
@@ -75,15 +74,39 @@ export default function GlobalSearcher() {
                             minHeight: "64px",
                             justifyContent: "start",
                         }}
-                        onClick={() => {
-                            browsingFolder?.setter({
-                                id: undefined,
-                                name: "",
-                                content: [],
-                                subTy: "tag",
-                            })
-                            selectedItems?.setter([{ id: asset.id, ty: "asset" }])
-                            overlay?.setter(undefined)
+                        onClick={async () => {
+                            const tags = await GetTagsOnAsset({ asset: asset.id })
+                                .catch(err => dispatchToast(<ErrToast body={err} />))
+                            if (tags) {
+                                if (tags.length == 0) {
+                                    const assets = await GetAllUncategorizedAssets()
+                                        .catch(err => dispatchToast(<ErrToast body={err} />))
+
+                                    if (assets) {
+                                        browsingFolder?.setter({
+                                            id: undefined,
+                                            name: "",
+                                            content: assets.map(a => { return { id: a, ty: "asset" } }),
+                                            subTy: "uncategorized",
+                                        })
+                                    }
+                                } else if (tags.length == 1) {
+                                    const assets = await GetAssetsContainingTag({ tag: tags[0] })
+                                        .catch(err => dispatchToast(<ErrToast body={err} />))
+
+                                    if (assets) {
+                                        browsingFolder?.setter({
+                                            id: tags[0],
+                                            name: "",
+                                            content: assets.map(a => { return { id: a, ty: "asset" } }),
+                                            subTy: "tag",
+                                        })
+                                    }
+                                }
+
+                                selectedItems?.setter([{ id: asset.id, ty: "asset" }])
+                                overlay?.setter(undefined)
+                            }
                         }}
                     >
                         <FallbackableText
@@ -115,6 +138,7 @@ export default function GlobalSearcher() {
                                     content: assets.map(a => { return { id: a, ty: "asset" } }),
                                     subTy: "tag",
                                 })
+                                selectedItems?.setter([])
                                 overlay?.setter(undefined)
                             }
                         }}
@@ -158,12 +182,7 @@ export default function GlobalSearcher() {
                 <Input
                     autoFocus
                     appearance="underline"
-                    onChange={(_, data) => {
-                        if (focusedItem != undefined) {
-                            setFocusedItem(undefined)
-                        }
-                        setQuery(data.value)
-                    }}
+                    onChange={(_, data) => setQuery(data.value)}
                     style={{
                         width: "100%",
                         height: "60px",
@@ -173,8 +192,6 @@ export default function GlobalSearcher() {
                     onKeyDown={ev => {
                         if (ev.key == "Escape") {
                             overlay?.setter(undefined)
-                        } else if (ev.key == "ArrowDown") {
-                            setFocusedItem(0)
                         }
                     }}
                 />

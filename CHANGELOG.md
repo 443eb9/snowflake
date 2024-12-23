@@ -26,8 +26,9 @@
 - Resizable panels. Drag at borders to change panel size.
 - Global searcher, press `ctrl+p` to open it.
   - Search assets using their ids or names.
+    - If only one tag is attached to the asset, open that tag and expand tree to that tag.
   - Search tags using their ids or names.
-  - Jump to that asset/tag.
+    - Open that tag and expand tree to that tag.
 
 # What's Fixed
 
