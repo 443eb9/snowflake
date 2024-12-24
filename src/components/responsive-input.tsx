@@ -5,7 +5,6 @@ export default function ResponsiveInput({ onCancel, onConfirm, ...props }: Input
         <Input
             {...props}
             onKeyDown={ev => {
-                console.log(ev)
                 if (ev.key == "Enter") {
                     ev.currentTarget.blur()
                     onConfirm(ev.currentTarget)

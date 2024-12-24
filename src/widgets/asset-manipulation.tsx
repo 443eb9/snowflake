@@ -70,7 +70,6 @@ export default function AssetManipulation() {
 
     function handleRecover() {
         if (selectedItems?.data) {
-            console.log(selectedItems.data)
             fileManipulation?.setter({
                 id: selectedItems.data,
                 op: "recover",
