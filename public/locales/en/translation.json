@@ -25,6 +25,7 @@
     "ctxMenu.open": "Open",
     "ctxMenu.quickRef": "Quick Ref",
     "ctxMenu.recover": "Recover",
+    "ctxMenu.recoverInto": "Recover Into",
     "ctxMenu.refresh": "Refresh",
     "ctxMenu.remTag": "Remove Tag",
     "ctxMenu.rename": "Rename",

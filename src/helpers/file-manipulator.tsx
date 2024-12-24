@@ -200,9 +200,9 @@ export default function FileManipulator() {
         }
     }
 
-    async function handleItemsRecover(items: ItemId[]) {
+    async function handleItemsRecover(items: ItemId[], parentOverride: string) {
         if (selectedItems?.data && browsingFolder?.data) {
-            await RecoverItems({ items })
+            await RecoverItems({ items, parentOverride: parentOverride.length > 0 ? parentOverride : undefined })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             selectedItems.setter([])
@@ -240,7 +240,7 @@ export default function FileManipulator() {
         if (data?.submit == undefined) { return }
 
         if (data.id.length > 0 && data.op == "recover") {
-            handleItemsRecover(data.id)
+            handleItemsRecover(data.id, data.submit[0])
         }
 
         const assets = data.id.filter(id => id.ty == "asset").map(id => id.id)

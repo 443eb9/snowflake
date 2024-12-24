@@ -64,9 +64,9 @@ export default function CollectionTagContextMenu() {
 
     const handleDelete = () => {
         const data = contextMenuProp?.data
-        if (data) {
+        if (data && data.data.length == 1) {
             switch (data.ty) {
-                case "assets":
+                case "asset":
                     fileManipulation?.setter({
                         id: data.data.map(id => { return { id, ty: "asset" } }),
                         op: "deletion",
@@ -77,7 +77,7 @@ export default function CollectionTagContextMenu() {
                 case "collection":
                 case "tag":
                     fileManipulation?.setter({
-                        id: [data],
+                        id: [{ id: data.data[0], ty: data.ty }],
                         op: "deletion",
                         submit: [],
                     })
@@ -91,7 +91,7 @@ export default function CollectionTagContextMenu() {
 
         let id: ItemId | undefined = undefined;
         switch (contextMenuProp.data.ty) {
-            case "assets":
+            case "asset":
                 if (contextMenuProp.data.data.length == 1) {
                     id = {
                         id: contextMenuProp.data.data[0],
@@ -100,15 +100,12 @@ export default function CollectionTagContextMenu() {
                 }
                 break
             case "collection":
-                id = {
-                    id: contextMenuProp.data.id,
-                    ty: "collection",
-                }
-                break
             case "tag":
-                id = {
-                    id: contextMenuProp.data.id,
-                    ty: "tag",
+                if (contextMenuProp.data.data.length == 1) {
+                    id = {
+                        id: contextMenuProp.data.data[0],
+                        ty: contextMenuProp.data.ty,
+                    }
                 }
                 break
         }
@@ -122,9 +119,9 @@ export default function CollectionTagContextMenu() {
     }
 
     const handleTagCreation = () => {
-        if (contextMenuProp?.data && contextMenuProp.data.ty == "collection") {
+        if (contextMenuProp?.data && contextMenuProp.data.ty == "collection" && contextMenuProp.data.data.length == 1) {
             fileManipulation?.setter({
-                id: [contextMenuProp.data],
+                id: [{ id: contextMenuProp.data.data[0], ty: contextMenuProp.data.ty }],
                 op: "create",
                 submit: ["New Tag", "tag"],
             })
@@ -148,9 +145,9 @@ export default function CollectionTagContextMenu() {
     }
 
     const handleCollectionCreation = () => {
-        if (contextMenuProp?.data && contextMenuProp.data.ty == "collection") {
+        if (contextMenuProp?.data && contextMenuProp.data.ty == "collection" && contextMenuProp.data.data.length == 1) {
             fileManipulation?.setter({
-                id: [contextMenuProp.data],
+                id: [{ id: contextMenuProp.data.data[0], ty: contextMenuProp.data.ty }],
                 op: "create",
                 submit: ["New Collection", "collection"],
             })
@@ -158,9 +155,9 @@ export default function CollectionTagContextMenu() {
     }
 
     const handleTagRegroup = (group: string) => {
-        if (contextMenuProp?.data && contextMenuProp.data.ty == "tag") {
+        if (contextMenuProp?.data && contextMenuProp.data.ty == "tag" && contextMenuProp.data.data.length == 1) {
             fileManipulation?.setter({
-                id: [contextMenuProp.data],
+                id: [{ id: contextMenuProp.data.data[0], ty: contextMenuProp.data.ty }],
                 op: "regroup",
                 submit: [group],
             })
@@ -170,13 +167,13 @@ export default function CollectionTagContextMenu() {
 
     const handleMove = (dst: Collection) => {
         const ty = contextMenuProp?.data?.ty
-        if (!contextMenuProp?.data) { return }
+        if (!contextMenuProp?.data || contextMenuProp.data.data.length != 1) { return }
 
         switch (ty) {
             case "collection":
             case "tag":
                 fileManipulation?.setter({
-                    id: [contextMenuProp.data],
+                    id: [{ id: contextMenuProp.data.data[0], ty: contextMenuProp.data.ty }],
                     op: "move",
                     submit: [dst.id],
                 })
@@ -187,14 +184,14 @@ export default function CollectionTagContextMenu() {
 
     const handleQuickRef = async () => {
         const ty = contextMenuProp?.data?.ty
-        if (!contextMenuProp?.data) { return }
+        if (!contextMenuProp?.data || contextMenuProp.data.data.length != 1) { return }
 
         switch (ty) {
             case "tag":
-                await QuickRef({ ty: { tag: contextMenuProp.data.id } })
+                await QuickRef({ ty: { tag: contextMenuProp.data.data[0] } })
                     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 break
-            case "assets":
+            case "asset":
                 if (selectedItems?.data) {
                     await QuickRef({ ty: { asset: contextMenuProp.data.data } })
                         .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -213,7 +210,7 @@ export default function CollectionTagContextMenu() {
     }
 
     const ty = contextMenuProp?.data?.ty
-    const multipleSelected = contextMenuProp?.data?.ty == "assets" && contextMenuProp.data.data.length > 1
+    const multipleSelected = contextMenuProp?.data?.ty == "asset" && contextMenuProp.data.data.length > 1
 
     if (!allCollections || !ty || !contextMenuProp.data || !allTags) {
         return <></>
@@ -272,9 +269,9 @@ export default function CollectionTagContextMenu() {
                             <Button
                                 icon={<Checkmark20Regular />}
                                 onClick={() => {
-                                    if (contextMenuProp.data && contextMenuProp.data.ty == "collection" && color) {
+                                    if (contextMenuProp.data?.data.length == 1 && contextMenuProp.data.ty == "collection" && color) {
                                         fileManipulation?.setter({
-                                            id: [contextMenuProp.data],
+                                            id: [{ id: contextMenuProp.data.data[0], ty: "collection" }],
                                             op: "recolor",
                                             submit: [color.toHex()],
                                         })
@@ -285,9 +282,9 @@ export default function CollectionTagContextMenu() {
                             <Button
                                 icon={<Eraser20Regular />}
                                 onClick={() => {
-                                    if (contextMenuProp.data && contextMenuProp.data.ty == "collection") {
+                                    if (contextMenuProp.data?.data.length == 1 && contextMenuProp.data.ty == "collection") {
                                         fileManipulation?.setter({
-                                            id: [contextMenuProp.data],
+                                            id: [{ id: contextMenuProp.data.data[0], ty: "collection" }],
                                             op: "recolor",
                                             submit: [""],
                                         })
@@ -402,7 +399,7 @@ export default function CollectionTagContextMenu() {
                             <Text>{t("ctxMenu.moveTo")}</Text>
                         </Button>
                     }
-                    disabled={ty == "assets"}
+                    disabled={ty == "asset"}
                     className="w-full"
                 >
                     <FilterableSearch
@@ -454,7 +451,7 @@ export default function CollectionTagContextMenu() {
                             <Text>{t("ctxMenu.modifyTags")}</Text>
                         </Button>
                     }
-                    disabled={ty != "assets"}
+                    disabled={ty != "asset"}
                     className="w-full"
                 >
                     <FilterableSearch

@@ -29,6 +29,9 @@
     - If only one tag is attached to the asset, open that tag and expand tree to that tag.
   - Search tags using their ids or names.
     - Open that tag and expand tree to that tag.
+- New recycle bin
+  - Split assets, collections and tags into three tabs.
+  - Recover items into a new parent container.
 
 # What's Fixed
 

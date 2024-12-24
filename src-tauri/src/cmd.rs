@@ -577,9 +577,10 @@ pub async fn import_web_assets(
 #[tauri::command]
 pub fn recover_items(
     items: Vec<ItemId>,
+    parent_override: Option<CollectionId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Option<DuplicateAssets>, String> {
-    log::info!("Recovering items {:?}", items);
+    log::info!("Recovering items {:?} -> {:?}", items, parent_override);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         let mut assets = Vec::with_capacity(items.len());
@@ -595,9 +596,11 @@ pub fn recover_items(
 
         let duplication = storage.recover_assets(assets).map_err(|e| e.to_string())?;
         storage
-            .recover_collections(collections)
+            .recover_collections(collections, parent_override)
             .map_err(|e| e.to_string())?;
-        storage.recover_tags(tags).map_err(|e| e.to_string())?;
+        storage
+            .recover_tags(tags, parent_override)
+            .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {

@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useState } from "react"
-import { Collection, ItemId, Tag } from "../backend"
+import { ItemId } from "../backend"
 
 export type StateContext<T> = {
     data: T | undefined,
@@ -22,13 +22,15 @@ export type FileManipulation = {
 }
 
 export type ContextMenuProp = {
-    ty: "assets",
+    ty: "asset",
     data: string[],
 } | {
     ty: "collection",
-} & Collection | {
+    data: string[],
+} | {
     ty: "tag",
-} & Tag
+    data: string[],
+}
 
 export type Overlays = {
     ty: "assetDownload" | "settings" | "globalSearch" | undefined,

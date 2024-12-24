@@ -927,7 +927,11 @@ impl Storage {
         Ok(DuplicateAssets::default())
     }
 
-    pub fn recover_collections(&mut self, collections: Vec<CollectionId>) -> AppResult<()> {
+    pub fn recover_collections(
+        &mut self,
+        collections: Vec<CollectionId>,
+        parent: Option<CollectionId>,
+    ) -> AppResult<()> {
         for collection_id in collections {
             let collection = self
                 .collections
@@ -936,7 +940,7 @@ impl Storage {
             collection.is_deleted = false;
             self.recycle_bin.collections.remove(&collection.id);
 
-            if let Some(parent) = collection.parent {
+            if let Some(parent) = parent.or(collection.parent) {
                 let parent = self
                     .collections
                     .get_mut(&parent)
@@ -948,7 +952,11 @@ impl Storage {
         Ok(())
     }
 
-    pub fn recover_tags(&mut self, tags: Vec<TagId>) -> AppResult<()> {
+    pub fn recover_tags(
+        &mut self,
+        tags: Vec<TagId>,
+        parent: Option<CollectionId>,
+    ) -> AppResult<()> {
         for tag_id in tags {
             let tag = self
                 .tags
@@ -959,7 +967,7 @@ impl Storage {
 
             let parent = self
                 .collections
-                .get_mut(&tag.parent)
+                .get_mut(&parent.unwrap_or(tag.parent))
                 .ok_or_else(|| AppError::CollectionNotFound(tag.parent))?;
             parent.content.insert(tag_id);
         }

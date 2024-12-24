@@ -1,6 +1,6 @@
 import { useContext, useEffect, useRef, useState } from "react"
 import ItemPreview from "./asset-preview"
-import { GetItems, Item } from "../backend"
+import { GetItems, IdTy, Item } from "../backend"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
 import Selecto from "react-selecto";
 import { darkenContentStyleHook } from "../helpers/styling";
@@ -47,10 +47,22 @@ export default function ItemsGrid() {
         }
 
         if (selectoRef.current) {
-            contextMenuProp?.setter({
-                ty: "assets",
-                data: selectoRef.current.getSelectedTargets().map(node => decodeId(node.id).id),
-            })
+            let ty: IdTy | undefined;
+            switch (browsingFolder.data.subTy) {
+                case "recycleBinCollections": ty = "collection"; break
+                case "recycleBinTags": ty = "tag"; break
+                case "recycleBinAssets":
+                case "tag":
+                case "uncategorized":
+                case "all": ty = "asset"; break
+            }
+
+            if (ty) {
+                contextMenuProp?.setter({
+                    ty,
+                    data: selectoRef.current.getSelectedTargets().map(node => decodeId(node.id).id),
+                })
+            }
         }
 
         if (isAtRecycleBin(browsingFolder.data.subTy)) {

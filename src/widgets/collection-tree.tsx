@@ -236,7 +236,10 @@ export default function CollectionTree() {
                                     iconBefore={<ItemIcon item={nodeItem.data} />}
                                     onClick={() => updateBrowsingFolder(nodeItem.data)}
                                     onContextMenu={ev => {
-                                        contextMenuProp?.setter(nodeItem.data)
+                                        contextMenuProp?.setter({
+                                            ty: nodeItem.data.ty,
+                                            data: [nodeItem.data.id],
+                                        })
                                         showContextMenu({ event: ev, id: CollectionTagCtxMenuId })
                                     }}
                                 >
