@@ -64,9 +64,8 @@ export default function TagsContainer({
             .catch(err => dispatchToast(<ErrToast body={err} />)) as boolean | undefined
         if (hideConflict == undefined) { return }
 
-        const available = await (hideConflict ? GetTagsWithoutConflict({ tags: selected.map(t => t.id) }) : GetAllTags())
+        const available = await (hideConflict ? GetTagsWithoutConflict({ tags: selectedIds }) : GetAllTags())
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
-        console.log(available)
 
         if (available) {
             setAvailable(available)
@@ -84,6 +83,7 @@ export default function TagsContainer({
             }
         }
 
+        fetchAvailableTags()
         fetchTags()
     }, [selectedIds])
 

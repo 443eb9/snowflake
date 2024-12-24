@@ -32,6 +32,7 @@
 - New recycle bin
   - Split assets, collections and tags into three tabs.
   - Recover items into a new parent container.
+- `esc` to close overlay panel.
 
 # What's Fixed
 
