@@ -11,14 +11,15 @@ use futures::StreamExt;
 use hashbrown::{HashMap, HashSet};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId,
         Color, DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, ItemIds, LibraryMeta,
-        LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue,
-        SpecialCollections, Storage, StorageConstructionSettings, Tag, TagId, UserSettings, CACHE,
+        LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault, SpecialCollections,
+        Storage, StorageConstructionSettings, Tag, TagId, UserSettings, CACHE,
     },
     event::{DownloadEvent, DownloadStatus},
 };
@@ -54,7 +55,7 @@ pub enum WindowTransparency {
 pub fn set_window_transparency(
     window_label: Option<String>,
     new_transparency: Option<WindowTransparency>,
-    new_color: Option<(u8, u8, u8, u8)>,
+    new_color: Option<(f32, f32, f32, f32)>,
     app: AppHandle,
     data: State<'_, Mutex<AppData>>,
 ) -> Result<(), String> {
@@ -77,7 +78,7 @@ pub fn set_window_transparency(
         .ok_or_else(|| "Invalid user settings".to_string())?;
     let old_color = data
         .settings
-        .get_as::<(u8, u8, u8, u8)>("appearance", "transparencyColor")
+        .get_as::<(f32, f32, f32, f32)>("appearance", "transparencyColor")
         .ok_or_else(|| "Invalid user settings".to_string())?;
 
     if new_transparency.is_some() {
@@ -92,12 +93,18 @@ pub fn set_window_transparency(
     }
 
     let new_transparency = new_transparency.unwrap_or(old_transparency);
-    let new_color = Some(new_color.unwrap_or(old_color));
+    let new_color = new_color.unwrap_or(old_color);
+    let adapted_color = Some((
+        new_color.0 as u8,
+        new_color.1 as u8,
+        new_color.2 as u8,
+        (new_color.3 * 255.0) as u8,
+    ));
 
     match new_transparency {
         WindowTransparency::None => Ok(()),
-        WindowTransparency::Blur => window_vibrancy::apply_blur(&window, new_color),
-        WindowTransparency::Acrylic => window_vibrancy::apply_acrylic(&window, new_color),
+        WindowTransparency::Blur => window_vibrancy::apply_blur(&window, adapted_color),
+        WindowTransparency::Acrylic => window_vibrancy::apply_acrylic(&window, adapted_color),
         WindowTransparency::Mica => window_vibrancy::apply_mica(&window, Some(true)),
         WindowTransparency::Tabbed => window_vibrancy::apply_tabbed(&window, Some(true)),
         WindowTransparency::Vibrancy => window_vibrancy::apply_vibrancy(
@@ -131,11 +138,14 @@ pub fn get_user_setting(
     category: String,
     item: String,
     data: State<'_, Mutex<AppData>>,
-) -> Result<Option<SettingsValue>, String> {
+) -> Result<Value, String> {
     log::info!("Getting user setting. {} {}", category, item);
 
     let data = data.lock().map_err(|e| e.to_string())?;
-    Ok(data.settings.get(&category, &item).cloned())
+    data.settings
+        .get(&category, &item)
+        .cloned()
+        .ok_or_else(|| AppError::SettingNotFound(category, item).to_string())
 }
 
 #[tauri::command]
@@ -175,7 +185,7 @@ pub fn get_default_setting(
 pub fn set_user_setting(
     category: String,
     item: String,
-    value: SettingsValue,
+    value: Value,
     data: State<'_, Mutex<AppData>>,
     resource: State<'_, ResourceCache>,
     app: AppHandle,
@@ -198,32 +208,23 @@ pub fn set_user_setting(
         .or_insert_with(|| default.clone().default_value());
 
     match default {
-        SettingsDefault::Selection { candidates, .. } => match value {
-            SettingsValue::Name(new) => {
-                if candidates.contains(&new) {
-                    *original = SettingsValue::Name(new);
-                } else {
-                    return Err("Incompatible value".into());
-                }
+        SettingsDefault::Selection { candidates, .. } => {
+            let Value::String(new) = value else {
+                return Err(AppError::IncompatibleSettingValue.to_string());
+            };
+            if candidates.contains(&new) {
+                *original = Value::String(new);
+            } else {
+                return Err(AppError::IncompatibleSettingValue.to_string());
             }
-            _ => return Err("Incompatible value".into()),
-        },
-        SettingsDefault::Sequence(_) => match value {
-            SettingsValue::Sequence(new) => *original = SettingsValue::Sequence(new),
-            _ => return Err("Incompatible value".into()),
-        },
-        SettingsDefault::Integers(_) => match value {
-            SettingsValue::Integers(new) => *original = SettingsValue::Integers(new),
-            _ => return Err("Incompatible value".into()),
-        },
-        SettingsDefault::Toggle(_) => match value {
-            SettingsValue::Toggle(new) => *original = SettingsValue::Toggle(new),
-            _ => return Err("Incompatible value".into()),
-        },
-        SettingsDefault::Float(_) => match value {
-            SettingsValue::Float(val) => *original = SettingsValue::Float(val),
-            _ => return Err("Incompatible value".into()),
-        },
+        }
+        SettingsDefault::Value(default) => {
+            if std::mem::discriminant(default) == std::mem::discriminant(&original) {
+                *original = value;
+            } else {
+                return Err(AppError::IncompatibleSettingValue.to_string());
+            }
+        }
     }
 
     data.save(app.app_handle()).map_err(|e| e.to_string())?;

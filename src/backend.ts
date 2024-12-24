@@ -175,7 +175,7 @@ export function GetUserSettings(): Promise<UserSettings> {
     return invoke("get_user_settings")
 }
 
-export function GetUserSetting(params: { category: string, item: string }): Promise<SettingsValue | undefined> {
+export function GetUserSetting(params: { category: string, item: string }): Promise<SettingsValue> {
     return invoke("get_user_setting", params)
 }
 

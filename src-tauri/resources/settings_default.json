@@ -22,8 +22,8 @@
             ]
         },
         "hideConflictTagsWhenPickingNewTags": true,
-        "leftPanelWidth": 180,
-        "rightPanelWidth": 180
+        "leftPanelWidth": 180.0,
+        "rightPanelWidth": 180.0
     },
     "appearance": {
         "theme": {
@@ -44,14 +44,14 @@
             ]
         },
         "transparencyColor": [
-            20,
-            20,
-            20,
-            20
+            0.0,
+            0.0,
+            0.0,
+            0.0
         ]
     },
     "modelRendering": {
-        "fps": 60
+        "fps": 60.0
     },
     "keyMapping": {
         "save": [

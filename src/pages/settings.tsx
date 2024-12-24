@@ -215,7 +215,8 @@ function AppearanceTab(props: TabProps) {
                             onColorChange={(_, data) => {
                                 const color = new TinyColor(data.color)
                                 setTransparencyColor(color)
-                                const rgba = [color.r, color.g, color.b, color.a].map(x => Math.min(Math.round(x), 255)) as [number, number, number, number]
+                                const rgb = [color.r, color.g, color.b].map(x => Math.min(Math.round(x), 255))
+                                const rgba = [rgb[0], rgb[1], rgb[2], color.a] as [number, number, number, number]
                                 SetWindowTransparency({ newColor: rgba })
                                 props.update("transparencyColor", rgba)
                             }}

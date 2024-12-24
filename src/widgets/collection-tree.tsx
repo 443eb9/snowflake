@@ -259,7 +259,7 @@ export default function CollectionTree() {
 
     return (
         <div className="flex flex-col h-full">
-            <Text as="h3" size={200}>{t("browser.tagCollSectionTitle")}</Text>
+            <Text className="mb-2" as="h3" size={200}>{t("browser.tagCollSectionTitle")}</Text>
             <div className="flex flex-col">
                 <Button
                     appearance="subtle"

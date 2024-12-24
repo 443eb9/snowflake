@@ -13,6 +13,7 @@ use gltf::Gltf;
 use hashbrown::{hash_map::Entry, HashMap, HashSet};
 use rand::Rng;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use tauri::{AppHandle, Manager};
 use thiserror::Error;
 use uuid::Uuid;
@@ -48,6 +49,10 @@ pub enum AppError {
     TagNotFound(TagId),
     #[error("Illegal collection modification: {0:?}")]
     IllegalCollectionModification(CollectionId),
+    #[error("Setting not found. Category {0}, item {1}")]
+    SettingNotFound(String, String),
+    #[error("Incompatible setting value.")]
+    IncompatibleSettingValue,
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -59,66 +64,23 @@ pub enum SettingsDefault {
         default: String,
         candidates: Vec<String>,
     },
-    Sequence(Vec<String>),
-    Integers(Vec<i32>),
-    Toggle(bool),
-    Float(f32),
+    Value(Value),
 }
 
 impl SettingsDefault {
-    pub fn default_value(self) -> SettingsValue {
+    pub fn default_value(self) -> Value {
         match self {
-            SettingsDefault::Selection { default, .. } => SettingsValue::Name(default),
-            SettingsDefault::Sequence(vec) => SettingsValue::Sequence(vec),
-            SettingsDefault::Integers(vec) => SettingsValue::Integers(vec),
-            SettingsDefault::Toggle(enabled) => SettingsValue::Toggle(enabled),
-            SettingsDefault::Float(val) => SettingsValue::Float(val),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(untagged)]
-pub enum SettingsValue {
-    Name(String),
-    Toggle(bool),
-    Sequence(Vec<String>),
-    Integers(Vec<i32>),
-    Float(f32),
-}
-
-impl SettingsValue {
-    pub fn to_object<T: DeserializeOwned>(self) -> Option<T> {
-        match self {
-            SettingsValue::Name(name) => T::deserialize(&serde_json::Value::String(name)).ok(),
-            SettingsValue::Toggle(b) => T::deserialize(&serde_json::Value::Bool(b)).ok(),
-            SettingsValue::Sequence(vec) => T::deserialize(&serde_json::Value::Array(
-                vec.into_iter()
-                    .map(|x| serde_json::Value::String(x))
-                    .collect(),
-            ))
-            .ok(),
-            SettingsValue::Integers(vec) => T::deserialize(&serde_json::Value::Array(
-                vec.into_iter()
-                    .map(|x| {
-                        serde_json::Value::Number(serde_json::Number::from_i128(x as i128).unwrap())
-                    })
-                    .collect(),
-            ))
-            .ok(),
-            SettingsValue::Float(f) => T::deserialize(&serde_json::Value::Number(
-                serde_json::Number::from_f64(f as f64)?,
-            ))
-            .ok(),
+            SettingsDefault::Selection { default, .. } => Value::String(default),
+            SettingsDefault::Value(value) => value,
         }
     }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone)]
-pub struct UserSettings(HashMap<String, HashMap<String, SettingsValue>>);
+pub struct UserSettings(HashMap<String, HashMap<String, Value>>);
 
 impl Deref for UserSettings {
-    type Target = HashMap<String, HashMap<String, SettingsValue>>;
+    type Target = HashMap<String, HashMap<String, Value>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -147,13 +109,13 @@ impl UserSettings {
         }
     }
 
-    pub fn get(&self, category: &str, item: &str) -> Option<&SettingsValue> {
+    pub fn get(&self, category: &str, item: &str) -> Option<&Value> {
         self.0.get(category).and_then(|c| c.get(item))
     }
 
     pub fn get_as<T: DeserializeOwned>(&self, category: &str, item: &str) -> Option<T> {
         self.get(category, item)
-            .and_then(|value| value.clone().to_object())
+            .and_then(|value| T::deserialize(value).ok())
     }
 }
 

@@ -32,7 +32,13 @@ export default function WindowTransparencyManager() {
                         provider.style.backgroundColor = "transparent"
                 }
 
-                await SetWindowTransparency({ newTransparency: transparency as WindowTransparency, newColor: transparencyColor as [number, number, number, number] })
+                const newColor = transparencyColor as [number, number, number, number]
+                await SetWindowTransparency({
+                    newTransparency: transparency as WindowTransparency,
+                    newColor
+                })
+
+                document.querySelector("body")!.style.backgroundColor = `rgba(${newColor[0]}, ${newColor[1]}, ${newColor[2]}, ${newColor[3]})`
             }
         }
 
