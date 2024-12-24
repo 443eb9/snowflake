@@ -324,17 +324,17 @@ function KeyMappingTab(props: TabProps) {
                     return
                 }
 
-                if (ev.ctrlKey) {
-                    keys.push("ctrl")
-                }
                 if (ev.altKey) {
                     keys.push("alt")
                 }
                 if (ev.shiftKey) {
                     keys.push("shift")
                 }
+                if (ev.ctrlKey) {
+                    keys.push("ctrl")
+                }
 
-                setListenedKeyMap(keys)
+                setListenedKeyMap(keys.reverse())
             }
             document.addEventListener("keydown", recorder)
 
