@@ -193,12 +193,15 @@ export default function AssetManipulation() {
                     <RadioGroup
                         layout="horizontal"
                         defaultValue={browsingFolder.data.subTy}
-                        onChange={(_, data) => browsingFolder.setter({
-                            id: undefined,
-                            content: [],
-                            subTy: data.value as VirtualFolderSubTy,
-                            name: "",
-                        })}
+                        onChange={(_, data) => {
+                            selectedItems?.setter([])
+                            browsingFolder.setter({
+                                id: undefined,
+                                content: [],
+                                subTy: data.value as VirtualFolderSubTy,
+                                name: "",
+                            })
+                        }}
                     >
                         <Radio value={"recycleBinAssets"} label={t("recycleBin.assets")} />
                         <Radio value={"recycleBinCollections"} label={t("recycleBin.collections")} />
