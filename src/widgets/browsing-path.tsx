@@ -19,7 +19,9 @@ export function BrowsingPath() {
             }
 
             switch (browsingFolder.data.subTy) {
-                case "recycleBin":
+                case "recycleBinAssets":
+                case "recycleBinCollections":
+                case "recycleBinTags":
                     setVirtualPath([browsingFolder.data.name])
                     break
                 case "tag":

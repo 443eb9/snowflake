@@ -31,7 +31,6 @@ export default function CollectionTagContextMenu() {
     const [allTags, setAllTags] = useState<Tag[] | undefined>()
     const [color, setColor] = useState<TinyColor>(new TinyColor("ffffff"))
     const [tagModification, setTagModification] = useState<"add" | "remove">("add")
-    const [deletionConfirm, setDeletionConfirm] = useState(false)
 
     const { dispatchToast } = useToastController(GlobalToasterId)
     const { hideAll } = useContextMenu({ id: CollectionTagCtxMenuId })
@@ -77,16 +76,11 @@ export default function CollectionTagContextMenu() {
                     break
                 case "collection":
                 case "tag":
-                    if (deletionConfirm) {
-                        fileManipulation?.setter({
-                            id: [data],
-                            op: "deletion",
-                            submit: [],
-                        })
-                        hideAll()
-                    } else {
-                        setDeletionConfirm(true)
-                    }
+                    fileManipulation?.setter({
+                        id: [data],
+                        op: "deletion",
+                        submit: [],
+                    })
                     break
             }
         }
@@ -229,11 +223,6 @@ export default function CollectionTagContextMenu() {
         <Menu
             id={CollectionTagCtxMenuId}
             theme="dark"
-            onVisibilityChange={vis => {
-                if (vis) {
-                    setDeletionConfirm(false)
-                }
-            }}
         >
             <Item onClick={handleRefresh}>
                 <Button
@@ -538,13 +527,13 @@ export default function CollectionTagContextMenu() {
                     <Text>{t("ctxMenu.open")}</Text>
                 </Button>
             </Item>
-            <Item onClick={handleDelete} closeOnClick={false}>
+            <Item onClick={handleDelete}>
                 <Button
                     className={buttonStyle.root}
                     icon={<Delete20Regular />}
                     appearance="subtle"
                 >
-                    <Text>{t(deletionConfirm ? "ctxMenu.delPerm.confirm" : "ctxMenu.del")}</Text>
+                    <Text>{t("ctxMenu.del")}</Text>
                 </Button>
             </Item>
         </Menu>

@@ -1,7 +1,7 @@
-import { Button, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Text } from "@fluentui/react-components"
+import { Button, makeStyles, Menu, MenuButton, MenuPopover, MenuTrigger, Radio, RadioGroup, Text } from "@fluentui/react-components"
 import { Add20Regular, ArrowCounterclockwise20Regular, ArrowDownload20Regular, Checkmark20Regular, Delete20Regular, Edit20Regular, FolderOpen20Regular } from "@fluentui/react-icons"
 import { useContext, useState } from "react"
-import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedItemsContext } from "../helpers/context-provider"
+import { browsingFolderContext, fileManipulationContext, overlaysContext, selectedItemsContext, VirtualFolderSubTy } from "../helpers/context-provider"
 import { open } from "@tauri-apps/plugin-dialog"
 import { t } from "../i18n"
 import ResponsiveInput from "../components/responsive-input"
@@ -101,7 +101,7 @@ export default function AssetManipulation() {
         return <></>
     }
 
-    function getButtons() {
+    function getLeftButtons() {
         switch (browsingFolder?.data?.subTy) {
             case "all":
             case "uncategorized":
@@ -135,10 +135,17 @@ export default function AssetManipulation() {
                         </Menu>
                     </>
                 )
-            case "recycleBin":
+            case "recycleBinAssets":
+            case "recycleBinCollections":
+            case "recycleBinTags":
                 return (
                     <>
-                        <Button icon={<ArrowCounterclockwise20Regular />} disabled={selectedCount == 0} onClick={handleRecover} />
+                        <Button
+                            icon={<ArrowCounterclockwise20Regular />}
+                            disabled={selectedCount == 0}
+                            onClick={handleRecover}
+                            appearance="outline"
+                        />
                         <Menu open={confirmPopoverOpen} onOpenChange={(_, d) => setConfirmPopoverOpen(d.open)}>
                             <MenuTrigger>
                                 <MenuButton
@@ -166,20 +173,47 @@ export default function AssetManipulation() {
         }
     }
 
-    return (
-        <div className="flex gap-1 justify-between">
-            <div className="flex gap-1">
-                {getButtons()}
-            </div>
-            <div className="flex gap-1">
-                {
-                    browsingFolder?.data?.subTy != "recycleBin" &&
+    function getRightButtons() {
+        switch (browsingFolder?.data?.subTy) {
+            case "all":
+            case "uncategorized":
+            case "tag":
+                return (
                     <>
                         <Button icon={<Add20Regular />} onClick={() => handleImport(false)} appearance="outline" />
                         <Button icon={<FolderOpen20Regular />} onClick={() => handleImport(true)} appearance="outline" />
                         <Button icon={<ArrowDownload20Regular />} onClick={() => overlays?.setter({ ty: "assetDownload" })} appearance="outline" />
                     </>
-                }
+                )
+            case "recycleBinAssets":
+            case "recycleBinCollections":
+            case "recycleBinTags":
+                return (
+                    <RadioGroup
+                        layout="horizontal"
+                        defaultValue={browsingFolder.data.subTy}
+                        onChange={(_, data) => browsingFolder.setter({
+                            id: undefined,
+                            content: [],
+                            subTy: data.value as VirtualFolderSubTy,
+                            name: "",
+                        })}
+                    >
+                        <Radio value={"recycleBinAssets"} label={t("recycleBin.assets")} />
+                        <Radio value={"recycleBinCollections"} label={t("recycleBin.collections")} />
+                        <Radio value={"recycleBinTags"} label={t("recycleBin.tags")} />
+                    </RadioGroup>
+                )
+        }
+    }
+
+    return (
+        <div className="flex gap-1 justify-between">
+            <div className="flex gap-1">
+                {getLeftButtons()}
+            </div>
+            <div className="flex gap-1">
+                {getRightButtons()}
             </div>
         </div>
     )

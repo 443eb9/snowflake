@@ -59,13 +59,14 @@ export default function TagsContainer({
         }
     }
 
-    async function fetchAllTags() {
+    async function fetchAvailableTags() {
         const hideConflict = await GetUserSetting({ category: "general", item: "hideConflictTagsWhenPickingNewTags" })
             .catch(err => dispatchToast(<ErrToast body={err} />)) as boolean | undefined
         if (hideConflict == undefined) { return }
 
         const available = await (hideConflict ? GetTagsWithoutConflict({ tags: selected.map(t => t.id) }) : GetAllTags())
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
+        console.log(available)
 
         if (available) {
             setAvailable(available)
@@ -109,7 +110,7 @@ export default function TagsContainer({
         }
 
         fetchAllCollections()
-        fetchAllTags()
+        fetchAvailableTags()
     }, [])
 
     if (!available || !allCollections) {
@@ -147,7 +148,7 @@ export default function TagsContainer({
                 !readonly &&
                 <Popover>
                     <PopoverTrigger>
-                        <Button onClick={() => fetchAllTags()}>{t("tagsContainer.add")}</Button>
+                        <Button onClick={() => fetchAvailableTags()}>{t("tagsContainer.add")}</Button>
                     </PopoverTrigger>
 
                     <PopoverSurface className={mergeClasses("flex gap-4 max-h-96 h-96", popoverStyle.root)}>
@@ -199,6 +200,7 @@ export default function TagsContainer({
                                             appearance="subtle"
                                             icon={<Tag20Regular />}
                                             style={{ justifyContent: "start" }}
+                                            onClick={() => update(tag.id, false)}
                                         >
                                             <FallbackableText
                                                 style={{

@@ -7,7 +7,6 @@ use crate::app::{AppData, ResourceCache, Storage};
 
 mod app;
 mod cmd;
-mod err;
 mod event;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -80,7 +79,7 @@ pub fn run() {
             cmd::import_assets,
             cmd::import_memory_asset,
             cmd::import_web_assets,
-            cmd::recover_assets,
+            cmd::recover_items,
             cmd::get_recycle_bin,
             cmd::get_duplicated_assets,
             cmd::get_asset_abs_path,
@@ -93,7 +92,9 @@ pub fn run() {
             cmd::modify_tag,
             cmd::get_asset,
             cmd::get_tags_on_asset,
-            cmd::get_removed_asset,
+            cmd::get_removed_assets,
+            cmd::get_removed_collections,
+            cmd::get_removed_tags,
             cmd::get_assets,
             cmd::get_items,
             cmd::get_tags,

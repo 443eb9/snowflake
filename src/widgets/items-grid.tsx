@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState } from "react"
-import AssetPreview from "./asset-preview"
+import ItemPreview from "./asset-preview"
 import { GetItems, Item } from "../backend"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
 import Selecto from "react-selecto";
@@ -9,14 +9,14 @@ import { TriggerEvent, useContextMenu } from "react-contexify";
 import ErrToast from "./toasts/err-toast";
 import { GlobalToasterId } from "../main";
 import { RecycleBinCtxMenuId } from "./context-menus/recycle-bin-context-menu";
-import { decodeId, decodeItem } from "../util";
+import { decodeId, isAtRecycleBin } from "../util";
 import { CollectionTagCtxMenuId } from "./context-menus/collection-tag-context-menu";
 
 export const SelectableClassTag = "selectable-asset"
 export const SelectedClassTag = "selected-asset"
 
 export default function ItemsGrid() {
-    const [objects, setObjects] = useState<Item[] | undefined>()
+    const [items, setObjects] = useState<Item[] | undefined>()
     const selectoRef = useRef<Selecto & HTMLElement>(null)
     const gridRef = useRef<HTMLDivElement>(null)
     const boundRef = useRef<HTMLDivElement>(null)
@@ -53,7 +53,7 @@ export default function ItemsGrid() {
             })
         }
 
-        if (browsingFolder.data.subTy == "recycleBin") {
+        if (isAtRecycleBin(browsingFolder.data.subTy)) {
             showCtxMenu({ event: ev, id: RecycleBinCtxMenuId })
         } else {
             showCtxMenu({ event: ev, id: CollectionTagCtxMenuId })
@@ -67,7 +67,8 @@ export default function ItemsGrid() {
                 return
             }
 
-            const objects = await GetItems({ items: browsingFolder.data.content, excludeRemoved: browsingFolder.data.subTy != "recycleBin" })
+            console.log(browsingFolder.data)
+            const objects = await GetItems({ items: browsingFolder.data.content, filter: "all" })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (objects) {
@@ -112,22 +113,16 @@ export default function ItemsGrid() {
                 />
             }
             {
-                objects &&
+                items &&
                 <div className="flex w-full flex-wrap gap-2 overflow-x-hidden" ref={gridRef}>
                     {
-                        objects.map((object, index) => {
-                            const item = decodeItem(object)
-                            switch (item.ty) {
-                                case "asset":
-                                    return (
-                                        <AssetPreview
-                                            key={index}
-                                            asset={item.data}
-                                            onContextMenu={handleContextMenu}
-                                        />
-                                    )
-                            }
-                        })
+                        items.map((item, index) =>
+                            <ItemPreview
+                                key={index}
+                                item={item}
+                                onContextMenu={handleContextMenu}
+                            />
+                        )
                     }
                 </div>
             }

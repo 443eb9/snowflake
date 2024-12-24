@@ -26,6 +26,8 @@ pub const SETTINGS: &str = "resources/settings_default.json";
 
 #[derive(Debug, Error)]
 pub enum AppError {
+    #[error("Storage not initialized.")]
+    StorageNotInitialized,
     #[error("Invalid library.")]
     InvalidLibrary,
     #[error("Io error: {0}")]
@@ -422,12 +424,32 @@ impl ItemId {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+#[serde(tag = "ty", content = "ids")]
+pub enum ItemIds {
+    Asset(Vec<AssetId>),
+    Collection(Vec<CollectionId>),
+    Tag(Vec<TagId>),
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
+#[serde(tag = "ty", content = "data")]
 pub enum Item {
     Asset(Asset),
     Collection(Collection),
     Tag(Tag),
+}
+
+impl Item {
+    pub fn is_deleted(&self) -> bool {
+        match self {
+            Item::Asset(asset) => asset.is_deleted,
+            Item::Collection(collection) => collection.is_deleted,
+            Item::Tag(tag) => tag.is_deleted,
+        }
+    }
 }
 
 #[derive(Serialize, Default)]
@@ -556,6 +578,8 @@ impl LibraryMeta {
 #[serde(rename_all = "camelCase")]
 pub struct RecycleBin {
     pub assets: HashSet<AssetId>,
+    pub collections: HashSet<CollectionId>,
+    pub tags: HashSet<TagId>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
@@ -804,6 +828,38 @@ impl Storage {
         }
     }
 
+    pub fn move_collection_to_recycle_bin(&mut self, id: CollectionId) -> AppResult<()> {
+        if let Some(parent) = self.collections.get(&id).map(|c| c.parent) {
+            if let Some(parent) = parent.and_then(|p| self.collections.get_mut(&p)) {
+                parent.children.remove(&id);
+            }
+
+            self.collections.get_mut(&id).unwrap().is_deleted = true;
+            self.recycle_bin.collections.insert(id);
+
+            Ok(())
+        } else {
+            Err(AppError::CollectionNotFound(id))
+        }
+    }
+
+    pub fn move_tag_to_recycle_bin(&mut self, id: TagId) -> AppResult<()> {
+        if let Some(tag) = self.tags.get_mut(&id) {
+            if let Some(parent) = self.collections.get_mut(&tag.parent) {
+                parent.content.remove(&tag.id);
+            } else {
+                return Err(AppError::CollectionNotFound(tag.parent));
+            }
+
+            tag.is_deleted = true;
+            self.recycle_bin.tags.insert(id);
+
+            Ok(())
+        } else {
+            Err(AppError::TagNotFound(id))
+        }
+    }
+
     pub fn delete_asset(&mut self, id: AssetId) -> AppResult<()> {
         if let Some(asset) = self.assets.remove(&id) {
             self.cache.remove_asset(asset.id);
@@ -819,6 +875,10 @@ impl Storage {
         let Some(tag) = self.tags.remove(&id) else {
             return Err(AppError::TagNotFound(id));
         };
+
+        for asset in self.assets.values_mut() {
+            asset.tags.remove(&tag);
+        }
 
         if let Some(parent) = self.collections.get_mut(&tag.parent) {
             parent.content.remove(&id);
@@ -852,10 +912,11 @@ impl Storage {
     }
 
     pub fn recover_assets(&mut self, assets: Vec<AssetId>) -> AppResult<DuplicateAssets> {
-        for asset in assets {
-            let Some(asset) = self.assets.get_mut(&asset) else {
-                continue;
-            };
+        for asset_id in assets {
+            let asset = self
+                .assets
+                .get_mut(&asset_id)
+                .ok_or_else(|| AppError::AssetNotFound(asset_id))?;
             asset.is_deleted = false;
             self.cache
                 .add_asset(asset.compute_crc(&self.cache.root)?, asset.id);
@@ -864,6 +925,46 @@ impl Storage {
         }
 
         Ok(DuplicateAssets::default())
+    }
+
+    pub fn recover_collections(&mut self, collections: Vec<CollectionId>) -> AppResult<()> {
+        for collection_id in collections {
+            let collection = self
+                .collections
+                .get_mut(&collection_id)
+                .ok_or_else(|| AppError::CollectionNotFound(collection_id))?;
+            collection.is_deleted = false;
+            self.recycle_bin.collections.remove(&collection.id);
+
+            if let Some(parent) = collection.parent {
+                let parent = self
+                    .collections
+                    .get_mut(&parent)
+                    .ok_or_else(|| AppError::CollectionNotFound(parent))?;
+                parent.children.insert(collection_id);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn recover_tags(&mut self, tags: Vec<TagId>) -> AppResult<()> {
+        for tag_id in tags {
+            let tag = self
+                .tags
+                .get_mut(&tag_id)
+                .ok_or_else(|| AppError::TagNotFound(tag_id))?;
+            tag.is_deleted = false;
+            self.recycle_bin.tags.remove(&tag.id);
+
+            let parent = self
+                .collections
+                .get_mut(&tag.parent)
+                .ok_or_else(|| AppError::CollectionNotFound(tag.parent))?;
+            parent.content.insert(tag_id);
+        }
+
+        Ok(())
     }
 
     pub fn create_tag(&mut self, name: String, parent: CollectionId) -> AppResult<()> {
@@ -1128,6 +1229,7 @@ impl Collection {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Tag {
+    pub is_deleted: bool,
     pub parent: CollectionId,
     pub group: Option<CollectionId>,
     pub id: TagId,
@@ -1139,6 +1241,7 @@ pub struct Tag {
 impl Tag {
     pub fn new(name: String, parent: CollectionId) -> Self {
         Self {
+            is_deleted: false,
             parent,
             group: None,
             color: None,

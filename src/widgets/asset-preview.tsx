@@ -1,10 +1,10 @@
 import { Button, makeStyles, Text, useToastController } from "@fluentui/react-components";
-import { Asset, GetUserSetting, OpenWithDefaultApp, QuickRef } from "../backend";
+import { GetUserSetting, Item, OpenWithDefaultApp, QuickRef } from "../backend";
 import { HTMLAttributes, useContext, useEffect, useState } from "react";
 import { fileManipulationContext, settingsChangeFlagContext } from "../helpers/context-provider";
 import { SelectableClassTag } from "./items-grid";
 import { encodeId } from "../util";
-import AssetImage from "./asset-image";
+import ItemImage from "./asset-image";
 import { GlobalToasterId } from "../main";
 import ErrToast from "./toasts/err-toast";
 import ResponsiveInput from "../components/responsive-input";
@@ -18,7 +18,7 @@ const inputStyleHook = makeStyles({
 
 type DbClick = "open" | "ref"
 
-export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTMLAttributes<HTMLButtonElement>) {
+export default function ItemPreview({ item, ...props }: { item: Item } & HTMLAttributes<HTMLButtonElement>) {
     const [dbClick, setDbClick] = useState<DbClick | undefined>()
     const inputStyle = inputStyleHook()
     const { dispatchToast } = useToastController(GlobalToasterId)
@@ -26,7 +26,7 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
     const fileManipulation = useContext(fileManipulationContext)
     const settingsChange = useContext(settingsChangeFlagContext)
 
-    const onRename = fileManipulation?.data?.op == "rename" && fileManipulation.data.id[0].id == asset.id
+    const onRename = fileManipulation?.data?.op == "rename" && fileManipulation.data.id[0].id == item.data.id
 
     useEffect(() => {
         async function fetch() {
@@ -42,18 +42,18 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
     return (
         <Button
             {...props}
-            id={encodeId(asset.id, "asset")}
+            id={encodeId(item.data.id, item.ty)}
             className={`flex flex-col gap-2 ${SelectableClassTag}`}
             appearance="subtle"
             onClick={async ev => {
-                if (ev.detail == 2) {
+                if (ev.detail == 2 && item.ty == "asset") {
                     switch (dbClick) {
                         case "open":
-                            await OpenWithDefaultApp({ asset: asset.id })
+                            await OpenWithDefaultApp({ asset: item.data.id })
                                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                             break
                         case "ref":
-                            await QuickRef({ ty: { asset: [asset.id] } })
+                            await QuickRef({ ty: { asset: [item.data.id] } })
                                 .catch(err => dispatchToast(<ErrToast body={err} />))
                             break
                     }
@@ -61,12 +61,12 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
             }}
         >
             <div className="flex h-full items-center">
-                <AssetImage className="max-w-48 max-h-48" asset={asset} />
+                <ItemImage className="max-w-48 max-h-48" item={item} />
             </div>
             {
                 onRename
                     ? <ResponsiveInput
-                        defaultValue={asset.name}
+                        defaultValue={item.data.name}
                         className={inputStyle.root}
                         appearance="underline"
                         autoFocus
@@ -78,9 +78,9 @@ export default function AssetPreview({ asset, ...props }: { asset: Asset } & HTM
                                 })
                             }
                         }}
-                        onCancel={target => target.value = asset.name}
+                        onCancel={target => target.value = item.data.name}
                     />
-                    : <Text align="center" as="p">{asset.name}</Text>
+                    : <Text align="center" as="p">{item.data.name}</Text>
             }
         </Button>
     )

@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from "react"
 import { useToastController } from "@fluentui/react-components"
 import TagsContainer from "../widgets/tags-container"
-import { Asset, GetAsset, GetAssetAbsPath, GetRemovedAsset, GetTagsOnAsset, ModifySrcOf } from "../backend"
+import { Asset, GetAssetAbsPath, GetAssets, GetRemovedAssets, GetTagsOnAsset, ModifySrcOf } from "../backend"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
-import { formatFileSize } from "../util"
+import { formatFileSize, isAtRecycleBin } from "../util"
 import { t } from "../i18n"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
-import AssetImage from "./asset-image"
+import ItemImage from "./asset-image"
 import ResponsiveInput from "../components/responsive-input"
 import FallbackableText from "../components/fallbackable-text"
 import KeyValueList from "../components/key-value-list"
@@ -24,7 +24,7 @@ export default function DetailInfo() {
     const browsingFolder = useContext(browsingFolderContext)
     const fileManipulation = useContext(fileManipulationContext)
 
-    const atRecycleBin = browsingFolder?.data?.subTy == "recycleBin"
+    const atRecycleBin = browsingFolder?.data?.subTy == "recycleBinAssets"
 
     const { dispatchToast } = useToastController(GlobalToasterId)
 
@@ -37,10 +37,11 @@ export default function DetailInfo() {
         }
 
         const selected = selectedItems.data[0]
-        if (!browsingFolder?.data) { return }
+        if (!browsingFolder?.data || selected.ty != "asset") { return }
 
         const ty = browsingFolder.data.subTy
-        const asset = await (ty == "recycleBin" ? GetRemovedAsset({ asset: selected.id }) : GetAsset({ asset: selected.id }))
+        const asset = await (isAtRecycleBin(ty) ? GetRemovedAssets({ assets: [selected.id] }) : GetAssets({ assets: [selected.id] }))
+            .then(assets => assets.length == 1 ? assets[0] : undefined)
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         const absPath = await GetAssetAbsPath({ asset: selected.id })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
@@ -69,7 +70,7 @@ export default function DetailInfo() {
     } else if (asset && assetAbsPath) {
         return (
             <div className="flex flex-col gap-8">
-                <AssetImage className="w-full" asset={asset} />
+                <ItemImage className="w-full" item={{ ty: "asset", data: asset }} />
                 <KeyValueList
                     items={[
                         {
@@ -142,6 +143,13 @@ export default function DetailInfo() {
                     )}
                 />
             </div>
+        )
+    } else {
+        return (
+            <FallbackableText
+                size={600}
+                fallback={t("detail.notAvailable")}
+            />
         )
     }
 }

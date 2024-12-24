@@ -16,11 +16,10 @@ use tauri::{ipc::Channel, AppHandle, Manager, State, WebviewUrl, WebviewWindowBu
 use crate::{
     app::{
         AppData, AppError, Asset, AssetId, AssetProperty, AssetType, Collection, CollectionId,
-        Color, DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, LibraryMeta,
+        Color, DuplicateAssets, GltfPreviewCamera, IdType, Item, ItemId, ItemIds, LibraryMeta,
         LibraryStatistics, RawAsset, RecentLib, ResourceCache, SettingsDefault, SettingsValue,
         SpecialCollections, Storage, StorageConstructionSettings, Tag, TagId, UserSettings, CACHE,
     },
-    err::{asset_doesnt_exist, storage_not_initialized},
     event::{DownloadEvent, DownloadStatus},
 };
 
@@ -146,7 +145,7 @@ pub fn get_library_meta(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Li
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage.lib_meta.clone())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -375,7 +374,7 @@ pub fn export_library(
 
         Ok(())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -388,7 +387,7 @@ pub fn gen_statistics(
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
         Ok(storage.gen_statistics())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -407,7 +406,7 @@ pub fn import_assets(
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -432,7 +431,7 @@ pub fn change_library_name(
         storage.lib_meta.name = name;
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -460,7 +459,7 @@ pub fn import_memory_asset(
 
         Ok(duplication.reduce())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -571,43 +570,65 @@ pub async fn import_web_assets(
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
 #[tauri::command]
-pub fn recover_assets(
-    assets: Vec<AssetId>,
+pub fn recover_items(
+    items: Vec<ItemId>,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Option<DuplicateAssets>, String> {
-    log::info!("Recovering items {:?}", assets);
+    log::info!("Recovering items {:?}", items);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
+        let mut assets = Vec::with_capacity(items.len());
+        let mut collections = Vec::with_capacity(items.len());
+        let mut tags = Vec::with_capacity(items.len());
+        for item in items {
+            match item.ty {
+                IdType::Asset => assets.push(item.asset()),
+                IdType::Collection => collections.push(item.collection()),
+                IdType::Tag => tags.push(item.tag()),
+            }
+        }
+
         let duplication = storage.recover_assets(assets).map_err(|e| e.to_string())?;
+        storage
+            .recover_collections(collections)
+            .map_err(|e| e.to_string())?;
+        storage.recover_tags(tags).map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())?;
         Ok(duplication.reduce())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
 #[tauri::command]
-pub fn get_recycle_bin(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<ItemId>, String> {
-    log::info!("Getting recycle bin.");
+pub fn get_recycle_bin(
+    ty: IdType,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<ItemIds, String> {
+    log::info!("Getting recycle bin {:?}.", ty);
 
-    if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        Ok(storage
-            .recycle_bin
-            .assets
-            .clone()
-            .into_iter()
-            .map(|asset| ItemId {
-                id: asset.0,
-                ty: IdType::Asset,
-            })
-            .collect())
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(match ty {
+            IdType::Asset => {
+                ItemIds::Asset(storage.recycle_bin.assets.clone().into_iter().collect())
+            }
+            IdType::Collection => ItemIds::Collection(
+                storage
+                    .recycle_bin
+                    .collections
+                    .clone()
+                    .into_iter()
+                    .collect(),
+            ),
+            IdType::Tag => ItemIds::Tag(storage.recycle_bin.tags.clone().into_iter().collect()),
+        })
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -628,7 +649,7 @@ pub fn get_duplicated_assets(
                 .collect(),
         ))
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -642,7 +663,7 @@ pub fn get_asset_abs_path(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         storage.get_asset_abs_path(asset).map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -656,7 +677,7 @@ pub fn get_tag_virtual_path(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         storage.get_tag_virtual_path(tag).map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -684,7 +705,7 @@ pub fn get_collection_tree(
                 .collect())
         }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -697,7 +718,7 @@ pub fn get_special_collections(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(storage.sp_collections)
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -706,9 +727,14 @@ pub fn get_all_tags(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<Ta
     log::info!("Getting all tags");
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage.tags.values().cloned().collect())
+        Ok(storage
+            .tags
+            .values()
+            .filter(|t| !t.is_deleted)
+            .cloned()
+            .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -724,7 +750,7 @@ pub fn get_all_assets(storage: State<'_, Mutex<Option<Storage>>>) -> Result<Vec<
             .map(|a| a.id)
             .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -742,7 +768,7 @@ pub fn get_all_uncategorized_assets(
             .map(|a| a.id)
             .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -754,7 +780,7 @@ pub fn modify_tag(new_tag: Tag, storage: State<'_, Mutex<Option<Storage>>>) -> R
         storage.tags.insert(new_tag.id, new_tag);
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -770,29 +796,10 @@ pub fn get_asset(
             .assets
             .get(&asset)
             .filter(|a| !a.is_deleted)
-            .ok_or_else(|| asset_doesnt_exist(asset))
+            .ok_or_else(|| AppError::AssetNotFound(asset).to_string())
             .cloned()
     } else {
-        Err(storage_not_initialized())
-    }
-}
-
-#[tauri::command]
-pub fn get_removed_asset(
-    asset: AssetId,
-    storage: State<'_, Mutex<Option<Storage>>>,
-) -> Result<Asset, String> {
-    log::info!("Getting removed asset {:?}", asset);
-
-    if let Ok(Some(storage)) = storage.lock().as_deref() {
-        storage
-            .assets
-            .get(&asset)
-            .filter(|a| a.is_deleted)
-            .ok_or_else(|| asset_doesnt_exist(asset))
-            .cloned()
-    } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -810,7 +817,64 @@ pub fn get_assets(
             .cloned()
             .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
+    }
+}
+
+#[tauri::command]
+pub fn get_removed_assets(
+    assets: Vec<AssetId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Asset>, String> {
+    log::info!("Getting removed assets {:?}", assets);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(assets
+            .into_iter()
+            .filter_map(|asset| storage.assets.get(&asset))
+            .filter(|asset| asset.is_deleted)
+            .cloned()
+            .collect())
+    } else {
+        Err(AppError::StorageNotInitialized.to_string())
+    }
+}
+
+#[tauri::command]
+pub fn get_removed_collections(
+    collections: Vec<CollectionId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Collection>, String> {
+    log::info!("Getting removed collections {:?}", collections);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(collections
+            .into_iter()
+            .filter_map(|collection| storage.collections.get(&collection))
+            .filter(|collection| collection.is_deleted)
+            .cloned()
+            .collect())
+    } else {
+        Err(AppError::StorageNotInitialized.to_string())
+    }
+}
+
+#[tauri::command]
+pub fn get_removed_tags(
+    tags: Vec<TagId>,
+    storage: State<'_, Mutex<Option<Storage>>>,
+) -> Result<Vec<Tag>, String> {
+    log::info!("Getting removed tags {:?}", tags);
+
+    if let Ok(Some(storage)) = storage.lock().as_deref() {
+        Ok(tags
+            .into_iter()
+            .filter_map(|tag| storage.tags.get(&tag))
+            .filter(|tag| tag.is_deleted)
+            .cloned()
+            .collect())
+    } else {
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -828,39 +892,48 @@ pub fn get_tags_on_asset(
             Err(AppError::AssetNotFound(asset).to_string())
         }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FilterStrategy {
+    All,
+    UnremovedOnly,
+    RemovedOnly,
 }
 
 #[tauri::command]
 pub fn get_items(
     items: Vec<ItemId>,
-    exclude_removed: bool,
+    filter: FilterStrategy,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<Vec<Item>, String> {
     log::info!("Getting items {:?}", items);
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(items
-            .into_iter()
-            .filter_map(|id| match id.ty {
-                IdType::Asset => storage
-                    .assets
-                    .get(&id.asset())
-                    .filter(|a| !a.is_deleted || !exclude_removed)
-                    .cloned()
-                    .map(|a| Item::Asset(a)),
-                IdType::Collection => storage
-                    .collections
-                    .get(&id.collection())
-                    .filter(|c| !c.is_deleted || !exclude_removed)
-                    .cloned()
-                    .map(|c| Item::Collection(c)),
-                IdType::Tag => storage.tags.get(&id.tag()).cloned().map(|a| Item::Tag(a)),
-            })
-            .collect())
+        let all = items.into_iter().filter_map(|id| match id.ty {
+            IdType::Asset => storage
+                .assets
+                .get(&id.asset())
+                .cloned()
+                .map(|a| Item::Asset(a)),
+            IdType::Collection => storage
+                .collections
+                .get(&id.collection())
+                .cloned()
+                .map(|c| Item::Collection(c)),
+            IdType::Tag => storage.tags.get(&id.tag()).cloned().map(|a| Item::Tag(a)),
+        });
+
+        match filter {
+            FilterStrategy::All => Ok(all.collect()),
+            FilterStrategy::UnremovedOnly => Ok(all.filter(|i| !i.is_deleted()).collect()),
+            FilterStrategy::RemovedOnly => Ok(all.filter(Item::is_deleted).collect()),
+        }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -874,11 +947,11 @@ pub fn get_tags(
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         Ok(tags
             .into_iter()
-            .filter_map(|t| storage.tags.get(&t))
+            .filter_map(|t| storage.tags.get(&t).filter(|t| !t.is_deleted))
             .cloned()
             .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -893,6 +966,7 @@ pub fn get_tags_without_conflict(
         let tags = tags
             .iter()
             .filter_map(|id| storage.tags.get(id))
+            .filter(|tag| !tag.is_deleted)
             .collect::<Vec<_>>();
         let conflict_groups = tags
             .iter()
@@ -906,6 +980,7 @@ pub fn get_tags_without_conflict(
         Ok(storage
             .tags
             .values()
+            .filter(|tag| !tag.is_deleted)
             .filter(|tag| match &tag.group {
                 Some(group) => !conflict_groups.contains(group),
                 None => !conflict_ungrouped.contains(&tag.id),
@@ -913,7 +988,7 @@ pub fn get_tags_without_conflict(
             .cloned()
             .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -940,7 +1015,7 @@ pub fn add_tag_to_assets(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -961,7 +1036,7 @@ pub fn remove_tag_from_assets(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -982,7 +1057,7 @@ pub fn get_assets_containing_tag(
             .flatten()
             .collect())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -999,10 +1074,10 @@ pub fn modify_src_of(
             asset.src = src;
             storage.save().map_err(|e| e.to_string())
         } else {
-            Err(asset_doesnt_exist(asset))
+            Err(AppError::AssetNotFound(asset).to_string())
         }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1029,45 +1104,63 @@ pub fn delete_assets(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
 #[tauri::command]
 pub fn delete_tags(
     tags: Vec<TagId>,
+    permanently: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Deleting tags {:?}", tags);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for tag in tags {
-            storage.delete_tag(tag).map_err(|e| e.to_string())?;
+        if permanently {
+            for tag in tags {
+                storage.delete_tag(tag).map_err(|e| e.to_string())?;
+            }
+        } else {
+            for tag in tags {
+                storage
+                    .move_tag_to_recycle_bin(tag)
+                    .map_err(|e| e.to_string())?;
+            }
         }
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
 #[tauri::command]
 pub fn delete_collections(
     collections: Vec<CollectionId>,
+    permanently: bool,
     storage: State<'_, Mutex<Option<Storage>>>,
 ) -> Result<(), String> {
     log::info!("Deleting collections {:?}", collections);
 
     if let Ok(Some(storage)) = storage.lock().as_deref_mut() {
-        for collection in collections {
-            storage
-                .delete_collection(collection)
-                .map_err(|e| e.to_string())?;
+        if permanently {
+            for collection in collections {
+                storage
+                    .delete_collection(collection)
+                    .map_err(|e| e.to_string())?;
+            }
+        } else {
+            for collection in collections {
+                storage
+                    .move_collection_to_recycle_bin(collection)
+                    .map_err(|e| e.to_string())?;
+            }
         }
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1088,7 +1181,7 @@ pub fn create_tags(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1113,7 +1206,7 @@ pub fn create_collections(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1135,7 +1228,7 @@ pub fn recolor_collection(
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1156,7 +1249,7 @@ pub fn rename_item(
         .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1177,7 +1270,7 @@ pub fn move_tags_to(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1203,7 +1296,7 @@ pub fn regroup_tag(
             .map_err(|e| e.to_string())?;
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1228,7 +1321,7 @@ pub fn move_collections_to(
 
         storage.save().map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1294,7 +1387,7 @@ pub async fn global_search(
             ),
         })
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1313,7 +1406,7 @@ pub fn open_with_default_app(
         )
         .map_err(|e| e.to_string())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1353,7 +1446,7 @@ pub async fn quick_ref(
 
         for asset in ids {
             let Some(asset) = storage.assets.get(asset) else {
-                return Err(asset_doesnt_exist(*asset));
+                return Err(AppError::AssetNotFound(*asset).to_string());
             };
 
             let size = asset.props.get_quick_ref_size(screen_resolution);
@@ -1386,7 +1479,7 @@ pub async fn quick_ref(
 
         Ok(())
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1408,10 +1501,10 @@ pub fn compute_camera_pos(
                 _ => Err("Asset is not a model.".into()),
             }
         } else {
-            Err(asset_doesnt_exist(asset))
+            Err(AppError::AssetNotFound(asset).to_string())
         }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1446,10 +1539,10 @@ pub fn save_render_cache(
                 _ => Err("Asset is not a model.".into()),
             }
         } else {
-            Err(asset_doesnt_exist(asset))
+            Err(AppError::AssetNotFound(asset).to_string())
         }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }
 
@@ -1482,9 +1575,9 @@ pub fn get_render_cache(
                 _ => Err("Asset is not a model.".into()),
             }
         } else {
-            Err(asset_doesnt_exist(asset))
+            Err(AppError::AssetNotFound(asset).to_string())
         }
     } else {
-        Err(storage_not_initialized())
+        Err(AppError::StorageNotInitialized.to_string())
     }
 }

@@ -40,6 +40,7 @@
     "detail.modify": "Last Modified",
     "detail.multiAssetsSelect": "Multiple assets selected",
     "detail.noAssetSelect": "No asset selected",
+    "detail.notAvailable": "Detail info not available",
     "detail.size": "Size",
     "detail.src": "Source",
     "detail.tags": "Tags",
@@ -141,5 +142,8 @@
     "globalSearch.item.assetName": "Asset Name",
     "globalSearch.item.assetId": "Asset Id",
     "globalSearch.item.tagName": "Tag Name",
-    "globalSearch.item.tagId": "Tag Id"
+    "globalSearch.item.tagId": "Tag Id",
+    "recycleBin.assets": "Assets",
+    "recycleBin.collections": "Collections",
+    "recycleBin.tags": "Tags"
 }

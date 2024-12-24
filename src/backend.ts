@@ -95,22 +95,29 @@ export type LibraryStatistics = {
 }
 
 export type Item = {
-    asset: Asset,
+    ty: "asset",
+    data: Asset,
 } | {
-    collection: Collection,
+    ty: "collection",
+    data: Collection,
 } | {
-    tag: Tag,
+    ty: "tag",
+    data: Tag,
 }
 
 export type SpecialCollections = {
     root: string,
 }
 
-export type ItemTy = "asset" | "collection" | "tag"
+export type IdTy = "asset" | "collection" | "tag"
 
 export type ItemId = {
     id: string,
-    ty: ItemTy,
+    ty: IdTy,
+}
+export type ItemIds = {
+    ids: string[],
+    ty: IdTy,
 }
 
 export type GltfPreviewCamera = {
@@ -145,6 +152,8 @@ export type SearchQueryResult = {
     ty: "tags",
     data: Tag[],
 }
+
+export type FilterStrategy = "all" | "unremovedOnly" | "removedOnly"
 
 export function CrashTest(): Promise<void> {
     return invoke("crash_test")
@@ -214,12 +223,12 @@ export function GenStatistics(): Promise<LibraryStatistics> {
     return invoke("gen_statistics")
 }
 
-export function RecoverAssets(params: { assets: string[] }): Promise<void> {
-    return invoke("recover_assets", params)
+export function RecoverItems(params: { items: ItemId[] }): Promise<void> {
+    return invoke("recover_items", params)
 }
 
-export function GetRecycleBin(): Promise<ItemId[]> {
-    return invoke("get_recycle_bin")
+export function GetRecycleBin(params: { ty: IdTy }): Promise<ItemIds> {
+    return invoke("get_recycle_bin", params)
 }
 
 export function GetDuplicatedAssets(): Promise<DuplicateAssets> {
@@ -275,8 +284,16 @@ export function GetAsset(params: { asset: string }): Promise<Asset> {
     return invoke("get_asset", params)
 }
 
-export function GetRemovedAsset(params: { asset: string }): Promise<Asset> {
-    return invoke("get_removed_asset", params)
+export function GetRemovedAssets(params: { assets: string[] }): Promise<Asset[]> {
+    return invoke("get_removed_assets", params)
+}
+
+export function GetRemovedCollections(params: { collections: string[] }): Promise<Collection[]> {
+    return invoke("get_removed_collections", params)
+}
+
+export function GetRemovedTags(params: { tags: string[] }): Promise<Tag[]> {
+    return invoke("get_removed_tags", params)
 }
 
 export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
@@ -299,7 +316,7 @@ export function GetTagsWithoutConflict(params: { tags: string[] }): Promise<Tag[
     return invoke("get_tags_without_conflict", params)
 }
 
-export function GetItems(params: { items: ItemId[], excludeRemoved: boolean }): Promise<Item[]> {
+export function GetItems(params: { items: ItemId[], filter: FilterStrategy }): Promise<Item[]> {
     return invoke("get_items", params)
 }
 
@@ -319,11 +336,11 @@ export function DeleteAssets(params: { assets: string[], permanently: boolean })
     return invoke("delete_assets", params)
 }
 
-export function DeleteCollections(params: { collections: string[] }): Promise<void> {
+export function DeleteCollections(params: { collections: string[], permanently: boolean }): Promise<void> {
     return invoke("delete_collections", params)
 }
 
-export function DeleteTags(params: { tags: string[] }): Promise<void> {
+export function DeleteTags(params: { tags: string[], permanently: boolean }): Promise<void> {
     return invoke("delete_tags", params)
 }
 

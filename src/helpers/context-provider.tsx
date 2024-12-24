@@ -6,11 +6,13 @@ export type StateContext<T> = {
     setter: (data: T | undefined) => void,
 }
 
+export type VirtualFolderSubTy = "recycleBinAssets" | "recycleBinCollections" | "recycleBinTags" | "tag" | "uncategorized" | "all"
+
 export type VirtualFolder = {
     id: string | undefined,
     name: string,
     content: ItemId[],
-    subTy: "recycleBin" | "tag" | "uncategorized" | "all",
+    subTy: VirtualFolderSubTy,
 }
 
 export type FileManipulation = {
