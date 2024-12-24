@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     fs::{copy, create_dir_all, metadata, read, read_dir, remove_file, File},
     io::Write,
     ops::{Deref, DerefMut},
@@ -342,16 +343,15 @@ impl DuplicateAssets {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct FolderId(pub Uuid);
-
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct AssetId(pub Uuid);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TagId(pub Uuid);
 
 // Backward compatibility 0.1.0 (Default)
-#[derive(Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(
+    Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord,
+)]
 pub struct CollectionId(pub Uuid);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -564,7 +564,7 @@ pub struct Storage {
     pub cache: StorageCache,
     pub sp_collections: SpecialCollections,
     pub tags: HashMap<TagId, Tag>,
-    pub collections: HashMap<CollectionId, Collection>,
+    pub collections: BTreeMap<CollectionId, Collection>,
     pub assets: HashMap<AssetId, Asset>,
     pub recycle_bin: RecycleBin,
     pub lib_meta: LibraryMeta,
@@ -611,7 +611,7 @@ impl Storage {
             cache: Default::default(),
             sp_collections,
             tags,
-            collections,
+            collections: collections.into_iter().collect(),
             assets,
             recycle_bin: Default::default(),
             lib_meta: LibraryMeta::new(
@@ -631,8 +631,8 @@ impl Storage {
 
         let path = root.join(LIBRARY_STORAGE);
         let reader = File::open(&path)?;
-        // TODO fallback to legacy storage if fails.
-        let mut result = serde_json::from_reader::<_, Self>(reader)?;
+        let mut result = serde_json::from_reader::<_, Self>(reader)
+            .or(crate::compatibility::load_legacy_storage(root))?;
 
         let asset_crc = result
             .assets
@@ -645,15 +645,8 @@ impl Storage {
             .map(|(data, id)| (id, crc32fast::hash(&data)))
             .collect();
 
-        // // Backward compatibility 0.1.0
-        // if result.root_collection == CollectionId::default() {
-        //     let root_collection = Collection::new(None, Default::default());
-        //     let collections = HashMap::from([(root_collection.id, root_collection.clone())]);
-        //     result.root_collection = root_collection.id;
-        //     result.collections = collections;
-        // }
-
         result.cache = StorageCache::build(root, asset_crc);
+        result.save()?;
         Ok(result)
     }
 

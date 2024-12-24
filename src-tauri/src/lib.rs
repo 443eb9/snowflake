@@ -7,6 +7,7 @@ use crate::app::{AppData, ResourceCache, Storage};
 
 mod app;
 mod cmd;
+mod compatibility;
 mod event;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
