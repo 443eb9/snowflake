@@ -26,8 +26,9 @@ Build for creativity, not for profit.
 ## Screenshots
 
 ![](readme-media/startup.png)
-![](readme-media/main-page.png)
-![](readme-media/quick-ref.png)
+![](readme-media/library.png)
+![](readme-media/acrylic.png)
+![](readme-media/quickref.png)
 ![](readme-media/settings.png)
 
 ## Supported Asset Formats

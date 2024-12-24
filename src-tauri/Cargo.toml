@@ -1,6 +1,6 @@
 [package]
 name = "snowflake"
-version = "0.1.0"
+version = "0.2.0"
 description = "An asset management for designers and artists."
 authors = ["443eb9"]
 edition = "2021"

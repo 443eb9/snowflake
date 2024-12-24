@@ -1,4 +1,6 @@
-# v0.2.0 [main branch, haven't released]
+# v0.3.0 [main branch, haven't released]
+
+# v0.2.0
 
 # What's New
 

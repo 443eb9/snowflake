@@ -353,10 +353,7 @@ pub struct AssetId(pub Uuid);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct TagId(pub Uuid);
 
-// Backward compatibility 0.1.0 (Default)
-#[derive(
-    Serialize, Deserialize, Default, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord,
-)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct CollectionId(pub Uuid);
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
