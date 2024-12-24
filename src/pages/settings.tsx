@@ -462,16 +462,16 @@ function AboutTab(props: TabProps) {
                             if (current == latest) {
                                 props.dispatchToast(
                                     <MsgToast
-                                        title={t("update.title.already")}
-                                        body={t("update.body.already")}
+                                        title={t("toast.update.already.title")}
+                                        body={t("toast.update.already.body")}
                                     />,
                                     { intent: "success" }
                                 )
                             } else {
                                 props.dispatchToast(
                                     <MsgToast
-                                        title={t("update.title")}
-                                        body={t("update.body", { current, latest })}
+                                        title={t("toast.update.available.title")}
+                                        body={t("toast.update.available.body", { current, latest })}
                                     />
                                 )
                             }

@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { open } from "@tauri-apps/plugin-dialog";
 import { GetRecentLibs, InitializeLibrary, LoadLibrary, RecentLib, StorageConstructionSettings, UnloadLibrary } from "../backend";
 import { useContext, useEffect, useState } from "react";
-import { t } from "../i18n";
+import i18n, { t } from "../i18n";
 import OverlayPanel from "./overlay-panel";
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, overlaysContext, selectedItemsContext, settingsChangeFlagContext } from "../helpers/context-provider";
 import { GlobalToasterId } from "../main";
@@ -54,6 +54,17 @@ export default function Startup() {
     }, [])
 
     useEffect(() => {
+        if (i18n.isInitialized) {
+            dispatchToast(
+                <MsgToast
+                    title={t("toast.update.startUpdateCheck.title")}
+                    body={t("toast.update.startUpdateCheck.body")}
+                />
+            )
+        }
+    }, [i18n.isInitialized])
+
+    useEffect(() => {
         type GitTags = {
             name: string,
         }
@@ -67,11 +78,19 @@ export default function Startup() {
                 const current = await app.getVersion()
                 const latest = tags[0].name
 
-                if (current != latest) {
+                if (current == latest) {
                     dispatchToast(
                         <MsgToast
-                            title={t("update.title")}
-                            body={t("update.body", { current, latest })}
+                            title={t("toast.update.already.title")}
+                            body={t("toast.update.already.body", { current, latest })}
+                        />,
+                        { intent: "success" }
+                    )
+                } else {
+                    dispatchToast(
+                        <MsgToast
+                            title={t("toast.update.available.title")}
+                            body={t("toast.update.available.body", { current, latest })}
                         />
                     )
                 }

@@ -33,6 +33,7 @@
   - Split assets, collections and tags into three tabs.
   - Recover items into a new parent container.
 - `esc` to close overlay panel.
+- Show hint when start check for updates.
 
 # What's Fixed
 
