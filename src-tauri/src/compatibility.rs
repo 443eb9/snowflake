@@ -39,7 +39,7 @@ pub fn load_legacy_storage(root: impl AsRef<Path>) -> AppResult<Storage> {
                     is_deleted: folder.is_deleted,
                     parent: folder.parent.map(|p| p.into()),
                     id: folder.id.into(),
-                    name: folder.name.clone(),
+                    name: folder.name.clone().into(),
                     color: None,
                     meta: folder.meta.clone(),
                     content: Default::default(),
@@ -61,7 +61,7 @@ pub fn load_legacy_storage(root: impl AsRef<Path>) -> AppResult<Storage> {
             (
                 c.id.into(),
                 crate::app::Tag::new(
-                    c.name.clone(),
+                    c.name.clone().into(),
                     c.parent.map(|p| p.into()).unwrap_or(root_collection).into(),
                 ),
             )
@@ -79,7 +79,7 @@ pub fn load_legacy_storage(root: impl AsRef<Path>) -> AppResult<Storage> {
                     parent: storage.root_id.into(),
                     group: None,
                     id: tag.id,
-                    name: tag.name,
+                    name: tag.name.into(),
                     color: None,
                     meta: tag.meta,
                 },
@@ -121,7 +121,7 @@ pub fn load_legacy_storage(root: impl AsRef<Path>) -> AppResult<Storage> {
                     crate::app::Asset {
                         is_deleted: false,
                         id: asset.id,
-                        name: asset.name,
+                        name: asset.name.into(),
                         ty: asset.ty,
                         ext: asset.ext,
                         props: asset.props,

@@ -34,6 +34,7 @@
   - Recover items into a new parent container.
 - `esc` to close overlay panel.
 - Show hint when start check for updates.
+- Persistent tree node order and item order.
 
 # What's Fixed
 

@@ -191,8 +191,16 @@ export default function CollectionTree() {
                 })
 
                 if (openItems.current.has(item.id) && item.ty == "collection") {
-                    item.children.forEach(child => collectTree(child, depth + 1))
-                    item.content.forEach(child => collectTree(child, depth + 1))
+                    item.children.sort((a, b) => {
+                        const elema = treeContext?.items.get(a)?.name
+                        const elemb = treeContext?.items.get(b)?.name
+                        return elema && elemb ? (elema < elemb ? -1 : 1) : 0
+                    }).forEach(child => collectTree(child, depth + 1))
+                    item.content.sort((a, b) => {
+                        const elema = treeContext?.items.get(a)?.name
+                        const elemb = treeContext?.items.get(b)?.name
+                        return elema && elemb ? (elema < elemb ? -1 : 1) : 0
+                    }).forEach(child => collectTree(child, depth + 1))
                 }
             }
 

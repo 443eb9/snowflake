@@ -79,12 +79,11 @@ export default function ItemsGrid() {
                 return
             }
 
-            console.log(browsingFolder.data)
             const objects = await GetItems({ items: browsingFolder.data.content, filter: "all" })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (objects) {
-                setObjects(objects)
+                setObjects(objects.sort((a, b) => a.data.name < b.data.name ? -1 : 1))
             }
 
             if (selectoRef.current) {

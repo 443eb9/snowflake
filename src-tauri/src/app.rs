@@ -1,5 +1,4 @@
 use std::{
-    collections::BTreeMap,
     fs::{copy, create_dir_all, metadata, read, read_dir, remove_file, File},
     io::Write,
     ops::{Deref, DerefMut},
@@ -205,7 +204,12 @@ fn collect_path<'a>(
             let collection = Collection::new(
                 Some(parent),
                 Some(Color::random()),
-                current.file_stem().unwrap().to_string_lossy().to_string(),
+                current
+                    .file_stem()
+                    .unwrap()
+                    .to_string_lossy()
+                    .to_string()
+                    .into(),
             );
             folder_as_tag
                 .folder_collections
@@ -278,7 +282,7 @@ fn collect_path<'a>(
             }
         };
 
-        let mut asset = Asset::new(name, ext.into(), meta, ty, props, Default::default());
+        let mut asset = Asset::new(name.into(), ext.into(), meta, ty, props, Default::default());
         if let Some(folder_as_tag) = folder_as_tag.as_mut() {
             let parent_path = path.parent().unwrap();
 
@@ -297,7 +301,8 @@ fn collect_path<'a>(
                             .file_stem()
                             .unwrap()
                             .to_string_lossy()
-                            .to_string(),
+                            .to_string()
+                            .into(),
                         parent,
                     );
                     if parent != folder_as_tag.root_collection {
@@ -564,7 +569,7 @@ pub struct Storage {
     pub cache: StorageCache,
     pub sp_collections: SpecialCollections,
     pub tags: HashMap<TagId, Tag>,
-    pub collections: BTreeMap<CollectionId, Collection>,
+    pub collections: HashMap<CollectionId, Collection>,
     pub assets: HashMap<AssetId, Asset>,
     pub recycle_bin: RecycleBin,
     pub lib_meta: LibraryMeta,
@@ -741,7 +746,7 @@ impl Storage {
 
             let mut asset = Asset {
                 id: AssetId(id),
-                ..Asset::new(id.to_string(), ext.into(), meta, ty, props, src)
+                ..Asset::new(id.to_string().into(), ext.into(), meta, ty, props, src)
             };
 
             if let Some(initial_tag) = initial_tag.and_then(|i| self.tags.get(&i)) {
@@ -916,7 +921,7 @@ impl Storage {
     }
 
     pub fn create_tag(&mut self, name: String, parent: CollectionId) -> AppResult<()> {
-        let tag = Tag::new(name, parent);
+        let tag = Tag::new(name.into(), parent);
         let Some(parent) = self.collections.get_mut(&parent) else {
             return Err(AppError::CollectionNotFound(parent));
         };
@@ -926,7 +931,7 @@ impl Storage {
     }
 
     pub fn create_collection(&mut self, name: String, parent: CollectionId) -> AppResult<()> {
-        let collection = Collection::new(Some(parent), None, name);
+        let collection = Collection::new(Some(parent), None, name.into());
         let Some(parent) = self.collections.get_mut(&parent) else {
             return Err(AppError::CollectionNotFound(parent));
         };
@@ -937,7 +942,7 @@ impl Storage {
 
     pub fn rename_asset(&mut self, id: AssetId, new_name: String) -> AppResult<()> {
         if let Some(asset) = self.assets.get_mut(&id) {
-            asset.name = new_name;
+            asset.name = new_name.into();
 
             Ok(())
         } else {
@@ -947,7 +952,7 @@ impl Storage {
 
     pub fn rename_collection(&mut self, id: CollectionId, new_name: String) -> AppResult<()> {
         if let Some(collection) = self.collections.get_mut(&id) {
-            collection.name = new_name;
+            collection.name = new_name.into();
             Ok(())
         } else {
             Err(AppError::CollectionNotFound(id))
@@ -956,7 +961,7 @@ impl Storage {
 
     pub fn rename_tag(&mut self, id: TagId, new_name: String) -> AppResult<()> {
         if let Some(tag) = self.tags.get_mut(&id) {
-            tag.name = new_name;
+            tag.name = new_name.into();
             Ok(())
         } else {
             Err(AppError::TagNotFound(id))
@@ -1105,11 +1110,11 @@ impl Storage {
             return Err(AppError::TagNotFound(id));
         };
 
-        let mut res = vec![tag.name.clone()];
+        let mut res = vec![tag.name.to_string()];
         let mut cur_id = Some(tag.parent);
         while let Some(id) = cur_id.filter(|i| !self.sp_collections.is_special(*i)) {
             if let Some(collection) = self.collections.get(&id) {
-                res.push(collection.name.clone());
+                res.push(collection.name.to_string());
                 cur_id = collection.parent;
             } else {
                 return Err(AppError::CollectionNotFound(id));
@@ -1152,15 +1157,15 @@ pub struct Collection {
     pub is_deleted: bool,
     pub parent: Option<CollectionId>,
     pub id: CollectionId,
-    pub name: String,
+    pub name: Arc<str>,
     pub color: Option<Color>,
     pub meta: Metadata,
-    pub content: HashSet<TagId>,
     pub children: HashSet<CollectionId>,
+    pub content: HashSet<TagId>,
 }
 
 impl Collection {
-    pub fn new(parent: Option<CollectionId>, color: Option<Color>, name: String) -> Self {
+    pub fn new(parent: Option<CollectionId>, color: Option<Color>, name: Arc<str>) -> Self {
         Self {
             is_deleted: false,
             parent,
@@ -1181,13 +1186,13 @@ pub struct Tag {
     pub parent: CollectionId,
     pub group: Option<CollectionId>,
     pub id: TagId,
-    pub name: String,
+    pub name: Arc<str>,
     pub color: Option<Color>,
     pub meta: Metadata,
 }
 
 impl Tag {
-    pub fn new(name: String, parent: CollectionId) -> Self {
+    pub fn new(name: Arc<str>, parent: CollectionId) -> Self {
         Self {
             is_deleted: false,
             parent,
@@ -1394,7 +1399,7 @@ impl Into<Vec<TagId>> for TagContainer {
 pub struct Asset {
     pub is_deleted: bool,
     pub id: AssetId,
-    pub name: String,
+    pub name: Arc<str>,
     pub ty: AssetType,
     pub ext: Arc<str>,
     pub props: AssetProperty,
@@ -1405,7 +1410,7 @@ pub struct Asset {
 
 impl Asset {
     pub fn new(
-        name: String,
+        name: Arc<str>,
         ext: Arc<str>,
         meta: Metadata,
         ty: AssetType,
@@ -1425,31 +1430,31 @@ impl Asset {
         }
     }
 
-    pub fn gen_file_name(&self) -> String {
+    pub fn gen_file_name(&self) -> Arc<str> {
         if self.ext.is_empty() {
-            self.name.to_owned()
+            self.name.clone()
         } else {
-            format!("{}.{}", self.name, self.ext)
+            format!("{}.{}", self.name, self.ext).into()
         }
     }
 
-    pub fn get_file_name(&self) -> String {
+    pub fn get_file_name(&self) -> Arc<str> {
         if self.ext.is_empty() {
-            self.id.clone().0.to_string()
+            self.id.clone().0.to_string().into()
         } else {
-            format!("{}.{}", self.id.0, self.ext)
+            format!("{}.{}", self.id.0, self.ext).into()
         }
     }
 
     pub fn get_file_path(&self, root: &Path) -> PathBuf {
         root.join(self.ty.storage_folder())
-            .join(self.get_file_name())
+            .join(self.get_file_name().as_ref())
     }
 
     pub fn compute_crc(&self, root: &Path) -> std::io::Result<u32> {
         Ok(crc32fast::hash(&read(
             root.join(self.ty.storage_folder())
-                .join(self.get_file_name()),
+                .join(self.get_file_name().as_ref()),
         )?))
     }
 }

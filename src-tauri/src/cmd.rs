@@ -324,15 +324,15 @@ fn export_recursion(
     tag_to_path: &mut HashMap<TagId, PathBuf>,
 ) -> Result<(), AppError> {
     if let Some(collection) = storage.collections.get(&collection) {
-        let collection_path = path.join(&collection.name);
+        let collection_path = path.join(collection.name.as_ref());
         let _ = create_dir_all(&collection_path);
 
         for tag in &collection.content {
             let Some(tag) = storage.tags.get(tag) else {
                 return Err(AppError::TagNotFound(*tag));
             };
-            let _ = create_dir_all(&collection_path.join(&tag.name));
-            tag_to_path.insert(tag.id, collection_path.join(tag.name.clone()));
+            let _ = create_dir_all(&collection_path.join(tag.name.as_ref()));
+            tag_to_path.insert(tag.id, collection_path.join(tag.name.as_ref()));
         }
 
         for child in collection.children.clone() {
@@ -365,7 +365,7 @@ pub fn export_library(
 
             for tag in asset.tags.grouped.values().chain(&asset.tags.ungrouped) {
                 if let Some(path) = tag_to_path.get(tag) {
-                    copy(&asset_path, path.join(asset.gen_file_name()))
+                    copy(&asset_path, path.join(asset.gen_file_name().as_ref()))
                         .map_err(|e| e.to_string())?;
                 } else {
                     return Err(AppError::TagNotFound(*tag).to_string());
