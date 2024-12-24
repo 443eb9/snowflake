@@ -2,7 +2,7 @@ import { Button, Input, makeStyles, Text, Title2, useToastController } from "@fl
 import { Add20Regular, ArrowDownload20Regular } from "@fluentui/react-icons";
 import { List, ListItem } from "@fluentui/react-list-preview";
 import { useContext, useEffect, useState } from "react";
-import { DownloadEvent, ImportWebAssets } from "../backend";
+import { DownloadEvent, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, ImportWebAssets } from "../backend";
 import { browsingFolderContext } from "../helpers/context-provider";
 import { Channel } from "@tauri-apps/api/core";
 import { formatFileSize } from "../util";
@@ -92,13 +92,28 @@ export default function AssetDownload({ lockOverlay }: { lockOverlay: (lock: boo
 
     useEffect(() => {
         async function update() {
-            // TODO update
-            if (browsingFolder?.data?.id) {
-                // browsingFolder.setter({
-                //     ...folder,
-                //     content: folder.content.map(asset => { return { id: asset, ty: "asset" } }),
-                //     subTy: "folder",
-                // })
+            if (!browsingFolder?.data) { return }
+
+            let assets: string[] | undefined;
+            switch (browsingFolder.data.subTy) {
+                case "all":
+                    assets = await GetAllAssets()
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" })) ?? undefined
+                    break
+                case "uncategorized":
+                    assets = await GetAllUncategorizedAssets()
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" })) ?? undefined
+                    break
+                case "tag":
+                    assets = await GetAssetsContainingTag({ tag: browsingFolder.data.id! })
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" })) ?? undefined
+                    break
+            }
+            if (assets) {
+                browsingFolder?.setter({
+                    ...browsingFolder.data,
+                    content: assets.map(id => { return { id, ty: "asset" } })
+                })
             }
         }
 

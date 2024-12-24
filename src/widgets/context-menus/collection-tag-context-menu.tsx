@@ -64,7 +64,7 @@ export default function CollectionTagContextMenu() {
 
     const handleDelete = () => {
         const data = contextMenuProp?.data
-        const ty =contextMenuProp?.data?.ty
+        const ty = contextMenuProp?.data?.ty
         if (ty && data) {
             fileManipulation?.setter({
                 id: data.data.map(id => { return { id, ty } }),
@@ -200,7 +200,7 @@ export default function CollectionTagContextMenu() {
     const ty = contextMenuProp?.data?.ty
     const multipleSelected = contextMenuProp?.data?.ty == "asset" && contextMenuProp.data.data.length > 1
 
-    if (!allCollections || !ty || !contextMenuProp.data || !allTags) {
+    if (!allCollections || !allTags || !ty) {
         return <></>
     }
 

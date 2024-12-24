@@ -539,7 +539,7 @@ pub async fn import_web_assets(
                         downloaded: f32::MAX,
                         total: total_f,
                         status: DownloadStatus::Error(format!(
-                            "Failed to import non-image assets. {}",
+                            "Failed to import unsupported asset. {}",
                             fmt.media_type()
                         )),
                     });

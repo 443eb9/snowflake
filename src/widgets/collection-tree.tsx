@@ -201,7 +201,7 @@ export default function CollectionTree() {
         }
 
         const visibleNodes = convertItemTreeToFlatTree()
-        const { show: showContextMenu } = useContextMenu()
+        const { show: showContextMenu } = useContextMenu({ id: CollectionTagCtxMenuId })
 
         return (
             <FlatTree
@@ -240,7 +240,7 @@ export default function CollectionTree() {
                                             ty: nodeItem.data.ty,
                                             data: [nodeItem.data.id],
                                         })
-                                        showContextMenu({ event: ev, id: CollectionTagCtxMenuId })
+                                        showContextMenu({ event: ev })
                                     }}
                                 >
                                     <CollectionNode item={nodeItem.data} />
