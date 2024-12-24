@@ -280,26 +280,6 @@ export function GetAllUncategorizedAssets(): Promise<string[]> {
     return invoke("get_all_uncategorized_assets")
 }
 
-export function GetAsset(params: { asset: string }): Promise<Asset> {
-    return invoke("get_asset", params)
-}
-
-export function GetRemovedAssets(params: { assets: string[] }): Promise<Asset[]> {
-    return invoke("get_removed_assets", params)
-}
-
-export function GetRemovedCollections(params: { collections: string[] }): Promise<Collection[]> {
-    return invoke("get_removed_collections", params)
-}
-
-export function GetRemovedTags(params: { tags: string[] }): Promise<Tag[]> {
-    return invoke("get_removed_tags", params)
-}
-
-export function GetAssets(params: { assets: string[] }): Promise<Asset[]> {
-    return invoke("get_assets", params)
-}
-
 export function GetTagsOnAsset(params: { asset: string }): Promise<string[]> {
     return invoke("get_tags_on_asset", params)
 }
@@ -308,12 +288,12 @@ export function ModifySrcOf(params: { asset: string, src: string }): Promise<voi
     return invoke("modify_src_of", params)
 }
 
-export function GetTags(params: { tags: string[] }): Promise<Tag[]> {
-    return invoke("get_tags", params)
-}
-
 export function GetTagsWithoutConflict(params: { tags: string[] }): Promise<Tag[]> {
     return invoke("get_tags_without_conflict", params)
+}
+
+export function GetItem(params: { item: ItemId }): Promise<Item> {
+    return invoke("get_item", params)
 }
 
 export function GetItems(params: { items: ItemId[], filter: FilterStrategy }): Promise<Item[]> {
@@ -332,16 +312,8 @@ export function GetAssetsContainingTag(params: { tag: string }): Promise<string[
     return invoke("get_assets_containing_tag", params)
 }
 
-export function DeleteAssets(params: { assets: string[], permanently: boolean }): Promise<void> {
-    return invoke("delete_assets", params)
-}
-
-export function DeleteCollections(params: { collections: string[], permanently: boolean }): Promise<void> {
-    return invoke("delete_collections", params)
-}
-
-export function DeleteTags(params: { tags: string[], permanently: boolean }): Promise<void> {
-    return invoke("delete_tags", params)
+export function DeleteItems(params: { items: ItemId[], permanently: boolean }): Promise<void> {
+    return invoke("delete_items", params)
 }
 
 export function CreateTags(params: { tagNames: string[], parent: string }): Promise<void> {

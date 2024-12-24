@@ -402,26 +402,11 @@ pub enum IdType {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]
-pub struct ItemId {
-    pub ty: IdType,
-    pub id: Uuid,
-}
-
-impl ItemId {
-    pub fn asset(self) -> AssetId {
-        assert_eq!(self.ty, IdType::Asset);
-        AssetId(self.id)
-    }
-
-    pub fn collection(self) -> CollectionId {
-        assert_eq!(self.ty, IdType::Collection);
-        CollectionId(self.id)
-    }
-
-    pub fn tag(self) -> TagId {
-        assert_eq!(self.ty, IdType::Tag);
-        TagId(self.id)
-    }
+#[serde(tag = "ty", content = "id")]
+pub enum ItemId {
+    Asset(AssetId),
+    Collection(CollectionId),
+    Tag(TagId),
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]

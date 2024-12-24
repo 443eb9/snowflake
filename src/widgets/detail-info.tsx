@@ -1,9 +1,9 @@
 import { useContext, useEffect, useState } from "react"
 import { useToastController } from "@fluentui/react-components"
 import TagsContainer from "../widgets/tags-container"
-import { Asset, GetAssetAbsPath, GetAssets, GetRemovedAssets, GetTagsOnAsset, ModifySrcOf } from "../backend"
+import { Asset, GetAssetAbsPath, GetItem, GetTagsOnAsset, ModifySrcOf } from "../backend"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "../helpers/context-provider"
-import { formatFileSize, isAtRecycleBin } from "../util"
+import { formatFileSize } from "../util"
 import { t } from "../i18n"
 import ErrToast from "./toasts/err-toast"
 import { GlobalToasterId } from "../main"
@@ -39,9 +39,8 @@ export default function DetailInfo() {
         const selected = selectedItems.data[0]
         if (!browsingFolder?.data || selected.ty != "asset") { return }
 
-        const ty = browsingFolder.data.subTy
-        const asset = await (isAtRecycleBin(ty) ? GetRemovedAssets({ assets: [selected.id] }) : GetAssets({ assets: [selected.id] }))
-            .then(assets => assets.length == 1 ? assets[0] : undefined)
+        const asset = await GetItem({ item: selected })
+            .then(data => data.ty == "asset" ? data.data : undefined)
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         const absPath = await GetAssetAbsPath({ asset: selected.id })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))

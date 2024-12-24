@@ -64,25 +64,13 @@ export default function CollectionTagContextMenu() {
 
     const handleDelete = () => {
         const data = contextMenuProp?.data
-        if (data && data.data.length == 1) {
-            switch (data.ty) {
-                case "asset":
-                    fileManipulation?.setter({
-                        id: data.data.map(id => { return { id, ty: "asset" } }),
-                        op: "deletion",
-                        submit: [],
-                    })
-                    hideAll()
-                    break
-                case "collection":
-                case "tag":
-                    fileManipulation?.setter({
-                        id: [{ id: data.data[0], ty: data.ty }],
-                        op: "deletion",
-                        submit: [],
-                    })
-                    break
-            }
+        const ty =contextMenuProp?.data?.ty
+        if (ty && data) {
+            fileManipulation?.setter({
+                id: data.data.map(id => { return { id, ty } }),
+                op: "deletion",
+                submit: [],
+            })
         }
     }
 

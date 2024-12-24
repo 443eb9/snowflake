@@ -2,7 +2,7 @@ import { convertFileSrc } from "@tauri-apps/api/core"
 import { getCurrentWindow, PhysicalSize } from "@tauri-apps/api/window"
 import { MouseEvent, useEffect, useState, WheelEvent } from "react"
 import { useParams } from "react-router-dom"
-import { Asset, GetAsset, GetAssetAbsPath } from "../backend"
+import { Asset, GetAssetAbsPath, GetItem } from "../backend"
 import { useContextMenu } from "react-contexify"
 import QuickRefContextMenu, { QuickRefCtxMenuId } from "../widgets/context-menus/quick-ref-context-menu"
 import GraphicsReference from "../widgets/quick-ref/graphics-reference"
@@ -30,10 +30,10 @@ export default function QuickRef() {
                     setAbsPath(path)
                 }
 
-                const asset = await GetAsset({ asset: id })
+                const asset = await GetItem({ item: { id, ty: "asset" } })
                     .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                 if (asset) {
-                    setAsset(asset)
+                    setAsset(asset.data as Asset)
                 }
             }
         }

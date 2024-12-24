@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react"
 import { browsingFolderContext, fileManipulationContext, selectedItemsContext } from "./context-provider"
-import { CreateCollections, CreateTags, DeleteAssets, DeleteCollections, DeleteTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, ImportAssets, ItemId, IdTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverItems, RegroupTag, RenameItem, GetRecycleBin } from "../backend"
+import { CreateCollections, CreateTags, GetAllAssets, GetAllUncategorizedAssets, GetAssetsContainingTag, ImportAssets, ItemId, IdTy, MoveCollectionsTo, MoveTagsTo, RecolorCollection, RecoverItems, RegroupTag, RenameItem, GetRecycleBin, DeleteItems } from "../backend"
 import { useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../main"
 import ErrToast from "../widgets/toasts/err-toast"
@@ -29,7 +29,7 @@ export default function FileManipulator() {
             ...browsingFolder.data,
             content: [...browsingFolder.data.content.filter(id => selectedItems.data?.find(selected => selected.id == id.id) == undefined)]
         })
-        await DeleteAssets({ assets, permanently })
+        await DeleteItems({ items: assets.map(id => { return { id, ty: "asset" } }), permanently })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         selectedItems.setter([])
@@ -131,7 +131,7 @@ export default function FileManipulator() {
         targetIds: string[],
         permanently: boolean,
     ) {
-        await DeleteCollections({ collections: targetIds, permanently })
+        await DeleteItems({ items: targetIds.map(id => { return { id, ty: "collection" } }), permanently })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data?.id && targetIds.includes(browsingFolder.data?.id)) {
@@ -170,7 +170,7 @@ export default function FileManipulator() {
         targetIds: string[],
         permanently: boolean,
     ) {
-        await DeleteTags({ tags: targetIds, permanently })
+        await DeleteItems({ items: targetIds.map(id => { return { id, ty: "tag" } }), permanently })
             .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
         if (browsingFolder?.data?.id && targetIds.includes(browsingFolder.data?.id)) {
@@ -202,7 +202,7 @@ export default function FileManipulator() {
 
     async function handleItemsRecover(items: ItemId[], parentOverride: string) {
         if (selectedItems?.data && browsingFolder?.data) {
-            await RecoverItems({ items, parentOverride: parentOverride.length > 0 ? parentOverride : undefined })
+            await RecoverItems({ items, parentOverride: parentOverride?.length > 0 ? parentOverride : undefined })
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             selectedItems.setter([])

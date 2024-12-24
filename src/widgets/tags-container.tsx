@@ -1,6 +1,6 @@
 import { Tag as FluentTag, TagGroup, Text, useToastController, Popover, PopoverTrigger, Button, PopoverSurface, makeStyles, mergeClasses, TabList, Tab } from "@fluentui/react-components";
 import { useContext, useEffect, useState } from "react";
-import { AddTagToAssets, Collection, GetAllTags, GetCollectionTree, GetTags, GetTagsOnAsset, GetTagsWithoutConflict, GetUserSetting, RemoveTagFromAssets, Tag } from "../backend";
+import { AddTagToAssets, Collection, GetAllTags, GetCollectionTree, GetItems, GetTagsOnAsset, GetTagsWithoutConflict, GetUserSetting, RemoveTagFromAssets, Tag } from "../backend";
 import { browsingFolderContext, selectedItemsContext } from "../helpers/context-provider";
 import { t } from "../i18n";
 import ErrToast from "./toasts/err-toast";
@@ -75,7 +75,8 @@ export default function TagsContainer({
 
     useEffect(() => {
         async function fetchTags() {
-            const selected = await GetTags({ tags: selectedIds })
+            const selected = await GetItems({ items: selectedIds.map(id => { return { id, ty: "tag" } }), filter: "all" })
+                .then(data => data.map(item => item.data as Tag))
                 .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
             if (selected) {
