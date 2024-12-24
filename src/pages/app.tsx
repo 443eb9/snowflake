@@ -53,12 +53,12 @@ export default function MainApp() {
             if (leftPanelWidth && leftPanelWidth > max && leftPanelWidth > defaultPanelWidth.left) {
                 setLeftPanelWidth(max)
                 await SetUserSetting({ category: "general", item: "leftPanelWidth", value: max })
-                    .catch(err => dispatchToast(<ErrToast body={err} />))
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             }
             if (rightPanelWidth && rightPanelWidth > max && rightPanelWidth > defaultPanelWidth.right) {
                 setRightPanelWidth(max)
                 await SetUserSetting({ category: "general", item: "rightPanelWidth", value: max })
-                    .catch(err => dispatchToast(<ErrToast body={err} />))
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             }
         }
 
@@ -68,21 +68,21 @@ export default function MainApp() {
     useEffect(() => {
         async function fetch() {
             const leftPanelWidth = await GetUserSetting({ category: "general", item: "leftPanelWidth" })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (leftPanelWidth) {
                 setLeftPanelWidth(leftPanelWidth as number)
             }
 
             const rightPanelWidth = await GetUserSetting({ category: "general", item: "rightPanelWidth" })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (rightPanelWidth) {
                 setRightPanelWidth(rightPanelWidth as number)
             }
 
             const defaultLeftPanelWidth = await GetDefaultSetting({ category: "general", item: "leftPanelWidth" })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             const defaultRightPanelWidth = await GetDefaultSetting({ category: "general", item: "rightPanelWidth" })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (defaultLeftPanelWidth && defaultRightPanelWidth) {
                 setDefaultPanelWidth({
                     left: defaultLeftPanelWidth as number,
@@ -134,7 +134,7 @@ export default function MainApp() {
                     }}
                     onEndResize={async () => {
                         await SetUserSetting({ category: "general", item: "leftPanelWidth", value: leftPanelWidth })
-                            .catch(err => dispatchToast(<ErrToast body={err} />))
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                     }}
                 />
                 <div className="flex flex-col flex-grow gap-1 overflow-hidden" style={{}}>
@@ -153,7 +153,7 @@ export default function MainApp() {
                     }}
                     onEndResize={async () => {
                         await SetUserSetting({ category: "general", item: "rightPanelWidth", value: rightPanelWidth })
-                            .catch(err => dispatchToast(<ErrToast body={err} />))
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                     }}
                 />
                 <div

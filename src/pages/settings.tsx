@@ -43,8 +43,6 @@ export default function Settings() {
             }
 
             const libraryMeta = await GetLibraryMeta()
-                .catch(err => dispatchToast(<ErrToast body={err} />))
-
             if (libraryMeta) {
                 setLibraryMeta(libraryMeta)
             }
@@ -61,7 +59,7 @@ export default function Settings() {
     const update = async (item?: string, value?: SettingsValue) => {
         if (item != undefined && value != undefined) {
             await SetUserSetting({ category: currentTab, item, value })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         }
         settingsChangeFlag?.setter(!settingsChangeFlag.data)
     }
@@ -454,7 +452,7 @@ function AboutTab(props: TabProps) {
                     onClick={async () => {
                         const tags = await fetch("https://api.github.com/repos/443eb9/snowflake/tags")
                             .then(async resp => (await resp.json()) as { name: string }[])
-                            .catch(err => props.dispatchToast(<ErrToast body={err} />))
+                            .catch(err => props.dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
                         if (tags) {
                             const current = await app.getVersion()

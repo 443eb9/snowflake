@@ -22,7 +22,7 @@ export default function GlobalSearcher() {
     useEffect(() => {
         async function fetch() {
             const result = await GlobalSearch({ ty: queryTy, query })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (result) {
                 setCandidates(result)
             }
@@ -76,11 +76,11 @@ export default function GlobalSearcher() {
                         }}
                         onClick={async () => {
                             const tags = await GetTagsOnAsset({ asset: asset.id })
-                                .catch(err => dispatchToast(<ErrToast body={err} />))
+                                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                             if (tags) {
                                 if (tags.length == 0) {
                                     const assets = await GetAllUncategorizedAssets()
-                                        .catch(err => dispatchToast(<ErrToast body={err} />))
+                                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
                                     if (assets) {
                                         browsingFolder?.setter({
@@ -92,7 +92,7 @@ export default function GlobalSearcher() {
                                     }
                                 } else if (tags.length == 1) {
                                     const assets = await GetAssetsContainingTag({ tag: tags[0] })
-                                        .catch(err => dispatchToast(<ErrToast body={err} />))
+                                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
                                     if (assets) {
                                         browsingFolder?.setter({
@@ -129,7 +129,7 @@ export default function GlobalSearcher() {
                         }}
                         onClick={async () => {
                             const assets = await GetAssetsContainingTag({ tag: tag.id })
-                                .catch(err => dispatchToast(<ErrToast body={err} />))
+                                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
 
                             if (assets) {
                                 browsingFolder?.setter({

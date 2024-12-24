@@ -216,7 +216,7 @@ export default function FileManipulator() {
             if (!ty) { return }
 
             const recycleBin = await GetRecycleBin({ ty })
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             if (recycleBin) {
                 browsingFolder?.setter({
                     id: undefined,

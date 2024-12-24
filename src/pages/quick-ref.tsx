@@ -77,7 +77,7 @@ export default function QuickRef() {
                 height: Math.round(size.height * newScale),
             }
             await appWindow.setSize(new PhysicalSize(scaled))
-                .catch(err => dispatchToast(<ErrToast body={err} />))
+                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         },
         onContextMenu: (ev: MouseEvent) => showContextMenu({ event: ev }),
     }

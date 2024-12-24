@@ -40,7 +40,7 @@ export default function RecycleBinContextMenu() {
 
     async function fetchAllCollections() {
         const allCollections = await GetCollectionTree({ noSpecial: false })
-            .catch(err => dispatchToast(<ErrToast body={err} />))
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
         if (allCollections) {
             setAllCollections(Array.from(allCollections.values()))
         }

@@ -61,7 +61,7 @@ export default function TagsContainer({
 
     async function fetchAvailableTags() {
         const hideConflict = await GetUserSetting({ category: "general", item: "hideConflictTagsWhenPickingNewTags" })
-            .catch(err => dispatchToast(<ErrToast body={err} />)) as boolean | undefined
+            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" })) as boolean | undefined
         if (hideConflict == undefined) { return }
 
         const available = await (hideConflict ? GetTagsWithoutConflict({ tags: selectedIds }) : GetAllTags())

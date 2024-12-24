@@ -122,11 +122,11 @@ export default function CollectionTagContextMenu() {
             switch (tagModification) {
                 case "add":
                     await AddTagToAssets({ tag: tag.id, assets })
-                        .catch(err => dispatchToast(<ErrToast body={err} />))
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                     break
                 case "remove":
                     await RemoveTagFromAssets({ tag: tag.id, assets })
-                        .catch(err => dispatchToast(<ErrToast body={err} />))
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                     break
             }
         }
@@ -192,7 +192,7 @@ export default function CollectionTagContextMenu() {
         if (browsingFolder?.data?.content) {
             browsingFolder.data.content.forEach(async asset => {
                 await OpenWithDefaultApp({ asset: asset.id })
-                    .catch(err => dispatchToast(<ErrToast body={err} />))
+                    .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
             })
         }
     }

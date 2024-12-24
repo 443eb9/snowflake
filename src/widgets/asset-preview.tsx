@@ -54,7 +54,7 @@ export default function ItemPreview({ item, ...props }: { item: Item } & HTMLAtt
                             break
                         case "ref":
                             await QuickRef({ ty: { asset: [item.data.id] } })
-                                .catch(err => dispatchToast(<ErrToast body={err} />))
+                                .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" }))
                             break
                     }
                 }
