@@ -668,7 +668,7 @@ impl Storage {
             .assets
             .values()
             .filter_map(|asset| {
-                (!asset.is_deleted).then(|| asset.tags.contains(tag).then_some(asset.id))
+                (!asset.is_deleted).then(|| asset.tags.contains(tag).then_some(dbg!(asset.id)))
             })
             .flatten()
             .collect())
@@ -1382,7 +1382,7 @@ impl TagContainer {
 
     pub fn contains(&self, tag: &Tag) -> bool {
         match tag.group {
-            Some(group) => self.grouped.contains_key(&group),
+            Some(group) => !self.grouped.get(&group).is_none_or(|id| *id != tag.id),
             None => self.ungrouped.contains(&tag.id),
         }
     }
