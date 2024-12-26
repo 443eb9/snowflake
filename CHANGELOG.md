@@ -1,8 +1,11 @@
 # v0.3.0 [main branch, haven't released]
 
+# v0.2.1
+
 # What's Fixed
 
 - Regrouping tag affects assets that shouldn't be affected.
+- Items not refreshed after modifying tags using context menu.
 
 # v0.2.0
 

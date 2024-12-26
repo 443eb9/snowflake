@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react"
 import { browsingFolderContext, contextMenuPropContext, fileManipulationContext, selectedItemsContext } from "../../helpers/context-provider"
 import { Item, Menu, Submenu, useContextMenu } from "react-contexify"
-import { AddTagToAssets, Collection, GetAllTags, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef, RemoveTagFromAssets, Tag } from "../../backend"
+import { AddTagToAssets, Collection, GetAllTags, GetAllUncategorizedAssets, GetAssetsContainingTag, GetCollectionTree, ItemId, OpenWithDefaultApp, QuickRef, RemoveTagFromAssets, Tag } from "../../backend"
 import { Button, CompoundButton, makeStyles, Popover, PopoverSurface, PopoverTrigger, Radio, RadioGroup, Text, useToastController } from "@fluentui/react-components"
 import { GlobalToasterId } from "../../main"
 import { ArrowCounterclockwise20Regular, ArrowForward20Regular, Checkmark20Regular, Collections20Regular, CollectionsAdd20Regular, Color20Regular, Delete20Regular, Dismiss20Regular, DrawImage20Regular, Edit20Regular, Eraser20Regular, Group20Regular, Open20Regular, Tag20Regular, TagMultiple20Regular } from "@fluentui/react-icons"
@@ -130,6 +130,31 @@ export default function CollectionTagContextMenu() {
                     break
             }
         }
+
+        if (browsingFolder?.data) {
+            let content: string[] | undefined;
+            switch (browsingFolder.data.subTy) {
+                case "tag":
+                    if (browsingFolder.data.id) {
+                        content = await GetAssetsContainingTag({ tag: browsingFolder.data.id })
+                            .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" })) ?? undefined
+                    }
+                    break
+                case "uncategorized":
+                    content = await GetAllUncategorizedAssets()
+                        .catch(err => dispatchToast(<ErrToast body={err} />, { intent: "error" })) ?? undefined
+                    break
+            }
+
+            if (content) {
+                browsingFolder.setter({
+                    ...browsingFolder.data,
+                    content: content.map(id => { return { id, ty: "asset" } }),
+                })
+            }
+        }
+
+        selectedItems?.setter([])
     }
 
     const handleCollectionCreation = () => {
