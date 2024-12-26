@@ -962,14 +962,9 @@ pub fn get_assets_containing_tag(
     log::info!("Getting assets containing tag {:?}", tag);
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
-        Ok(storage
-            .assets
-            .values()
-            .filter_map(|asset| {
-                (!asset.is_deleted).then(|| asset.tags.contains_id(tag).then_some(asset.id))
-            })
-            .flatten()
-            .collect())
+        storage
+            .get_assets_containing_tag(tag)
+            .map_err(|e| e.to_string())
     } else {
         Err(AppError::StorageNotInitialized.to_string())
     }
@@ -1302,17 +1297,15 @@ pub async fn quick_ref(
 
     if let Ok(Some(storage)) = storage.lock().as_deref() {
         let ids: Vec<_> = match &ty {
-            QuickRefSrcTy::Asset(ids) => ids.iter().collect(),
+            QuickRefSrcTy::Asset(ids) => ids.clone(),
             QuickRefSrcTy::Tag(id) => storage
-                .assets
-                .values()
-                .filter_map(|a| a.tags.contains_id(*id).then_some(&a.id))
-                .collect(),
+                .get_assets_containing_tag(*id)
+                .map_err(|e| e.to_string())?,
         };
 
         for asset in ids {
-            let Some(asset) = storage.assets.get(asset) else {
-                return Err(AppError::AssetNotFound(*asset).to_string());
+            let Some(asset) = storage.assets.get(&asset) else {
+                return Err(AppError::AssetNotFound(asset).to_string());
             };
 
             let size = asset.props.get_quick_ref_size(screen_resolution);

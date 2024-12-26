@@ -1,5 +1,9 @@
 # v0.3.0 [main branch, haven't released]
 
+# What's Fixed
+
+- Regrouping tag affects assets that shouldn't be affected.
+
 # v0.2.0
 
 # What's New

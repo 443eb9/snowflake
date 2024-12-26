@@ -659,6 +659,21 @@ impl Storage {
             .write_all(serde_json::to_string(self)?.as_bytes())?)
     }
 
+    pub fn get_assets_containing_tag(&self, tag: TagId) -> AppResult<Vec<AssetId>> {
+        let Some(tag) = self.tags.get(&tag) else {
+            return Err(AppError::TagNotFound(tag));
+        };
+
+        Ok(self
+            .assets
+            .values()
+            .filter_map(|asset| {
+                (!asset.is_deleted).then(|| asset.tags.contains(tag).then_some(asset.id))
+            })
+            .flatten()
+            .collect())
+    }
+
     pub fn add_assets(
         &mut self,
         initial_tag: Option<TagId>,
@@ -1049,18 +1064,49 @@ impl Storage {
         let old_group = tag.group;
         tag.group = group;
 
-        if let Some(group) = group {
-            if let Some(group) = self.collections.get(&group) {
-                tag.color = group.color;
+        if let Some(new_group) = group {
+            if let Some(new_group) = self.collections.get(&new_group) {
+                tag.color = new_group.color;
             } else {
-                return Err(AppError::CollectionNotFound(group));
+                return Err(AppError::CollectionNotFound(new_group));
+            }
+
+            for asset in self.assets.values_mut() {
+                if let Some(old_group) = old_group {
+                    match asset.tags.grouped.entry(old_group) {
+                        Entry::Occupied(e) => {
+                            e.remove();
+                        }
+                        Entry::Vacant(_) => continue,
+                    }
+                } else {
+                    if !asset.tags.ungrouped.remove(&tag.id) {
+                        continue;
+                    }
+
+                    dbg!(&asset.tags, &asset.name);
+                }
+
+                match asset.tags.grouped.entry(new_group) {
+                    Entry::Occupied(mut e) => match resolve {
+                        TagGroupConflictResolve::Override => {
+                            e.insert(tag.id);
+                        }
+                        TagGroupConflictResolve::Remove => todo!(),
+                    },
+                    Entry::Vacant(e) => {
+                        e.insert(tag.id);
+                    }
+                }
             }
         } else {
             tag.color = None;
-        }
 
-        for asset in self.assets.values_mut() {
-            asset.tags.regroup(old_group, group, tag.id, resolve);
+            if let Some(old_group) = old_group {
+                for asset in self.assets.values_mut() {
+                    asset.tags.grouped.remove(&old_group);
+                }
+            }
         }
 
         Ok(())
@@ -1334,45 +1380,10 @@ impl TagContainer {
         }
     }
 
-    pub fn contains_id(&self, id: TagId) -> bool {
-        self.ungrouped.contains(&id) || self.grouped.values().find(|t| t == &&id).is_some()
-    }
-
-    #[allow(unused)]
-    pub fn contains(&self, tag: Tag) -> bool {
+    pub fn contains(&self, tag: &Tag) -> bool {
         match tag.group {
             Some(group) => self.grouped.contains_key(&group),
             None => self.ungrouped.contains(&tag.id),
-        }
-    }
-
-    pub fn regroup(
-        &mut self,
-        old_group: Option<CollectionId>,
-        new_group: Option<CollectionId>,
-        id: TagId,
-        resolve: TagGroupConflictResolve,
-    ) {
-        if let Some(old_group) = old_group {
-            if self.grouped.remove(&old_group).is_none() {
-                return;
-            }
-        } else if !self.ungrouped.remove(&id) {
-            return;
-        }
-
-        if let Some(new_group) = new_group {
-            match self.grouped.entry(new_group) {
-                Entry::Occupied(mut e) => match resolve {
-                    TagGroupConflictResolve::Override => *e.get_mut() = id,
-                    TagGroupConflictResolve::Remove => {}
-                },
-                Entry::Vacant(e) => {
-                    e.insert(id);
-                }
-            }
-        } else {
-            self.ungrouped.insert(id);
         }
     }
 
