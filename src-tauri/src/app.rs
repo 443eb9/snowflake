@@ -1075,6 +1075,9 @@ impl Storage {
                 if let Some(old_group) = old_group {
                     match asset.tags.grouped.entry(old_group) {
                         Entry::Occupied(e) => {
+                            if *e.get() != tag.id {
+                                continue;
+                            }
                             e.remove();
                         }
                         Entry::Vacant(_) => continue,
@@ -1083,8 +1086,6 @@ impl Storage {
                     if !asset.tags.ungrouped.remove(&tag.id) {
                         continue;
                     }
-
-                    dbg!(&asset.tags, &asset.name);
                 }
 
                 match asset.tags.grouped.entry(new_group) {
