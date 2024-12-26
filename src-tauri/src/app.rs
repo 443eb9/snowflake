@@ -668,7 +668,7 @@ impl Storage {
             .assets
             .values()
             .filter_map(|asset| {
-                (!asset.is_deleted).then(|| asset.tags.contains(tag).then_some(dbg!(asset.id)))
+                (!asset.is_deleted).then(|| asset.tags.contains(tag).then_some(asset.id))
             })
             .flatten()
             .collect())

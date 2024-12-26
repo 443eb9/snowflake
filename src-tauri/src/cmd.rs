@@ -1242,7 +1242,7 @@ pub async fn global_search(
                 storage
                     .tags
                     .values()
-                    .filter(|tag| dbg!(&tag.name).contains(&query))
+                    .filter(|tag| &tag.name.contains(&query))
                     .cloned()
                     .collect(),
             ),
