@@ -12,8 +12,8 @@ pub struct RawAssetMetadata {
     pub desc: String,
     pub extension: u32,
     pub size_bytes: u32,
-    pub created_at: Option<u32>,
-    pub imported_at: u32,
+    pub created_at: Option<i64>,
+    pub imported_at: i64,
 }
 
 impl Into<AssetMetadata> for RawAssetMetadata {
@@ -29,8 +29,11 @@ impl Into<AssetMetadata> for RawAssetMetadata {
             size_bytes: self.size_bytes,
             created_at: self
                 .created_at
-                .map(|at| DateTime::from_timestamp_nanos(at as i64)),
-            imported_at: DateTime::from_timestamp_nanos(self.imported_at as i64),
+                .and_then(|at| DateTime::from_timestamp(at as i64, 0))
+                .map(Into::into),
+            imported_at: DateTime::from_timestamp(self.imported_at as i64, 0)
+                .unwrap()
+                .into(),
         }
     }
 }
@@ -44,10 +47,8 @@ impl From<AssetMetadata> for RawAssetMetadata {
             desc: value.desc,
             extension: unsafe { std::mem::transmute(value.extension) },
             size_bytes: value.size_bytes,
-            created_at: value
-                .created_at
-                .map(|at| at.timestamp_nanos_opt().unwrap() as u32),
-            imported_at: value.imported_at.timestamp_nanos_opt().unwrap() as u32,
+            created_at: value.created_at.map(|at| at.timestamp() as i64),
+            imported_at: value.imported_at.timestamp() as i64,
         }
     }
 }

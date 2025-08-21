@@ -92,7 +92,7 @@ create table asset_tags
         let asset_id = query_as(
             r#"
 insert into assets_meta (name, src, desc, extension, size_bytes, created_at, imported_at)
-values (?,?,?,?,?,?,?,?)
+values (?,?,?,?,?,?,?)
 returning id
             "#,
         )
@@ -161,7 +161,7 @@ values {}
             r#"
 select id, name, src, desc, extension, size_bytes, created_at, imported_at
 from assets_meta
-                    "#,
+            "#,
         )
         .fetch_all(&pool)
         .await?

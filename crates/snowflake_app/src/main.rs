@@ -38,6 +38,13 @@ pub enum Screen {
     Other,
 }
 
+#[derive(Debug, Clone)]
+pub enum ToastLevel {
+    Info,
+    Warning,
+    Error,
+}
+
 #[derive(Debug)]
 pub enum Message {
     Window(window::Id, window::Event),
@@ -45,8 +52,7 @@ pub enum Message {
     Library(library::Message),
     LibrarySourceUpdate(Option<LibrarySource>),
     LibraryCacheUpdate(LibraryCache),
-    // TODO
-    Toast,
+    Toast(ToastLevel, String),
 }
 
 #[derive(Debug)]
@@ -76,9 +82,10 @@ impl Snowflake {
         let (id, window_open) = window::open(window::Settings::default());
         tasks.push(window_open.then(|_| Task::none()));
 
-        tasks.push(Task::perform(LibrarySource::new("test"), |s| {
-            Message::LibrarySourceUpdate(Some(s.unwrap()))
-        }));
+        tasks.push(Task::perform(
+            LibrarySource::new(std::env::current_dir().unwrap().join("test")),
+            |s| Message::LibrarySourceUpdate(Some(s.unwrap())),
+        ));
 
         (
             Self {
@@ -103,13 +110,19 @@ impl Snowflake {
                                 return Task::none();
                             };
 
-                            return Task::perform(
-                                async move {
-                                    let source = source;
-                                    AssetMetadata::import(path, &source).await
-                                },
-                                |_| Message::Toast,
-                            );
+                            return Task::future(async move {
+                                let source = source;
+                                match AssetMetadata::import(path, &source).await {
+                                    Ok(_) => Message::Toast(
+                                        ToastLevel::Info,
+                                        format!("Successfully imported asset."),
+                                    ),
+                                    Err(err) => Message::Toast(
+                                        ToastLevel::Error,
+                                        format!("Error importing asset: {:?}", err),
+                                    ),
+                                }
+                            });
                         }
                         _ => {}
                     }
@@ -127,6 +140,32 @@ impl Snowflake {
                 };
 
                 match message {
+                    library::Message::AllAssets => {
+                        let tags = self.cache.tags.clone();
+                        Task::future(async move {
+                            match source.main_db.get_all_assets().await {
+                                Ok(displayed_assets) => Message::LibraryCacheUpdate(LibraryCache {
+                                    tags,
+                                    displayed_assets,
+                                    ..Default::default()
+                                }),
+                                Err(err) => Message::Toast(ToastLevel::Error, err.to_string()),
+                            }
+                        })
+                    }
+                    library::Message::AllUntaggedAssets => {
+                        let tags = self.cache.tags.clone();
+                        Task::future(async move {
+                            match source.main_db.get_assets_with_tag(&[], false).await {
+                                Ok(displayed_assets) => Message::LibraryCacheUpdate(LibraryCache {
+                                    tags,
+                                    displayed_assets,
+                                    ..Default::default()
+                                }),
+                                Err(err) => Message::Toast(ToastLevel::Error, err.to_string()),
+                            }
+                        })
+                    }
                     library::Message::SelectTag(tag) => {
                         let tags = self.cache.tags.clone();
                         let new_selected_tags = if self.modifier_state.ctrl {
@@ -150,18 +189,15 @@ impl Snowflake {
                             .collect::<Vec<_>>();
 
                         Task::future(async move {
-                            let Ok(new_assets) =
-                                source.main_db.get_assets_with_tag(&ids, false).await
-                            else {
-                                return Message::Toast;
-                            };
-
-                            Message::LibraryCacheUpdate(LibraryCache {
-                                tags,
-                                displayed_assets: new_assets,
-                                selected_tags: new_selected_tags,
-                                selected_assets: Default::default(),
-                            })
+                            match source.main_db.get_assets_with_tag(&ids, false).await {
+                                Ok(new_assets) => Message::LibraryCacheUpdate(LibraryCache {
+                                    tags,
+                                    displayed_assets: new_assets,
+                                    selected_tags: new_selected_tags,
+                                    selected_assets: Default::default(),
+                                }),
+                                Err(err) => Message::Toast(ToastLevel::Error, err.to_string()),
+                            }
                         })
                     }
                     library::Message::SelectAsset(asset) => {
@@ -191,7 +227,7 @@ impl Snowflake {
                 Some(new) => {
                     let task = Task::perform(LibraryCache::new(new.clone()), |cache| match cache {
                         Ok(cache) => Message::LibraryCacheUpdate(cache),
-                        Err(err) => Message::Toast,
+                        Err(err) => Message::Toast(ToastLevel::Error, err.to_string()),
                     });
                     self.source = Some(Arc::new(new));
                     task
@@ -210,7 +246,10 @@ impl Snowflake {
                 }
                 _ => Task::none(),
             },
-            Message::Toast => Task::none(),
+            Message::Toast(level, message) => {
+                println!("{:?}:{}", level, message);
+                Task::none()
+            }
         }
     }
 

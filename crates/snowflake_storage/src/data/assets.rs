@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Local, Utc};
 use filetime::FileTime;
 use thiserror::Error;
 
@@ -24,8 +24,8 @@ pub struct AssetMetadata {
     pub desc: String,
     pub extension: AssetExtension,
     pub size_bytes: u32,
-    pub created_at: Option<DateTime<Utc>>,
-    pub imported_at: DateTime<Utc>,
+    pub created_at: Option<DateTime<Local>>,
+    pub imported_at: DateTime<Local>,
 }
 
 #[derive(Error, Debug)]
@@ -75,8 +75,9 @@ impl AssetMetadata {
             extension,
             size_bytes: metadata.len() as u32,
             created_at: FileTime::from_creation_time(&metadata)
-                .map(|at| DateTime::from_timestamp_nanos(at.nanoseconds() as i64)),
-            imported_at: Utc::now(),
+                .and_then(|at| DateTime::from_timestamp(at.unix_seconds(), 0))
+                .map(Into::into),
+            imported_at: Local::now(),
         };
 
         let id = library

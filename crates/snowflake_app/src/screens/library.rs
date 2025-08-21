@@ -12,6 +12,8 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub enum Message {
+    AllAssets,
+    AllUntaggedAssets,
     SelectTag(Tag),
     SelectAsset(AssetMetadata),
 }
@@ -20,18 +22,27 @@ pub struct LibraryScreen {}
 
 impl LibraryScreen {
     pub fn view(&self, source: &LibrarySource, cache: &LibraryCache) -> Element<Message> {
+        let presets = column![
+            button(text("All Assets"))
+                .width(Fill)
+                .on_press(Message::AllAssets),
+            button(text("All Untagged Assets"))
+                .width(Fill)
+                .on_press(Message::AllUntaggedAssets),
+        ];
         let tags = Column::from_iter(cache.tags.iter().map(|tag| {
             button(text(tag.name.clone()))
                 .width(Fill)
                 .on_press(Message::SelectTag(tag.clone()))
                 .into()
-        }))
-        .width(240);
+        }));
 
         let assets = Row::from_iter(cache.displayed_assets.iter().map(|asset| {
             button(column![
-                container(Image::new(Handle::from_path(source.root.join(&asset.original_file(source)))))
-                    .max_height(200),
+                container(Image::new(Handle::from_path(
+                    source.root.join(&asset.original_file(source))
+                )))
+                .max_height(200),
                 text(asset.name.clone())
             ])
             .on_press(Message::SelectAsset(asset.clone()))
@@ -66,6 +77,6 @@ impl LibraryScreen {
             _ => Element::from(text("Multiple assets selected.").width(240)),
         };
 
-        row![tags, assets, selected].into()
+        row![column![presets, tags].width(240), assets, selected].into()
     }
 }
