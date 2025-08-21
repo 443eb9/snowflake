@@ -36,10 +36,9 @@ create table assets_meta
     name        text                  not null,
     src         text,
     desc        text,
-    path        text                  not null,
     extension   integer               not null,
     size_bytes  integer               not null,
-    created_at  integer               not null,
+    created_at  integer,
     imported_at integer               not null,
     is_deleted  integer default false not null
 )
@@ -92,7 +91,7 @@ create table asset_tags
 
         let asset_id = query_as(
             r#"
-insert into assets_meta (name, src, desc, path, extension, size_bytes, created_at, imported_at)
+insert into assets_meta (name, src, desc, extension, size_bytes, created_at, imported_at)
 values (?,?,?,?,?,?,?,?)
 returning id
             "#,
@@ -100,7 +99,6 @@ returning id
         .bind(&asset.name)
         .bind(&asset.src)
         .bind(&asset.desc)
-        .bind(&asset.path)
         .bind(&asset.extension)
         .bind(&asset.size_bytes)
         .bind(&asset.created_at)
@@ -161,7 +159,7 @@ values {}
         let pool = self.db.pool();
         Ok(query_as::<_, RawAssetMetadata>(
             r#"
-select id, name, src, desc, path, extension, size_bytes, created_at, imported_at
+select id, name, src, desc, extension, size_bytes, created_at, imported_at
 from assets_meta
                     "#,
         )
@@ -182,7 +180,7 @@ from assets_meta
         let q = if tags.is_empty() {
             query_as::<_, RawAssetMetadata>(
                 r#"
-select id, name, src, desc, path, extension, size_bytes, created_at, imported_at
+select id, name, src, desc, extension, size_bytes, created_at, imported_at
 from assets_meta
 join (
     select asset_id
@@ -199,7 +197,7 @@ join (
             bindings.pop();
             let sql = format!(
                 r#"
-select id, name, src, desc, path, extension, size_bytes, created_at, imported_at
+select id, name, src, desc, extension, size_bytes, created_at, imported_at
 from assets_meta
 join (
     select asset_id
@@ -277,6 +275,50 @@ where id IN ({})
             .into_iter()
             .map(Into::into)
             .collect())
+    }
+
+    pub async fn update_asset(&self, asset: &RawAssetMetadata) -> Result<()> {
+        let pool = self.db.pool();
+
+        query(
+            r#"
+update assets_meta
+set name =?, src =?, desc =?, extension =?, size_bytes =?, created_at =?, imported_at =?
+where id =?
+            "#,
+        )
+        .bind(&asset.name)
+        .bind(&asset.src)
+        .bind(&asset.desc)
+        .bind(&asset.extension)
+        .bind(&asset.size_bytes)
+        .bind(&asset.created_at)
+        .bind(&asset.imported_at)
+        .bind(&asset.id)
+        .execute(&pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn update_tag(&self, tag: &RawTag) -> Result<()> {
+        let pool = self.db.pool();
+
+        query(
+            r#"
+update tags_meta
+set name =?, created_at =?, color =?
+where id =?
+            "#,
+        )
+        .bind(&tag.name)
+        .bind(&tag.created_at)
+        .bind(&tag.color)
+        .bind(&tag.id)
+        .execute(&pool)
+        .await?;
+
+        Ok(())
     }
 
     pub async fn mark_asset_deleted(

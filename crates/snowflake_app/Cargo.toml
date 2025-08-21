@@ -6,3 +6,4 @@ edition = "2024"
 [dependencies]
 iced.workspace = true
 snowflake_storage = { version = "0.1", path = "../snowflake_storage" }
+thiserror.workspace = true

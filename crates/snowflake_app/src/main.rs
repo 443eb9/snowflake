@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, hash_map::Entry},
     path::{Path, PathBuf},
+    sync::Arc,
 };
 
 use iced::{
@@ -10,15 +11,18 @@ use iced::{
     window,
 };
 use snowflake_storage::{
-    data::{AssetMetadata, Id, Tag},
+    LibrarySource,
+    data::{AssetExtension, AssetMetadata, Id, Tag},
     sql::main_db::MainDatabase,
 };
 
 use crate::{
+    cache::LibraryCache,
     screens::library::{self, LibraryScreen},
     widgets::Element,
 };
 
+mod cache;
 mod screens;
 mod widgets;
 
@@ -51,41 +55,6 @@ pub enum WindowUpdate {
     Close(window::Id),
 }
 
-#[derive(Debug, Clone)]
-pub struct LibrarySource {
-    pub root: PathBuf,
-    pub main_db: MainDatabase,
-}
-
-impl LibrarySource {
-    pub async fn new(library_root: impl AsRef<Path>) -> snowflake_storage::sql::Result<Self> {
-        let root = library_root.as_ref().to_path_buf();
-        let main_db = MainDatabase::connect(library_root).await?;
-        main_db.init_tables().await;
-
-        Ok(Self { root, main_db })
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct LibraryCache {
-    pub tags: Vec<Tag>,
-    pub displayed_assets: Vec<AssetMetadata>,
-    pub selected_tags: HashMap<Id<Tag>, Tag>,
-    pub selected_assets: HashMap<Id<AssetMetadata>, AssetMetadata>,
-}
-
-impl LibraryCache {
-    pub async fn new(source: LibrarySource) -> snowflake_storage::sql::Result<Self> {
-        Ok(Self {
-            tags: source.main_db.get_all_tags().await?,
-            displayed_assets: Default::default(),
-            selected_tags: Default::default(),
-            selected_assets: Default::default(),
-        })
-    }
-}
-
 #[derive(Debug, Default, Clone, Copy)]
 pub struct ModifierState {
     pub ctrl: bool,
@@ -95,7 +64,7 @@ pub struct ModifierState {
 pub struct Snowflake {
     main_window: window::Id,
     screen: Screen,
-    source: Option<LibrarySource>,
+    source: Option<Arc<LibrarySource>>,
     cache: LibraryCache,
     modifier_state: ModifierState,
 }
@@ -129,6 +98,19 @@ impl Snowflake {
                 if id == self.main_window {
                     match event {
                         window::Event::Closed => return iced::exit(),
+                        window::Event::FileDropped(path) => {
+                            let Some(source) = self.source.clone() else {
+                                return Task::none();
+                            };
+
+                            return Task::perform(
+                                async move {
+                                    let source = source;
+                                    AssetMetadata::import(path, &source).await
+                                },
+                                |_| Message::Toast,
+                            );
+                        }
                         _ => {}
                     }
                 }
@@ -211,7 +193,7 @@ impl Snowflake {
                         Ok(cache) => Message::LibraryCacheUpdate(cache),
                         Err(err) => Message::Toast,
                     });
-                    self.source = Some(new);
+                    self.source = Some(Arc::new(new));
                     task
                 }
                 None => todo!(),
@@ -256,3 +238,5 @@ impl Snowflake {
         ])
     }
 }
+
+fn import_local_asset(path: PathBuf) {}

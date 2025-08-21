@@ -10,10 +10,9 @@ pub struct RawAssetMetadata {
     pub name: String,
     pub src: String,
     pub desc: String,
-    pub path: String,
     pub extension: u32,
     pub size_bytes: u32,
-    pub created_at: u32,
+    pub created_at: Option<u32>,
     pub imported_at: u32,
 }
 
@@ -24,12 +23,13 @@ impl Into<AssetMetadata> for RawAssetMetadata {
             name: self.name,
             src: self.src,
             desc: self.desc,
-            path: self.path.into(),
             // SAFETY:
             // - AssetType is repred into u32
             extension: unsafe { std::mem::transmute(self.extension) },
             size_bytes: self.size_bytes,
-            created_at: DateTime::from_timestamp_nanos(self.created_at as i64),
+            created_at: self
+                .created_at
+                .map(|at| DateTime::from_timestamp_nanos(at as i64)),
             imported_at: DateTime::from_timestamp_nanos(self.imported_at as i64),
         }
     }
@@ -42,10 +42,11 @@ impl From<AssetMetadata> for RawAssetMetadata {
             name: value.name,
             src: value.src,
             desc: value.desc,
-            path: value.path.as_os_str().to_string_lossy().into(),
             extension: unsafe { std::mem::transmute(value.extension) },
             size_bytes: value.size_bytes,
-            created_at: value.created_at.timestamp_nanos_opt().unwrap() as u32,
+            created_at: value
+                .created_at
+                .map(|at| at.timestamp_nanos_opt().unwrap() as u32),
             imported_at: value.imported_at.timestamp_nanos_opt().unwrap() as u32,
         }
     }

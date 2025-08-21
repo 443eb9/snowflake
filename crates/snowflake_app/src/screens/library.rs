@@ -30,7 +30,7 @@ impl LibraryScreen {
 
         let assets = Row::from_iter(cache.displayed_assets.iter().map(|asset| {
             button(column![
-                container(Image::new(Handle::from_path(source.root.join(&asset.path))))
+                container(Image::new(Handle::from_path(source.root.join(&asset.original_file(source)))))
                     .max_height(200),
                 text(asset.name.clone())
             ])
@@ -46,7 +46,7 @@ impl LibraryScreen {
                 Element::from(
                     column![
                         container(Image::new(Handle::from_path(
-                            source.root.join(asset.path.clone())
+                            source.root.join(asset.original_file(source))
                         )))
                         .max_height(200),
                         text(asset.name.clone()),
@@ -54,7 +54,10 @@ impl LibraryScreen {
                         text(asset.desc.clone()),
                         text(format!("Size: {} bytes", asset.size_bytes)),
                         text(format!("Format: {}", asset.extension)),
-                        text(format!("Created at: {}", asset.created_at)),
+                        text(format!(
+                            "Created at: {}",
+                            asset.created_at.map(|d| d.to_string()).unwrap_or_default()
+                        )),
                         text(format!("Imported at: {}", asset.imported_at)),
                     ]
                     .width(240),
